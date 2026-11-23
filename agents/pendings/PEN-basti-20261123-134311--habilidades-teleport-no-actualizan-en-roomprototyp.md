@@ -7,10 +7,10 @@ agent: gpt
 created: 2026-11-23T16:43:11.425Z
 title: Habilidades Teleport no actualizan en RoomPrototype y rompen e2e
 priority: p0   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done
 area:                    # combat | movement | world | exploration | character | abilities | items | audio | ui | shared
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-basti-20261123-160257
 ---
 
 ## Contexto
@@ -24,7 +24,10 @@ npx.cmd playwright test --config playwright.local.tmp.config.ts tests/e2e/abilit
 ```
 
 ## Criterio de cierre
-- [ ] RoomPrototype llama `abilities.update(dt)` una vez por frame sin perder los controles de Teleport.
-- [ ] tests/e2e/abilities-marks.spec.ts pasa con configuración local y un worker.
+- [x] RoomPrototype llama `abilities.update(dt)` una vez por frame sin perder los controles de Teleport.
+- [x] tests/e2e/abilities-marks.spec.ts pasa con configuración local y un worker.
 
 ## Notas
+
+## Cierre de integración
+Verificado en candidata del PR #15: suite completa Chromium 49/49 sin skips; lógica de TP y movimiento cenital activos. HIS-basti-20261123-160257.

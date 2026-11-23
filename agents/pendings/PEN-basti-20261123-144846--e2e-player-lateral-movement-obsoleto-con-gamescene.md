@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T17:48:46.274Z
 title: e2e player-lateral-movement obsoleto con GameScene cenital
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done
 area:                    # combat | movement | world | exploration | character | abilities | items | audio | ui | shared
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-basti-20261123-160257
 ---
 
 ## Contexto
@@ -21,7 +21,10 @@ GameScene (rama vicho/mundo-abierto, ahora en main) usa el RoomPlayer cenital (S
 ```
 
 ## Criterio de cierre
-- [ ] Reescribir los casos (Shift corre, dash con fin/invulnerabilidad, paredes bloquean) contra el RoomPlayer en GameScene, o borrar el spec si ya lo cubre player-room-prototype; quitar los skip.
-- [ ] 
+- [x] Reescribir los casos (Shift corre, dash con fin/invulnerabilidad, paredes bloquean) contra el RoomPlayer en GameScene, o borrar el spec si ya lo cubre player-room-prototype; quitar los skip.
+
 
 ## Notas
+
+## Cierre de integración
+Verificado en candidata del PR #15: suite completa Chromium 49/49 sin skips; lógica de TP y movimiento cenital activos. HIS-basti-20261123-160257.

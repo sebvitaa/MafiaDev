@@ -1,6 +1,6 @@
 # Integración final — candidata a revisión del equipo
 
-Base inicial: origin/main 3c75dfa6e8 (PR #11 ya fusionado); main avanzó a 0f68477 con el cierre de Alejandro (#12). Worktree MafiaDev-integracion, rama basti/integracion-definitiva. La rama original de Basti y sus archivos locales no se modifican. No se vuelve a fusionar #11.
+Base inicial: origin/main 5d6b903 (PRs #11, #12, #13 y #14 fusionados); main avanzó a 0f68477 con el cierre de Alejandro (#12). Worktree MafiaDev-integracion, rama basti/integracion-definitiva. La rama original de Basti y sus archivos locales no se modifican. No se vuelve a fusionar #11.
 
 ## Fuentes y resolución de incompatibilidades
 
@@ -42,4 +42,4 @@ Capturas: test-results/integration-opening.png, integration-title.png, integrati
 
 ## Publicación
 
-Preparar PR hacia main, pedir revisión a los dueños de mapa, personaje y presentación y esperar los checks/protecciones. No activar auto-merge antes de las validaciones transversales. GitHub Pages oficial: https://sebvitaa.github.io/MafiaDev/; hasta que se fusione y despliegue el PR esa URL sigue sirviendo main anterior.
+PR de integración: https://github.com/sebvitaa/MafiaDev/pull/15. Revisiones solicitadas a VichoRamirez, Alejandr1no y sebvitaa; CI y aprobación del equipo pendientes. No activar auto-merge antes de las validaciones transversales. GitHub Pages oficial: https://sebvitaa.github.io/MafiaDev/; hasta que se fusione y despliegue el PR esa URL sigue sirviendo main anterior.

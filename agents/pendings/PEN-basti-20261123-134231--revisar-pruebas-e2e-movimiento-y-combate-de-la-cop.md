@@ -7,10 +7,10 @@ agent: gpt
 created: 2026-11-23T16:42:31.006Z
 title: revisar pruebas e2e movimiento y combate de la copia integrada
 priority: p2   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done
 area: movement
 refs: [HIS-alejandro-20261123-134126]
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-basti-20261123-160257
 ---
 
 ## Contexto
@@ -25,9 +25,12 @@ abilities-game (1), abilities-marks (4), player-lateral-movement (3), player-roo
 ```
 
 ## Criterio de cierre
-- [ ] Verificar las expectativas del jugador lateral y las marcas contra el jugador cenital de la integración.
-- [ ] Repetir aisladamente los casos de doble toque de 300 ms y golpe cargado del laboratorio; corregir las discrepancias reproducibles.
+- [x] Verificar las expectativas del jugador lateral y las marcas contra el jugador cenital de la integración.
+- [x] Repetir aisladamente los casos de doble toque de 300 ms y golpe cargado del laboratorio; corregir las discrepancias reproducibles.
 
 ## Notas
 
 Durante la ejecución hubo actividad paralela en test-results. Conviene usar un directorio propio de resultados para conservar las trazas.
+
+## Cierre de integración
+Verificado en candidata del PR #15: suite completa Chromium 49/49 sin skips; lógica de TP y movimiento cenital activos. HIS-basti-20261123-160257.

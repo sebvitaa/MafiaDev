@@ -30,3 +30,6 @@ El PR permanece sin fusionar; ajustar los puntos rechazados sin alterar el main 
 ## Resolución
 <!-- humano: quién, cuándo, cita textual de su respuesta -->
 Autorización de preparación/publicación dada por Basti en el adjunto. La validación transversal final de los dueños del equipo aún está pendiente; el agente no la declara aprobada.
+
+## Actualización de recursos publicados
+Se integraron los PRs #12/#13/#14 de main: sprites, sello de 48 frames, cine3 y La Nota de 70 s. Las viñetas provisionales fueron sustituidas por el video publicado de Alejandro. Se conserva el balance configurable descrito arriba; PR #15 listo para revisión, con revisores de los tres dominios solicitados. La validación humana sigue pendiente.
