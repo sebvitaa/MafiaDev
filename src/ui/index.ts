@@ -15,3 +15,6 @@ export function installUi(scene: Phaser.Scene): void {
   scene.input.keyboard?.on('keydown-P', pause);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.scene.stop('HudScene'));
 }
+export { OptionsScene } from './scenes/OptionsScene';
+export { GameOverScene } from './scenes/GameOverScene';
+export { CreditsScene } from './scenes/CreditsScene';
