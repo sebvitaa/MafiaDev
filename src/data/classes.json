@@ -2,7 +2,7 @@
   "luchador": {
     "name": "Luchador",
     "stats": { "maxHp": 5, "atk": 2, "def": 1, "speed": 120, "airJumps": 1, "dashCooldownMs": 400 },
-    "abilities": ["time_stop"]
+    "abilities": ["teleport"]
   },
   "mago": {
     "name": "Mago",

@@ -1,5 +1,17 @@
 {
   "time_stop": { "name": "Parar el tiempo", "cooldownMs": 12000, "durationMs": 3000 },
-  "teleport": { "name": "Traspasar", "cooldownMs": 6000, "distance": 64 },
+  "teleport": {
+    "name": "Red de marcas",
+    "cooldownMs": 500,
+    "maxMarks": 4,
+    "projectileSpeed": 780,
+    "projectileRadius": 4,
+    "selectionRadius": 26,
+    "landingSearchRadius": 48,
+    "landingSearchStep": 4,
+    "enemyPadding": 6,
+    "feedbackMs": 1200,
+    "flashMs": 180
+  },
   "soul_bolt": { "name": "Proyectil de almas", "cooldownMs": 800, "soulCost": 1 }
 }
