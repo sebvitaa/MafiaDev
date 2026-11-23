@@ -333,7 +333,7 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   if (!box) throw new Error('No se encontró el canvas del prototipo');
   await page.mouse.move(box.x + box.width * 820 / 960, box.y + box.height * 383 / 600);
   await page.mouse.down();
-  await page.waitForTimeout(500);
+  await expect.poll(async () => (await state(page)).charge).toBeGreaterThan(0);
   const charging = await state(page);
   expect(charging.charge).toBeGreaterThan(0);
   expect(charging.chargeEffect).toBe(true);
@@ -362,7 +362,7 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
     scene.player.motion.velocity = { x: 0, y: 0 };
   });
   await page.mouse.down();
-  await page.waitForTimeout(1050);
+  await expect.poll(async () => (await state(page)).charge).toBe(1);
   await page.keyboard.down('ArrowRight');
   await page.waitForTimeout(160);
   await page.keyboard.up('ArrowRight');
@@ -372,14 +372,14 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   expect(releasePose.chargeEffectX).toBeCloseTo(releasePose.x, 0);
   expect(releasePose.chargeEffectY).toBeCloseTo(releasePose.y - 18, 0);
   await page.mouse.up();
-  await expect.poll(async () => (await state(page)).dummyHp).toBe(50);
-  const swingPose = await state(page);
-  expect(swingPose.slashVisible).toBe(true);
   await page.keyboard.down('ArrowLeft');
-  await page.waitForTimeout(130);
+  // Observe motion, damage and the visible slash together during the actual attack window.
+  await page.waitForFunction((x) => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    return scene.player.anchor.x < x && scene.player.attack.slash.visible && scene.trainingDummy.hp === 50;
+  }, releasePose.x);
   await page.keyboard.up('ArrowLeft');
-  expect((await state(page)).x).toBeLessThan(swingPose.x);
-  expect((await state(page)).slashVisible).toBe(true);
+  await page.waitForFunction(() => !(window.__game!.scene.getScene('RoomPrototype') as RoomScene).player.attack.slash.visible);
   expect((await state(page)).dummyHp).toBe(50);
   await page.mouse.up();
   expect((await state(page)).dummyHits).toBe(1);
