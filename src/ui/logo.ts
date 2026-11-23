@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import { C, hex, pixelTexture, text } from './theme';
 
 export const LOGO_WORD = 'MAFIADEV';
-// SUP-seba-20261123-1200: tagline elegido entre 6 propuestas de GPT-5-mini (2.27 sin respuesta).
+// SUP-seba-20261123-114613: tagline elegido entre 6 propuestas de GPT-5-mini (2.27 sin respuesta).
 export const TAGLINE = 'BAJO LA CIUDAD, LA VERDAD';
 /** Posición del logo en el título (la apertura lo lleva hasta aquí). */
 export const LOGO_TITLE_Y = 60;

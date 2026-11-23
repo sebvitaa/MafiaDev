@@ -14,7 +14,7 @@ import { fadeIn, flashTo } from '../ui/transitions';
 
 export interface TitleData { menu?: boolean; fromSplash?: boolean }
 
-// SUP-seba-20261123-1200: «3 escenarios: early, mid, late». GameScene (vicho) lee registry 'stage' / data.stage.
+// SUP-seba-20261123-114613-2: «3 escenarios: early, mid, late». GameScene (vicho) lee registry 'stage' / data.stage.
 // El selector va en la propia fila JUGAR (no en un submenú) para que ENTER/ESPACIO siga empezando al instante.
 export const STAGES = [
   { id: 1, label: '1 · INICIO' },

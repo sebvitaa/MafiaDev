@@ -61,6 +61,7 @@ export class GameOverScene extends Phaser.Scene {
 
   /** 6.1 — cámara lenta de la escena de juego (se restaura siempre al cerrar). */
   private slowed = false;
+  // SUP-seba-20261123-114613-3: toca timeScale de la escena de origen (GameScene) en runtime y lo restaura.
   private slowmo(on: boolean): void {
     if (this.slowed === on) return;
     this.slowed = on;
