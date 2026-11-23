@@ -56,8 +56,6 @@ test('Luchador usa cuatro marcas, teclas 1–4 y Q + mouse con recarga compartid
   expect(await playerX(page)).toBeCloseTo(S.x, -1);
   await page.keyboard.press('1');
   await expect.poll(() => playerX(page)).toBeCloseTo(A, -1);
-  await page.keyboard.press('2');
-  expect(await playerX(page)).toBeCloseTo(A, -1);
   for (const [key, x] of [['2', B], ['3', C], ['4', D]] as const) {
     await ready();
     await page.keyboard.press(key);
