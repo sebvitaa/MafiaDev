@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T13:51:10.685Z
 title: V01 Diseño del mundo abierto en papel
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done             # open | in_progress | blocked | done | wontfix
 area: world
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-vicho-20261123-123651               # hash o HIS-ID al cerrar
 ---
 
 ## Contexto
@@ -22,7 +22,7 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 ```
 
 ## Criterio de cierre
-- [ ] Imagen o ASCII del mapa en el cuerpo de este PEN con zonas, checkpoints, cofres y arena del jefe marcados
+- [x] Imagen o ASCII del mapa en el cuerpo de este PEN con zonas, checkpoints, cofres y arena del jefe marcados
 
 ## Notas
 - 2026-11-23 (vicho): Mundo MÁS GRANDE: varios minutos de gameplay (subir de ~120x80 a ~200x150 tiles o más, a ajustar jugando). Ambientación souls oscura pero llamativa; UNA sola zona muy luminosa y colorida (contraste).

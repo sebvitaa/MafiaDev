@@ -7,7 +7,7 @@ agent: claude
 created: 2026-11-23T13:51:21.096Z
 title: V10 Cofres en el mundo
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: in_progress             # open | in_progress | blocked | done | wontfix
 area: exploration
 refs: []
 closed_by:               # hash o HIS-ID al cerrar
@@ -26,3 +26,4 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 
 ## Notas
 - 2026-11-23 (vicho): Cofres se abren INTERACTUANDO (misma acción que checkpoints).
+- 2026-11-23 (HIS-vicho-20261123-123651): cofres interactivos con loot hechos; FALTA persistir cofres abiertos (SaveData no tiene campo: shared).

@@ -7,7 +7,7 @@ agent: claude
 created: 2026-11-23T13:51:25.737Z
 title: V14 Minimapa con forma del logo de Codex (requisito hackatón)
 priority: p2   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: in_progress             # open | in_progress | blocked | done | wontfix
 area: exploration
 refs: []
 closed_by:               # hash o HIS-ID al cerrar
@@ -27,3 +27,4 @@ MoSCoW: SHOULD. Vista cenital, mundo abierto (no por salas).
 ## Notas
 - 2026-11-23 (vicho): Ubicación: arriba a la derecha. Tecla/botón para mostrar u ocultar. Forma de logo de Codex: POSPUESTA por ahora (primero minimapa rectangular funcional).
 - 2026-11-23 (vicho): CAMBIO: minimapa ARRIBA A LA IZQUIERDA (no derecha). Ojo: hoy el HUD de vida de seba ocupa la esquina superior izquierda → coordinar posición con seba.
+- 2026-11-23 (HIS-vicho-20261123-123651): minimapa arriba-izquierda con N y niebla hecho; FALTA forma del logo de Codex (pospuesto).

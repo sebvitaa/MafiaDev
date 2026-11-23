@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T13:51:17.628Z
 title: V07 Checkpoints (sitios de gracia)
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done             # open | in_progress | blocked | done | wontfix
 area: exploration
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-vicho-20261123-123651               # hash o HIS-ID al cerrar
 ---
 
 ## Contexto
@@ -22,7 +22,7 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 ```
 
 ## Criterio de cierre
-- [ ] Recargar la página reaparece en el último checkpoint
+- [x] Recargar la página reaparece en el último checkpoint
 
 ## Notas
 - 2026-11-23 (vicho): Checkpoints estilo souls (hoguera DS / banca HK / linterna BB): se activan INTERACTUANDO, no al tocar. Descansar = guarda punto, cura y reaparecen los enemigos (world reset). Necesita acción 'interact' en src/core/Input.ts (shared) → avisar al equipo; mientras, tecla E local en dominio vicho + SUP.

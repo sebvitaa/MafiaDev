@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T13:51:16.462Z
 title: V06 Zonas por región: zone:changed y área tutorial
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done             # open | in_progress | blocked | done | wontfix
 area: exploration
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-vicho-20261123-123651               # hash o HIS-ID al cerrar
 ---
 
 ## Contexto
@@ -22,6 +22,6 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 ```
 
 ## Criterio de cierre
-- [ ] Test de zoneAt; eventos emitidos una vez por cruce
+- [x] Test de zoneAt; eventos emitidos una vez por cruce
 
 ## Notas
