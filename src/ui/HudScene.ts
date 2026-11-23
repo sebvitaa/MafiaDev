@@ -12,6 +12,7 @@ import type { ItemDef } from '../types/items';
 import { settings } from '../audio';
 import { C, RARITY_COLOR, text } from './theme';
 import { TutorialOverlay } from './tutorial/TutorialOverlay';
+import { presentLaNotaArrival } from './laNotaArrival';
 
 const isBoss = (s: string) => /boss/i.test(s);
 const BOSS_HP = (enemies as Record<string, { hp?: number }>).boss?.hp ?? 30; // jefe final (src/world/boss.ts)
@@ -56,8 +57,11 @@ export class HudScene extends Phaser.Scene {
     bus.on('chest:opened', ({ hidden }) => { if (hidden) this.toast('¡COFRE OCULTO!', RARITY_COLOR.legendary); }, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => bus.offContext(this));
 
-    const tutorial = new TutorialOverlay(this);
-    if (this.registry.get('newGame') === true && !settings.get().tutorialDone) this.time.delayedCall(800, () => tutorial.start());
+    const startTutorial = () => {
+      const tutorial = new TutorialOverlay(this);
+      if (this.registry.get('newGame') === true && !settings.get().tutorialDone) this.time.delayedCall(800, () => tutorial.start());
+    };
+    presentLaNotaArrival(this, startTutorial);
   }
 
   // ───────── corazones ─────────

@@ -8,6 +8,7 @@
 | Apertura (sting del logo, golpe de flexión) | WebAudio en tiempo real (`src/audio/splashSting.ts`), 0 KB de archivos | Material propio |
 | Marca de Codex en la apertura | Dibujada por código (`src/ui/logo.ts`) como homenaje a la herramienta usada | OpenAI y Codex son marcas de OpenAI |
 | `vo/*` (narrador) | OpenAI `gpt-4o-mini-tts` (voz «onyx») con eco y ecualización en ffmpeg | **Voz generada por IA**: indicarlo a los jugadores (está en los créditos del juego) |
+| Cinemática inicial «La Nota» | Montaje y animación por recortes del arte del juego. Voces sintéticas españolas de Windows (Helena, Laura y Pablo), jazz y ambiente del proyecto, efectos de sala sintetizados para el montaje | Las voces de la introducción son sintéticas. La música conserva los créditos de sus bancos de sonido indicados arriba. |
 | `ui/title/*` (cielo, skyline, calle, logo) | OpenAI `gpt-image-1.5`, reducidos a 480×270 y a una paleta de 24 colores | Salida de la API de OpenAI |
 | `ui/fonts/Silkscreen-Regular.ttf` | Jason Kottke, Google Fonts | SIL Open Font License 1.1 (`Silkscreen-OFL.txt`) |
 | `ui/fonts/BarlowCondensed-*.ttf` (menús nítidos) | Jeremy Tribby, Google Fonts | SIL Open Font License 1.1 (`BarlowCondensed-OFL.txt`) |

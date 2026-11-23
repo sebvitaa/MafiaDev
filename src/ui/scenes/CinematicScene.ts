@@ -28,7 +28,7 @@ export class CinematicScene extends Phaser.Scene {
     AudioDirector.duck(0, 90);
     let done = false;
 
-    const finish = () => {
+    const finish = (arrival: 'natural' | 'skip' = 'skip') => {
       if (done) return;
       done = true;
       if (entry.stage === 3) this.registry.set('setCinematicSeen', true);
@@ -37,6 +37,7 @@ export class CinematicScene extends Phaser.Scene {
         if (entry.resumeHud) this.scene.resume('HudScene');
         this.scene.stop();
       } else {
+        if (entry.stage === 1) this.registry.set('laNotaArrival', arrival);
         this.scene.start('GameScene', { stage: entry.stage });
       }
     };
@@ -45,7 +46,7 @@ export class CinematicScene extends Phaser.Scene {
       fontFamily: '"Barlow Condensed", sans-serif', fontSize: '10px', padding: '0',
     };
     const skip = layer.el('button', { text: 'Saltar · Esc', x: 421, y: 0, width: 56, height: 15, interactive: true, style: buttonStyle });
-    skip.onclick = finish;
+    skip.onclick = () => finish();
     const play = layer.el('button', { text: 'Reproducir', x: 199, y: 119, width: 82, height: 32, interactive: true, style: buttonStyle });
     play.hidden = true;
     const start = () => {
@@ -68,14 +69,16 @@ export class CinematicScene extends Phaser.Scene {
     const visibility = () => { if (document.hidden) video.pause(); else start(); };
     window.addEventListener('keydown', keydown, true);
     document.addEventListener('visibilitychange', visibility);
-    video.addEventListener('ended', finish);
-    video.addEventListener('error', finish);
+    const onEnded = () => finish('natural');
+    const onError = () => finish();
+    video.addEventListener('ended', onEnded);
+    video.addEventListener('error', onError);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       done = true;
       window.removeEventListener('keydown', keydown, true);
       document.removeEventListener('visibilitychange', visibility);
-      video.removeEventListener('ended', finish);
-      video.removeEventListener('error', finish);
+      video.removeEventListener('ended', onEnded);
+      video.removeEventListener('error', onError);
       unsubscribe();
       video.pause();
       video.removeAttribute('src');
