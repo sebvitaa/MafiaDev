@@ -13,6 +13,22 @@
       "invulnerableMs": 100
     }
   },
+  "roomPrototype": {
+    "speedMultiplier": 1.25,
+    "acceleration": 2400,
+    "deceleration": 3000,
+    "turnAcceleration": 3000,
+    "doubleTapWindowMs": 350,
+    "dashSpeed": 540,
+    "dashDurationMs": 150,
+    "dashCooldownMs": 650,
+    "trailIntervalMs": 24,
+    "trailLifetimeMs": 160,
+    "swordPickupRadius": 27,
+    "swordBobAmplitude": 6,
+    "swordAttackDurationMs": 220,
+    "swordAttackRange": 42
+  },
   "combat": {
     "hitStopMs": 70,
     "comboWindowMs": 250,
