@@ -7,6 +7,7 @@ import {
   type ComboAttack,
   type SwordDamageTarget,
 } from './SwordCombat';
+import type { EchoableSwordSwing } from './EchoDebtCombat';
 
 /** SUP-basti-20261123-123408: charge timing, 50% reach bonus and release animation. */
 export class SwordAttack {
@@ -49,6 +50,7 @@ export class SwordAttack {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly targets: () => readonly SwordDamageTarget[] = () => [],
+    private readonly onSwing: (swing: EchoableSwordSwing) => void = () => undefined,
   ) {
     this.slashShape = scene.add.graphics();
     this.slash = scene.add.container(0, 0, [this.slashShape]).setVisible(false);
@@ -213,6 +215,7 @@ export class SwordAttack {
     this.applyHitbox();
     this.animateWeapon(attack, duration, false);
     this.animateSlash(attack, duration, false);
+    this.onSwing(this.echoableSwing(attack));
   }
 
   private playCharged(progress: number): void {
@@ -236,6 +239,23 @@ export class SwordAttack {
     this.applyHitbox();
     this.animateWeapon(3, config.swordChargeDurationMs, true);
     this.animateSlash(3, config.swordChargeDurationMs, true);
+    this.onSwing(this.echoableSwing('charged'));
+  }
+
+  private echoableSwing(attack: EchoableSwordSwing['attack']): EchoableSwordSwing {
+    return {
+      attack,
+      origin: { x: this.origin.x, y: this.origin.y, height: this.height },
+      direction: { ...this.facing },
+      damage: this.hitDamage,
+      range: this.hitRange,
+      halfAngleDeg: this.hitAngle,
+      knockback: this.hitKnockback,
+      durationMs: this.swingDurationMs,
+      hitWindowMs: this.hitRemainingMs,
+      travel: this.swingTravel,
+      ease: this.swingEase,
+    };
   }
 
   private drawSlash(attack: ComboAttack, range: number, halfAngle: number, charged = false): void {

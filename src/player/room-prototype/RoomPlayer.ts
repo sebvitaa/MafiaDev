@@ -8,6 +8,7 @@ import { SwordAttack } from './SwordAttack';
 import type { SwordDamageTarget } from './SwordCombat';
 import { RoomFireball } from './RoomFireball';
 import type { FireballDamageTarget } from './FireballCombat';
+import { RoomEcho } from './RoomEcho';
 import tuning from '../../data/tuning.json';
 
 /** Prototype-local adapter; does not replace the lateral Player or publish gameplay events. */
@@ -20,6 +21,7 @@ export class RoomPlayer {
   readonly motion: RoomMotion;
   readonly attack: SwordAttack;
   readonly fireball: RoomFireball;
+  readonly echo: RoomEcho;
   hasSword = false;
   private readonly input: Input;
   private readonly shift: Phaser.Input.Keyboard.Key;
@@ -38,7 +40,8 @@ export class RoomPlayer {
     targets: () => readonly (SwordDamageTarget & FireballDamageTarget)[] = () => [],
   ) {
     this.motion = new RoomMotion(stats);
-    this.attack = new SwordAttack(scene, targets);
+    this.echo = new RoomEcho(scene, targets);
+    this.attack = new SwordAttack(scene, targets, (swing) => this.echo.recordSwing(swing));
     this.fireball = new RoomFireball(scene, targets);
     this.input = new Input(scene);
     const keyboard = scene.input.keyboard!;
@@ -142,6 +145,7 @@ export class RoomPlayer {
   update(dtMs: number): void {
     this.attack.update(dtMs);
     this.fireball.update(dtMs);
+    this.echo.update(dtMs);
     this.input.update();
     const events = this.motion.update({
       x: this.input.axisX,
@@ -152,7 +156,10 @@ export class RoomPlayer {
       dashPressed: this.dashQueued && (!this.attack.active || this.attack.canCancelWithDash),
       dashDirection: this.dashDirection,
     }, dtMs);
-    if (events.dashed) this.attack.cancelByDash();
+    if (events.dashed) {
+      this.attack.cancelByDash();
+      this.echo.startDash({ x: this.anchor.x, y: this.anchor.y, height: this.motion.height });
+    }
     this.jumpQueued = false;
     this.dashQueued = false;
     this.dashDirection = undefined;

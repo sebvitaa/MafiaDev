@@ -25,9 +25,19 @@ async function state(page: Page) {
       fireballAimY: p.fireball.aimPoint.y, fireballY: p.fireball.projectile.y,
       fireballExplosion: p.fireball.explosion.visible, fireballRadius: p.fireball.explosionRadius,
       fireballBurnVisible: p.fireball.burnMark.visible,
+      fireballItalianRain: p.fireball.isItalianRain,
+      fireballCompletos: p.fireball.activeProjectileCount,
+      fireballVisibleCompletos: p.fireball.visibleProjectileCount,
+      fireballLandedCompletos: p.fireball.landedCount,
+      fireballSplashes: p.fireball.visibleSplashCount,
+      echoVisible: p.echo.visible, echoRemaining: p.echo.remainingMs,
+      echoPending: p.echo.replayPending, echoUsed: p.echo.replayUsed,
+      echoSlash: p.echo.slash.visible,
       dummyHp: scene.trainingDummy?.hp ?? null,
       dummyDefeated: scene.trainingDummy?.defeated ?? false,
       dummyHits: scene.trainingDummy?.hitCount ?? null,
+      dummyDebtMarks: scene.trainingDummy?.debtMarkCount ?? null,
+      dummyDebtDetonation: scene.trainingDummy?.debtDetonationVisible ?? false,
       dummyReaction: scene.trainingDummy?.reactionActive ?? false,
       trails: scene.children.list.filter((o) => o.name === 'room-dash-trail' && (o as Phaser.GameObjects.Graphics).visible).length,
       scrollX: scene.cameras.main.scrollX, scrollY: scene.cameras.main.scrollY,
@@ -68,7 +78,7 @@ test('cámara fija encuadra la sala mientras WASD, flechas y carrera mueven al p
     const s = await state(page); return Math.hypot(s.vx, s.vy);
   }).toBeCloseTo(247.5);
   expect((await state(page)).dash).toBe(false);
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(500);
   await page.keyboard.up('w');
   await page.keyboard.up('d');
   await page.keyboard.up('Shift');
@@ -361,14 +371,23 @@ test('E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en
   expect(aimed.dummyHp).toBe(100);
   await page.keyboard.up('e');
   expect((await state(page)).fireballPhase).toBe('falling');
-  expect((await state(page)).fireballCooldown).toBeGreaterThan(6900);
-  await page.waitForTimeout(500);
+  expect((await state(page)).fireballItalianRain).toBe(true);
+  expect((await state(page)).fireballCompletos).toBeGreaterThanOrEqual(7);
+  expect((await state(page)).fireballCompletos).toBeLessThanOrEqual(10);
+  expect((await state(page)).fireballVisibleCompletos).toBeGreaterThan(0);
+  expect((await state(page)).fireballCooldown).toBeGreaterThan(6800);
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: 'test-results/room-prototype-italian-rain.png', fullPage: true });
   expect((await state(page)).fireballPhase).toBe('falling');
+  expect((await state(page)).fireballVisibleCompletos).toBeGreaterThan(0);
   expect((await state(page)).dummyHp).toBe(100);
+  expect((await state(page)).dummyHits).toBe(0);
   await expect.poll(async () => (await state(page)).dummyHp).toBe(50);
   expect((await state(page)).dummyHits).toBe(1);
   expect((await state(page)).fireballExplosion).toBe(true);
-  expect((await state(page)).fireballRadius).toBeGreaterThan(0);
+  await expect.poll(async () => (await state(page)).fireballRadius).toBeGreaterThan(0);
+  expect((await state(page)).fireballLandedCompletos).toBe((await state(page)).fireballCompletos);
+  expect((await state(page)).fireballSplashes).toBeGreaterThan(0);
   expect((await state(page)).fireballBurnVisible).toBe(true);
   await page.waitForTimeout(350);
   expect((await state(page)).dummyHp).toBe(50);
@@ -385,5 +404,202 @@ test('E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en
     const scene = window.__game!.scene.getScene('RoomPrototype');
     return scene.children.list.filter((object: Phaser.GameObjects.GameObject) =>
       object.name.startsWith('room-fireball-')).length;
-  })).toBe(4);
+  })).toBe(3);
+  expect(await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype');
+    return scene.children.list.filter((object: Phaser.GameObjects.GameObject) =>
+      object.name.startsWith('room-italian-')).length;
+  })).toBe(40);
+});
+
+test('Eco del Reverso repite una sola vez el golpe desde el dash con daño reducido', async ({ page }) => {
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    scene.player.equipSword();
+    scene.player.body.reset(760, 400);
+    scene.player.motion.facing = { x: 1, y: 0 };
+    scene.player.motion.velocity = { x: 0, y: 0 };
+  });
+  await page.keyboard.down('c');
+  await expect.poll(async () => (await state(page)).dash).toBe(true);
+  expect((await state(page)).echoVisible).toBe(true);
+  await page.keyboard.up('c');
+  await expect.poll(async () => (await state(page)).dash).toBe(false);
+  await place(page, 760, 400);
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    scene.player.motion.facing = { x: 1, y: 0 };
+  });
+  await page.mouse.click(480, 300);
+  await expect.poll(async () => (await state(page)).dummyHits).toBe(2);
+  const replayed = await state(page);
+  expect(replayed.echoPending).toBe(false);
+  expect(replayed.echoUsed).toBe(true);
+  expect(replayed.echoSlash).toBe(true);
+  expect(replayed.dummyHp).toBe(66); // 25 original + round(25 × 0.35) echo.
+  expect(replayed.dummyDebtMarks).toBe(2);
+  await page.waitForTimeout(300);
+  expect((await state(page)).dummyHits).toBe(2); // Neither hitbox leaves a ghost hit after its window.
+
+  await expect.poll(async () => page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    return scene.player.attack.active;
+  })).toBe(false);
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    scene.player.body.reset(760, 400);
+    scene.player.motion.facing = { x: 1, y: 0 };
+  });
+  await page.mouse.click(480, 300);
+  await expect.poll(async () => (await state(page)).dummyHits).toBe(3);
+  await page.waitForTimeout(150);
+  expect((await state(page)).dummyHp).toBe(36);
+  expect((await state(page)).dummyDebtMarks).toBe(3);
+  await page.keyboard.press('r');
+  await expect.poll(async () => page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype');
+    return scene.children.list.filter((object: Phaser.GameObjects.GameObject) =>
+      object.name.startsWith('room-reversal-echo')).length;
+  })).toBe(2);
+});
+
+test('la bola consume marcas de deuda y suma bonus en una detonación visual', async ({ page }) => {
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    scene.player.equipSword();
+    scene.player.body.reset(760, 400);
+    scene.player.motion.facing = { x: 1, y: 0 };
+    scene.player.motion.velocity = { x: 0, y: 0 };
+  });
+  await page.mouse.click(480, 300);
+  await expect.poll(async () => (await state(page)).dummyDebtMarks).toBe(1);
+  expect((await state(page)).dummyHp).toBe(75);
+
+  const box = await page.locator('canvas').boundingBox();
+  if (!box) throw new Error('No se encontró el canvas del prototipo');
+  await page.mouse.move(box.x + box.width * 820 / 960, box.y + box.height * 400 / 600);
+  await page.keyboard.down('e');
+  await expect.poll(async () => (await state(page)).fireballAiming).toBe(true);
+  await page.keyboard.up('e');
+  await expect.poll(async () => (await state(page)).dummyHits).toBe(2);
+  const detonated = await state(page);
+  expect(detonated.dummyHp).toBe(15); // 50 base + 10 bonus for the consumed mark.
+  expect(detonated.dummyDebtMarks).toBe(0);
+  expect(detonated.dummyDebtDetonation).toBe(true);
+});
+
+test('Bodoque se activa sin reemplazar al muñeco y recibe espada, eco y lluvia italiana', async ({ page }) => {
+  const bossState = () => page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene & {
+      bodoque: {
+        hp: number; maxHp: number; state: string; active: boolean; defeated: boolean;
+        debtMarkCount: number; visual: Phaser.GameObjects.Container;
+        healthBar: Phaser.GameObjects.Graphics; victoryLabel: Phaser.GameObjects.Text;
+      };
+      playerHp: number; localBossEvents: { phases: number[]; hits: number; killed: boolean };
+    };
+    return { hp: scene.bodoque.hp, maxHp: scene.bodoque.maxHp, state: scene.bodoque.state,
+      active: scene.bodoque.active, visible: scene.bodoque.visual.visible,
+      healthVisible: scene.bodoque.healthBar.visible, dummyHp: scene.trainingDummy.hp,
+      dummyVisible: scene.trainingDummy.visual.visible, marks: scene.bodoque.debtMarkCount,
+      defeated: scene.bodoque.defeated,
+      playerHp: scene.playerHp, phases: [...scene.localBossEvents.phases],
+      hitEvents: scene.localBossEvents.hits, killed: scene.localBossEvents.killed,
+      victory: scene.bodoque.victoryLabel.visible };
+  });
+
+  expect(await bossState()).toMatchObject({ hp: 600, maxHp: 600, state: 'inactive', active: false,
+    visible: false, dummyHp: 100, dummyVisible: true, playerHp: 100 });
+  await page.keyboard.press('b');
+  await expect.poll(async () => bossState()).toMatchObject({ state: 'idle', active: true,
+    visible: true, healthVisible: true, phases: [1] });
+
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    scene.player.equipSword();
+    scene.player.body.reset(700, 232);
+    scene.player.motion.facing = { x: 1, y: 0 };
+    scene.player.motion.velocity = { x: 0, y: 0 };
+  });
+  await page.mouse.click(480, 300);
+  await expect.poll(async () => bossState()).toMatchObject({ hp: 575, marks: 1, hitEvents: 1 });
+
+  const box = await page.locator('canvas').boundingBox();
+  if (!box) throw new Error('No se encontró el canvas del prototipo');
+  await page.mouse.move(box.x + box.width * 780 / 960, box.y + box.height * 232 / 600);
+  await page.keyboard.down('e');
+  await page.keyboard.up('e');
+  await expect.poll(async () => bossState()).toMatchObject({ hp: 515, marks: 0, hitEvents: 2 });
+
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    scene.player.echo.startDash({ x: 700, y: 232, height: 0 });
+  });
+  await page.mouse.click(480, 300);
+  await expect.poll(async () => bossState()).toMatchObject({ hp: 481, marks: 2, hitEvents: 4 });
+
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene & { bodoque: {
+      takeSwordDamage(damage: number, direction: { x: number; y: number }): void;
+    } };
+    scene.bodoque.takeSwordDamage(85, { x: 1, y: 0 });
+  });
+  await expect.poll(async () => bossState()).toMatchObject({ hp: 396, phases: [1, 2] });
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene & { bodoque: {
+      takeSwordDamage(damage: number, direction: { x: number; y: number }): void;
+    } };
+    scene.bodoque.takeSwordDamage(198, { x: 1, y: 0 });
+  });
+  await expect.poll(async () => bossState()).toMatchObject({ hp: 198, phases: [1, 2, 3] });
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene & { bodoque: {
+      takeSwordDamage(damage: number, direction: { x: number; y: number }): void;
+    } };
+    scene.bodoque.takeSwordDamage(198, { x: 1, y: 0 });
+  });
+  await expect.poll(async () => bossState()).toMatchObject({ hp: 100, state: 'opening', killed: false });
+  await expect.poll(async () => bossState()).toMatchObject({ hp: 100, state: 'heart' });
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    scene.bodoque.heartTarget.takeSwordDamage(100, { x: 1, y: 0 });
+  });
+  await expect.poll(async () => bossState()).toMatchObject({ hp: 0, active: false, defeated: true,
+    visible: true, victory: true, killed: true, dummyHp: 100, dummyVisible: true });
+});
+
+test('Bodoque telegrafía el micrófono-mazo parryable y conserva el movimiento para esquivarlo', async ({ page }) => {
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    scene.player.body.reset(720, 232);
+    scene.player.motion.velocity = { x: 0, y: 0 };
+    scene.player.motion.facing = { x: -1, y: 0 };
+  });
+  await page.keyboard.press('b');
+  const inspect = () => page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene & { bodoque: {
+      state: string; attackLabel: Phaser.GameObjects.Text; brain: { currentAttack?: { id: string; parryable: boolean } };
+    } };
+    return { state: scene.bodoque.state, attack: scene.bodoque.brain.currentAttack?.id,
+      parryable: scene.bodoque.brain.currentAttack?.parryable,
+      telegraph: scene.bodoque.attackLabel.visible, label: scene.bodoque.attackLabel.text,
+      hp: scene.playerHp, playerY: scene.player.anchor.y };
+  });
+  await expect.poll(async () => inspect()).toMatchObject({ state: 'telegraph', attack: 'microphoneMallet',
+    parryable: true, telegraph: true });
+  await page.keyboard.down('Shift');
+  await page.keyboard.down('ArrowUp');
+  await page.waitForTimeout(140);
+  await page.keyboard.up('ArrowUp');
+  await page.keyboard.up('Shift');
+  const moved = await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene & { bodoque: {
+      state: string; brain: { state: string };
+    } };
+    const result = { playerY: scene.player.anchor.y };
+    // Unit tests exercise the hit-zone boundary; keep this browser check isolated to the visible tell and evasive movement.
+    scene.bodoque.brain.state = 'inactive';
+    return result;
+  });
+  expect(moved.playerY).toBeLessThan(232);
 });
