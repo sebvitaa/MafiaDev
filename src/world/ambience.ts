@@ -1,11 +1,10 @@
 // Dominio: vicho (V21 + V22). Ambientación souls: viñeta oscura en la cámara principal (suave en la zona luminosa)
 // y partículas según el bioma bajo el jugador: polvo (ruinas), luciérnagas (bosque), pétalos (luminosa), brasas (arena).
 import Phaser from 'phaser';
+import { BIOMES, biomeAt, type Biome } from './biomeTiles';
 
 const DOT = 'amb-dot';
 
-type Biome = 'ruins' | 'forest' | 'bright' | 'arena';
-const BIOMES: Biome[] = ['ruins', 'forest', 'bright', 'arena']; // fila del tileset = (gid-1)/8 (ver biomeTiles.ts)
 
 const PARTICLES: Record<Biome, Phaser.Types.GameObjects.Particles.ParticleEmitterConfig> = {
   ruins: { tint: 0x9a97ad, frequency: 140, lifespan: 5000, speedX: { min: -6, max: 6 }, speedY: { min: -4, max: 4 }, alpha: { start: 0.5, end: 0 } },
@@ -37,8 +36,7 @@ export function installAmbience(
   let biome: Biome | null = null;
 
   const onUpdate = () => {
-    const tile = map.getTileAtWorldXY(player.x, player.y, false, cam, 'ground');
-    const b = tile ? BIOMES[Math.floor((tile.index - 1) / 8)] : undefined;
+    const b = biomeAt(map, player.x, player.y);
     if (b && b !== biome) {
       if (biome) emitters[biome].stop();
       emitters[b].start();

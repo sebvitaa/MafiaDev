@@ -6,6 +6,15 @@ import type Phaser from 'phaser';
 
 export const BIOME_TILES_KEY = 'world-biomes';
 
+export type Biome = 'ruins' | 'forest' | 'bright' | 'arena';
+export const BIOMES: Biome[] = ['ruins', 'forest', 'bright', 'arena']; // fila del tileset = (gid-1)/8
+
+/** Bioma del suelo bajo un punto del mundo, o null si es vacío. */
+export function biomeAt(map: Phaser.Tilemaps.Tilemap, x: number, y: number): Biome | null {
+  const tile = map.getTileAtWorldXY(x, y, false, undefined, 'ground');
+  return tile ? BIOMES[Math.floor((tile.index - 1) / 8)] ?? null : null;
+}
+
 type Px = (x: number, y: number, c: string) => void;
 
 /** Ruido determinista 0..1 por pixel. */
