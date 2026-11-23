@@ -27,7 +27,7 @@ export const FONT = 'Silkscreen, monospace';
 /** Silkscreen es nítida en múltiplos de 8 px. */
 export function text(
   scene: Phaser.Scene, x: number, y: number, str: string,
-  o: { size?: 8 | 16 | 24; color?: number; align?: 'left' | 'center' | 'right'; stroke?: boolean } = {},
+  o: { size?: 8 | 16 | 24 | 32; color?: number; align?: 'left' | 'center' | 'right'; stroke?: boolean } = {},
 ): Phaser.GameObjects.Text {
   const t = scene.add.text(x, y, str, {
     fontFamily: FONT,

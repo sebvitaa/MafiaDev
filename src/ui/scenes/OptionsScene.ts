@@ -1,18 +1,21 @@
-// Dominio: seba. Opciones sobre Title o Pause: volúmenes por canal (con vista previa), silencio,
-// movimiento reducido y pantalla completa. Persisten en settings (mafiadev.settings.v1).
+// Dominio: seba. Ajustes compartidos por el menú principal y la pausa.
 import Phaser from 'phaser';
 import { AudioDirector, settings } from '../../audio';
-import type { Settings } from '../../audio/settings';
+import { stepVolume } from '../../audio/settings';
 import type { SfxKey } from '../../types/assets';
-import { Menu } from '../Menu';
+import { Menu, type MenuItem } from '../Menu';
+import { confirmDialog } from '../ConfirmDialog';
+import { installGlobalKeys } from '../globalKeys';
+import { drawPixelBar } from '../pixelBar';
 import { C, panel, text } from '../theme';
 
-type VolKey = 'master' | 'music' | 'sfx' | 'ambient' | 'ui';
-
-const bar = (v: number) => '■'.repeat(Math.round(v * 10)).padEnd(10, '·');
+type VolKey = 'master' | 'music' | 'sfx';
 
 export class OptionsScene extends Phaser.Scene {
   private from = 'TitleScene';
+  private menu?: Menu;
+  private readonly bars: Phaser.GameObjects.Graphics[] = [];
+  private unsubscribe?: () => void;
 
   constructor() {
     super('OptionsScene');
@@ -24,45 +27,102 @@ export class OptionsScene extends Phaser.Scene {
 
   create(): void {
     const { width: w, height: h } = this.scale;
-    this.add.rectangle(0, 0, w, h, C.bg, 0.75).setOrigin(0);
-    const pw = 260, ph = 190, px = (w - pw) / 2, py = (h - ph) / 2;
+    installGlobalKeys(this);
+    this.add.rectangle(0, 0, w, h, C.bg, 0.78).setOrigin(0);
+    const pw = Math.min(440, w - 24), ph = 226, px = (w - pw) / 2, py = (h - ph) / 2;
     panel(this, px, py, pw, ph);
     text(this, w / 2, py + 8, 'OPCIONES', { size: 16, color: C.accent, align: 'center' }).setOrigin(0.5, 0);
 
-    const preview: Partial<Record<VolKey, SfxKey>> = { master: 'sfx-pickup', sfx: 'sfx-hit', ui: 'sfx-ui-move' };
-    const vol = (key: VolKey, label: string) => ({
-      label: () => `${label}\t${bar(settings.get()[key])}`,
-      onAdjust: (d: -1 | 1) => {
-        const s = settings.get();
-        settings.set({ [key]: Math.round((s[key] + d * 0.1) * 10) / 10 } as Partial<Settings>);
-        const p = preview[key];
-        if (p) AudioDirector.sfx(p, { channel: key === 'ui' ? 'ui' : 'sfx', detune: 0 });
+    const preview: Partial<Record<VolKey, SfxKey>> = { master: 'sfx-pickup', sfx: 'sfx-hit' };
+    const volume = (key: VolKey, label: string): MenuItem => ({
+      label: () => `${label}\t${Math.round(settings.get()[key] * 100)}%`,
+      onAdjust: (dir) => {
+        settings.set({ [key]: stepVolume(settings.get()[key], dir) });
+        const sound = preview[key];
+        if (sound === 'sfx-hit') AudioDirector.sfx(sound, { detune: 0 });
+        else if (sound) AudioDirector.sfx(sound);
+        this.redrawBars();
       },
+      onSelect: () => this.adjustVolume(key, 1, preview),
     });
-    const toggle = (key: 'muted' | 'reducedMotion', label: string) => ({
-      label: () => `${label}\t${settings.get()[key] ? 'SI' : 'NO'}`,
+    const toggle = (key: 'reducedMotion' | 'screenShake', label: string): MenuItem => ({
+      label: () => `${label}\t${settings.get()[key] ? 'SÍ' : 'NO'}`,
       onSelect: () => settings.set({ [key]: !settings.get()[key] }),
       onAdjust: () => settings.set({ [key]: !settings.get()[key] }),
     });
-
+    const fullscreen = (): MenuItem => ({
+      label: () => `PANTALLA COMPLETA\t${this.scale.isFullscreen ? 'SÍ' : 'NO'}`,
+      onSelect: () => this.toggleFullscreen(),
+      onAdjust: () => this.toggleFullscreen(),
+    });
     const close = () => {
+      this.menu?.setActive(false);
       this.scene.resume(this.from);
       this.scene.stop();
     };
-    new Menu(this, px + 30, py + 34, [
-      vol('master', 'GENERAL'),
-      vol('music', 'MUSICA'),
-      vol('sfx', 'EFECTOS'),
-      vol('ambient', 'AMBIENTE'),
-      vol('ui', 'MENUS'),
-      toggle('muted', 'SILENCIO'),
-      toggle('reducedMotion', 'MENOS MOV.'),
-      {
-        label: () => `PANTALLA\t${this.scale.isFullscreen ? 'COMPLETA' : 'VENTANA'}`,
-        onSelect: () => (this.scale.isFullscreen ? this.scale.stopFullscreen() : this.scale.startFullscreen()),
-      },
+    const restore = async () => {
+      this.menu?.setActive(false);
+      const confirmed = await confirmDialog(this, '¿RESTAURAR LOS VALORES POR DEFECTO?', { yes: 'SÍ', no: 'NO' });
+      if (confirmed) settings.reset();
+      this.menu?.refresh();
+      this.redrawBars();
+      this.menu?.setActive(true);
+    };
+
+    const items: MenuItem[] = [
+      volume('master', 'GENERAL'),
+      volume('music', 'MÚSICA'),
+      volume('sfx', 'EFECTOS'),
+      fullscreen(),
+      toggle('reducedMotion', 'MENOS MOVIMIENTO'),
+      toggle('screenShake', 'VIBRACIÓN DE PANTALLA'),
+      { label: () => 'RESTAURAR VALORES', onSelect: () => { void restore(); } },
       { label: () => 'VOLVER', onSelect: close },
-    ], { onBack: close, lineHeight: 15, valueX: 100 });
-    text(this, w / 2, py + ph - 12, '← → AJUSTAR · ESC VOLVER', { color: C.dim, align: 'center' }).setOrigin(0.5);
+    ];
+    const menuX = px + 26;
+    const firstY = py + 36;
+    this.menu = new Menu(this, menuX, firstY, items, { onBack: close, lineHeight: 18, valueX: 306, rowWidth: pw - 48 });
+
+    // Las barras son la parte gráfica de los tres valores; el porcentaje sigue en la columna del menú.
+    for (let i = 0; i < 3; i++) this.bars.push(this.add.graphics());
+    this.redrawBars();
+    this.unsubscribe = settings.subscribe(() => { this.menu?.refresh(); this.redrawBars(); });
+    this.scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, this.refreshMenu, this);
+    this.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, this.refreshMenu, this);
+    text(this, w / 2, py + ph - 10, '← → AJUSTAR · ESC VOLVER', { color: C.dim, align: 'center' }).setOrigin(0.5);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.unsubscribe?.();
+      this.unsubscribe = undefined;
+      this.scale.off(Phaser.Scale.Events.ENTER_FULLSCREEN, this.refreshMenu, this);
+      this.scale.off(Phaser.Scale.Events.LEAVE_FULLSCREEN, this.refreshMenu, this);
+      this.menu = undefined;
+      this.bars.length = 0;
+    });
+  }
+
+  private adjustVolume(key: VolKey, dir: -1 | 1, preview: Partial<Record<VolKey, SfxKey>>): void {
+    settings.set({ [key]: stepVolume(settings.get()[key], dir) });
+    const sound = preview[key];
+    if (sound === 'sfx-hit') AudioDirector.sfx(sound, { detune: 0 });
+    else if (sound) AudioDirector.sfx(sound);
+    this.redrawBars();
+  }
+
+  private toggleFullscreen(): void {
+    if (this.scale.isFullscreen) this.scale.stopFullscreen();
+    else this.scale.startFullscreen();
+    this.time.delayedCall(0, () => this.refreshMenu());
+  }
+
+  private refreshMenu = (): void => { this.menu?.refresh(); };
+
+  private redrawBars(): void {
+    const x = (this.scale.width - Math.min(440, this.scale.width - 24)) / 2 + 250;
+    const y0 = (this.scale.height - 226) / 2 + 37;
+    (['master', 'music', 'sfx'] as const).forEach((key, i) => {
+      const g = this.bars[i];
+      if (g) drawPixelBar(g, settings.get()[key], x, y0 + i * 18);
+    });
   }
 }

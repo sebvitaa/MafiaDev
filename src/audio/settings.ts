@@ -10,6 +10,7 @@ export interface Settings {
   ui: number;
   muted: boolean;
   reducedMotion: boolean;
+  screenShake: boolean;
   tutorialDone: boolean;
 }
 
@@ -18,12 +19,13 @@ export const SETTINGS_KEY = 'mafiadev.settings.v1';
 /** Mezcla base (fase 6). Los sliders del jugador escalan sobre estos valores. */
 export const DEFAULT_SETTINGS: Readonly<Settings> = {
   master: 0.8,
-  music: 0.7,
-  sfx: 0.8,
+  music: 0.35,
+  sfx: 0.6,
   ambient: 0.6,
   ui: 0.7,
   muted: false,
   reducedMotion: false,
+  screenShake: true,
   tutorialDone: false,
 };
 
@@ -44,8 +46,15 @@ export function sanitize(raw: unknown): Settings {
     ui: clamp01(r.ui, d.ui),
     muted: typeof r.muted === 'boolean' ? r.muted : d.muted,
     reducedMotion: typeof r.reducedMotion === 'boolean' ? r.reducedMotion : d.reducedMotion,
+    screenShake: typeof r.screenShake === 'boolean' ? r.screenShake : d.screenShake,
     tutorialDone: typeof r.tutorialDone === 'boolean' ? r.tutorialDone : d.tutorialDone,
   };
+}
+
+/** Ajusta un volumen en pasos de 5 %, acotado a 0–100 %. */
+export function stepVolume(v: number, dir: -1 | 1): number {
+  const base = Number.isFinite(v) ? v : 0;
+  return Math.min(1, Math.max(0, Math.round((base + dir * 0.05) * 100) / 100));
 }
 
 /** Volumen efectivo de un canal: canal × master, 0 si está en silencio. */
@@ -86,6 +95,9 @@ export function createSettingsStore(storage: Storage | undefined) {
     reload(): Settings {
       current = load();
       return current;
+    },
+    reset(): Settings {
+      return this.set({ ...DEFAULT_SETTINGS, tutorialDone: current.tutorialDone });
     },
     /** Devuelve la función para desuscribirse. */
     subscribe(fn: Listener): () => void {

@@ -1,0 +1,50 @@
+{
+  "sfx": [
+    {
+      "name": "heavy-punch",
+      "layers": [
+        { "wave": "thump", "f0": 138, "f1": 38, "dur": 0.34, "pitchDrop": 42, "a": 0.001, "gain": 0.78, "lp": 1100 },
+        { "wave": "brown", "f0": 160, "f1": 52, "q": 2.2, "dur": 0.22, "a": 0.001, "d": 0.1, "gain": 0.3, "lp": 1300 }
+      ],
+      "room": 0.28,
+      "peak": 0.85
+    },
+    {
+      "name": "parry-bell-anvil",
+      "layers": [
+        { "wave": "modal", "preset": "bell", "f0": 1174.7, "dur": 0.9, "gain": 0.46, "a": 0.001 },
+        { "wave": "modal", "preset": "anvil", "f0": 587.3, "dur": 0.7, "gain": 0.32, "a": 0.001, "pan": -0.18 },
+        { "wave": "noise", "f0": 9000, "dur": 0.035, "gain": 0.12, "hp": 4000, "pan": 0.25 }
+      ],
+      "hall": 0.28,
+      "peak": 0.82
+    },
+    {
+      "name": "wood-chest-creak",
+      "layers": [
+        { "wave": "ks", "f0": 185, "f1": 118, "curve": "exp", "decay": 0.6, "dur": 0.62, "a": 0.002, "gain": 0.56, "lp": 2600 },
+        { "wave": "brown", "f0": 130, "f1": 95, "q": 1.1, "dur": 0.18, "gain": 0.13, "lp": 1700 }
+      ],
+      "room": 0.4,
+      "peak": 0.72
+    },
+    {
+      "name": "pink-whoosh",
+      "layers": [
+        { "wave": "pink", "f0": 480, "f1": 7600, "q": 1.4, "dur": 0.72, "a": 0.13, "d": 0.72, "gain": 0.74, "pan": -0.12 },
+        { "wave": "brown", "f0": 180, "f1": 120, "q": 1.2, "dur": 0.68, "a": 0.15, "gain": 0.2, "pan": 0.18 }
+      ],
+      "room": 0.18,
+      "peak": 0.76
+    },
+    {
+      "name": "magic-celesta-chime",
+      "layers": [
+        { "wave": "fm", "f0": 1318.5, "ratio": 3.5, "index": 2.8, "dur": 1.05, "a": 0.002, "d": 1.05, "gain": 0.52 },
+        { "wave": "fm", "f0": 1975.5, "ratio": 3.5, "index": 1.7, "dur": 0.72, "a": 0.002, "d": 0.72, "gain": 0.22, "pan": 0.24 }
+      ],
+      "hall": 0.34,
+      "peak": 0.8
+    }
+  ]
+}

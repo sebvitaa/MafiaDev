@@ -1,64 +1,130 @@
 {
-  "bpm": 146,
+  "bpm": 140,
   "swing": 0,
-  "key": "C",
+  "key": "D",
   "mode": "harmonic",
   "loop": true,
-  "lead": "pulse50",
-  "bassOct": 2,
-  "fx": {"reverb": 0.18, "delay": 0.14, "delayFb": 0.32, "lowpass": 9200},
+  "lead": "choir",
+  "bassOct": 1,
+  "fx": {"reverb": 0.12, "hall": 0.2, "delay": 0.06, "lowpass": 12000},
   "sections": [
     {
-      "name": "A",
-      "lead": "pulse50",
-      "lead2": "pulse12",
-      "glide": false,
+      "name": "A0",
+      "lead": "choir",
       "acc": "arp16",
-      "harmOct": 4,
-      "bass": "octave",
-      "bassIns": "bass",
+      "accIns": "strings",
+      "harmOct": 5,
+      "bass": "rootfifth",
+      "bassIns": "upright",
+      "kit": "orch",
       "drums": {
-        "k": "x.......x.......",
-        "s": "....x.......x...",
-        "h": "x.x.x.x.x.x.x.x."
+        "k": "X...x..xX...x..x",
+        "s": "...gX..g.g..X.g.",
+        "h": "x.x.x.x.x.x.x.x.",
+        "o": "X...............",
+        "b": "................",
+        "r": "................"
       },
       "bars": [
-        {"c": "Cm",  "m": "G5:4 Eb5:2 C5:2 G5:4 Eb5:4"},
-        {"c": "Cm",  "m": "G5:4 Ab5:2 G5:2 C6:2 B5:2 C6:2 G5:2"},
-        {"c": "Ab",  "m": "C5:4 Eb5:4 Ab5:4 G5:4", "m2": "r:8 Eb4:8"},
-        {"c": "G7",  "m": "D5:4 F5:2 G5:2 B5:4 C6:4", "m2": "r:8 D4:8"},
-        {"c": "Fm",  "m": "C5:4 Ab4:2 F4:2 C5:4 Eb5:4"},
-        {"c": "Ab",  "m": "Eb5:4 C5:4 Ab5:4 G5:4"},
-        {"c": "G7",  "m": "D5:2 F5:2 G5:4 B5:4 C6:2 G5:2", "m2": "r:4 B4:4 D5:4 r:4"},
-        {"c": "Cm",  "m": "C6:4 G5:4 Eb5:4 r:2 G5:2"}
+        {"c": "Dm", "m": "D5:3 F5:1 A5:4 G5:2 F5:2 E5:4"},
+        {"c": "A7", "m": "F5:2 E5:2 D5:2 C#5:2 D5:8"}
+      ]
+    },
+    {
+      "name": "A",
+      "lead": "choir",
+      "acc": "arp16",
+      "accIns": "strings",
+      "harmOct": 5,
+      "bass": "rootfifth",
+      "bassIns": "upright",
+      "kit": "orch",
+      "drums": {
+        "k": "X...x..xX...x..x",
+        "s": "...gX..g.g..X.g.",
+        "h": "x.x.x.x.x.x.x.x.",
+        "o": "................",
+        "b": "................",
+        "r": "................"
+      },
+      "bars": [
+        {"c": "Dm",  "m": "D5:4 F5:2 G5:2 A5:4 r:4"},
+        {"c": "Bb",  "m": "F5:4 D5:4 Bb4:4 C5:4"},
+        {"c": "C",   "m": "G4:4 E5:4 C5:4 r:4"},
+        {"c": "A7",  "m": "E5:2 F5:2 E5:4 C#5:4 D5:4"},
+        {"c": "Dm",  "m": "D5:4 A4:4 F5:4 E5:4"},
+        {"c": "Gm",  "m": "D5:4 Bb4:4 G4:4 A4:4"},
+        {"c": "Bb",  "m": "F5:4 D5:4 C5:4 Bb4:4"},
+        {"c": "A7",  "m": "A4:4 C#5:4 E5:4 G5:4"},
+        {"c": "Dm",  "m": "D5:2 E5:2 F5:4 A5:4 F5:2 E5:2"},
+        {"c": "F",   "m": "C5:4 A4:4 F5:4 r:4"},
+        {"c": "Gm",  "m": "D5:4 G5:4 Bb4:4 A4:4"},
+        {"c": "A7",  "m": "E5:2 F5:2 G5:4 E5:4 C#5:4"},
+        {"c": "Dm/C","m": "A4:4 D5:4 F5:4 E5:4"},
+        {"c": "Bb",  "m": "D5:4 C5:4 Bb4:4 F5:4"},
+        {"c": "C",   "m": "G4:4 E5:4 C5:4 G4:4"},
+        {"c": "A7",  "m": "A4:2 C#5:2 E5:4 G5:2 E5:2 C#5:4"}
+      ]
+    },
+    {
+      "name": "B0",
+      "lead": "choir",
+      "lead2": "strings",
+      "acc": "arp16",
+      "accIns": "strings",
+      "harmOct": 5,
+      "bass": "octave",
+      "bassIns": "cello",
+      "kit": "orch",
+      "drums": {
+        "k": "X...x..xX...x..x",
+        "s": "...gX..g.g..X.g.",
+        "h": "x.x.x.x.x.x.x.x.",
+        "o": "X...............",
+        "b": "................",
+        "r": "................"
+      },
+      "bars": [
+        {"c": "A7", "m": "A4:4 E5:4 C#5:4 r:4", "m2": "r:16"}
       ]
     },
     {
       "name": "B",
-      "lead": "pulse50",
-      "lead2": "pulse12",
-      "glide": false,
+      "lead": "choir",
+      "lead2": "strings",
       "acc": "arp16",
-      "harmOct": 4,
+      "accIns": "strings",
+      "harmOct": 5,
       "bass": "octave",
-      "bassIns": "bass",
+      "bassIns": "cello",
+      "kit": "orch",
       "drums": {
-        "k": "x.......x.......",
-        "s": "....x.......x...",
-        "h": "xxxxxxxxxxxxxxxx"
+        "k": "X...x..xX...x..x",
+        "s": "...gX..g.g..X.g.",
+        "h": "x.x.x.x.x.x.x.x.",
+        "o": "................",
+        "b": "................",
+        "r": "................"
       },
       "bars": [
-        {"c": "Cm",     "m": "C5:2 Eb5:2 G5:4 G5:2 B5:2 C6:4", "m2": "r:8 G4:8"},
-        {"c": "Dm7b5",  "m": "F5:4 Ab5:2 C6:2 F5:4 Ab5:2 C6:2"},
-        {"c": "Eb",     "m": "G5:4 Eb5:4 G5:2 Ab5:2 C6:2 G5:2", "m2": "r:8 C5:4 G4:4"},
-        {"c": "Fm",     "m": "Ab5:4 C6:2 F5:2 Ab5:4 G5:2 F5:2"},
-        {"c": "G7",     "m": "D5:2 F5:2 G5:4 B5:4 C6:4", "m2": "r:4 D5:4 B4:4 r:4"},
-        {"c": "Ab",     "m": "Eb5:2 Ab5:2 C6:4 Ab5:4 C6:2 Eb5:2"},
-        {"c": "Bdim7",  "m": "D5:2 F5:2 Ab5:4 B5:4 C6:4", "m2": "r:8 F5:4 Ab4:4"},
-        {"c": "G7",     "m": "G5:2 B5:2 D5:4 F5:2 G5:4 r:2"}
+        {"c": "Dm", "m": "D5:4 F5:2 E5:2 D5:4 A4:4", "m2": "r:16"},
+        {"c": "A7", "m": "E5:2 F5:2 E5:4 C#5:4 D5:4", "m2": "r:16"},
+        {"c": "Gm", "m": "r:16", "m2": "D5:4 Bb4:4 G4:4 A4:4"},
+        {"c": "A7", "m": "r:16", "m2": "A4:4 C#5:4 E5:4 G5:4"},
+        {"c": "Bb", "m": "F5:4 D5:4 C5:4 Bb4:4", "m2": "r:16"},
+        {"c": "A7", "m": "A4:2 C#5:2 E5:4 G5:4 E5:4", "m2": "r:16"},
+        {"c": "Dm", "m": "D5:4 A4:4 F5:4 E5:4", "m2": "r:16"},
+        {"c": "A7", "m": "r:16", "m2": "E5:2 F5:2 G5:4 E5:4 C#5:4"},
+        {"c": "Dm", "m": "D5:2 E5:2 F5:4 A5:4 F5:2 E5:2", "m2": "r:16"},
+        {"c": "C",  "m": "G4:4 E5:4 C5:4 r:4", "m2": "r:16"},
+        {"c": "Bb", "m": "r:16", "m2": "F5:4 D5:4 C5:4 Bb4:4"},
+        {"c": "A7", "m": "r:16", "m2": "A4:4 E5:4 C#5:4 G5:4"},
+        {"c": "Gm", "m": "D5:4 Bb4:4 A4:4 G4:4", "m2": "r:16"},
+        {"c": "A7", "m": "A4:4 C#5:4 E5:4 r:4", "m2": "r:16"},
+        {"c": "Dm", "m": "D5:4 F5:2 E5:2 D5:8", "m2": "r:16"},
+        {"c": "A7", "m": "A4:4 C#5:4 E5:4 G5:4", "m2": "r:16"}
       ]
     }
   ],
-  "order": ["A", "B", "A"],
-  "title": "music-boss"
+  "order": ["A0", "A", "B0", "B"]
 }

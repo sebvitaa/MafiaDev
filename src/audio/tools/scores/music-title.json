@@ -1,66 +1,99 @@
 {
-  "bpm": 94,
-  "swing": 0.18,
+  "bpm": 70,
+  "swing": 0.16,
   "key": "D",
-  "mode": "dorian",
+  "mode": "harmonic",
   "loop": true,
-  "lead": "pulse25",
-  "bassOct": 2,
-  "fx": {"reverb": 0.23, "delay": 0.16, "delayFb": 0.32, "lowpass": 8500},
+  "lead": "sax",
+  "bassOct": 1,
+  "fx": { "reverb": 0.16, "hall": 0.24, "delay": 0.06, "lowpass": 9000 },
   "sections": [
     {
       "name": "A",
-      "lead": "pulse25",
-      "lead2": "pulse12",
-      "glide": false,
-      "acc": "padarp",
+      "lead": "sax",
+      "lead2": "flute",
+      "acc": "pad",
+      "accIns": "piano",
       "harmOct": 4,
-      "bass": "rootfifth",
-      "bassIns": "bass",
-      "drums": {
-        "k": "x.......x.......",
-        "b": "g...g...g...g...",
-        "r": "....x.......x...",
-        "h": "x.x.x.x.x.x.x.x."
-      },
+      "bass": "walking",
+      "bassIns": "upright",
+      "kit": "jazz",
+      "drums": { "k": "X.......x.......", "s": "....g.......g...", "h": "x...x...x...x...", "r": "........x......." },
       "bars": [
-        {"c": "Dm7",  "m": "D5:4 F5:2 A5:2 C5:4 r:4",                              "m2": "A4:8 r:8"},
-        {"c": "Dm7",  "m": "A4:4 C5:2 D5:2 F5:4 E5:4",                            "m2": "r:4 A4:4 r:8"},
-        {"c": "G9",   "m": "B4:4 D5:2 F5:2 A5:4 G5:4",                            "m2": "r:8 D4:4 G4:4"},
-        {"c": "G9",   "m": "D5:4 C5:4 B4:4 A4:4",                                  "m2": "r:16"},
-        {"c": "Dm7",  "m": "D5:4 F5:2 A5:2 C6:2 A5:2 G5:4",                        "m2": "A4:8 r:8"},
-        {"c": "Dm9",  "m": "A5:4 F5:2 E5:2 D5:4 r:4",                              "m2": "r:16"},
-        {"c": "Cmaj7","m": "E5:4 G5:2 B5:2 G5:4 E5:4",                             "m2": "G4:8 r:8"},
-        {"c": "A7",   "m": "C#5:2 E5:2 G5:2 A5:4 E5:2 C#5:2 r:2",                  "m2": "E4:8 r:8"}
+        { "c": "Dm",  "m": "D5:3 F5:1 A5:4 G5:2 F5:2 E5:4" },
+        { "c": "A7",  "m": "F5:2 E5:2 D5:2 C#5:2 D5:8" },
+        { "c": "Dm6", "m": "D5:4 F5:4 A5:4 G5:2 F5:2" },
+        { "c": "A7",  "m": "E5:4 C#5:2 D5:2 C#5:2 B4:2 A4:4" }
+      ]
+    },
+    {
+      "name": "A'",
+      "lead": "sax",
+      "lead2": "flute",
+      "acc": "pad",
+      "accIns": "piano",
+      "harmOct": 4,
+      "bass": "walking",
+      "bassIns": "upright",
+      "kit": "jazz",
+      "drums": { "k": "X.......x.......", "s": "...........g....", "h": "x..x.x..x..x.x..", "r": "........x......." },
+      "bars": [
+        { "c": "Dm",  "m": "D5:3 F5:1 A5:4 F5:2 E5:2 D5:4", "m2": "r:8 A4:4 r:4" },
+        { "c": "A7",  "m": "E5:2 C#5:2 D5:2 C#5:2 A5:4 G5:4", "m2": "r:8 E5:4 r:4" },
+        { "c": "Gm6", "m": "D5:4 G5:4 Bb4:4 A4:2 G4:2", "m2": "r:12 D5:4" },
+        { "c": "A7",  "m": "C#5:4 E5:4 A5:4 r:4", "m2": "r:8 C#5:4 r:4" }
+      ]
+    },
+    {
+      "name": "Breath",
+      "lead": "sax",
+      "acc": "pad",
+      "accIns": "piano",
+      "harmOct": 4,
+      "bass": "none",
+      "bassIns": "upright",
+      "kit": "jazz",
+      "drums": { "k": "................", "s": "................", "h": "................", "r": "................" },
+      "bars": [
+        { "c": "Dm6", "m": "r:16" }
       ]
     },
     {
       "name": "B",
-      "lead": "pulse12",
-      "lead2": "pulse12",
-      "glide": false,
-      "acc": "padarp",
+      "lead": "sax",
+      "lead2": "flute",
+      "acc": "stab",
+      "accIns": "piano",
       "harmOct": 4,
       "bass": "walking",
-      "bassIns": "bass",
-      "drums": {
-        "k": "x...x...x...x...",
-        "b": "g...g...g...g...",
-        "r": "....x...x...x...",
-        "h": "x.x.x.x.x.x.x.x.",
-        "o": "........x......."
-      },
+      "bassIns": "upright",
+      "kit": "jazz",
+      "drums": { "k": "X.......x.......", "s": "....g.......x...", "h": "x.x.x.x.x.x.x.x.", "r": "........x......." },
       "bars": [
-        {"c": "Fmaj7","m": "A4:4 C5:2 E5:2 F5:4 E5:4",                             "m2": "C5:8 r:8"},
-        {"c": "A7",   "m": "C#5:2 E5:2 G5:2 A5:4 E5:2 C#5:4",                      "m2": "E4:8 r:8"},
-        {"c": "Dm7",  "m": "D5:4 F5:2 A5:2 C6:4 A5:4",                             "m2": "A4:8 r:8"},
-        {"c": "G9",   "m": "B4:4 D5:2 F5:2 A5:4 G5:4",                             "m2": "r:16"},
-        {"c": "Dm6",  "m": "D5:2 E5:2 F5:2 A5:4 F5:2 E5:4",                        "m2": "F4:8 r:8"},
-        {"c": "Em7",  "m": "G5:4 B5:2 D5:2 E5:4 r:4",                              "m2": "E4:8 r:8"},
-        {"c": "Cmaj7","m": "E5:4 G5:2 B5:2 G5:4 E5:4",                             "m2": "G4:8 r:8"},
-        {"c": "A7",   "m": "E5:2 C#5:2 B4:2 C#5:2 D5:8",                           "m2": "r:16"}
+        { "c": "Bm7b5", "m": "D5:4 F5:4 A4:4 B4:4", "m2": "r:8 F5:4 r:4" },
+        { "c": "E7",    "m": "E5:4 G#4:4 B4:4 D5:4", "m2": "r:8 B4:4 r:4" },
+        { "c": "A7",    "m": "C#5:4 E5:4 G5:4 A5:4", "m2": "r:12 E5:4" },
+        { "c": "Dm",    "m": "F5:2 E5:2 D5:4 A4:4 r:4" }
+      ]
+    },
+    {
+      "name": "A''",
+      "lead": "sax",
+      "lead2": "flute",
+      "acc": "pad",
+      "accIns": "piano",
+      "harmOct": 4,
+      "bass": "walking",
+      "bassIns": "upright",
+      "kit": "jazz",
+      "drums": { "k": "X.......x.......", "s": "....g...........", "h": "x...x...x...x...", "r": "........x......." },
+      "bars": [
+        { "c": "Dm",  "m": "D5:3 F5:1 A5:4 F5:2 E5:2 r:4", "m2": "r:12 A4:4" },
+        { "c": "Gm6", "m": "D5:4 Bb4:4 G4:4 A4:2 G4:2", "m2": "r:8 D5:4 r:4" },
+        { "c": "Dm",  "m": "A4:4 F5:4 D5:4 r:4" },
+        { "c": "A7",  "m": "E5:2 C#5:2 D5:2 C#5:2 A4:8" }
       ]
     }
   ],
-  "order": ["A","B"]
+  "order": ["A", "A'", "Breath", "B", "A''"]
 }

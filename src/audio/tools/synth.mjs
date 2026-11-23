@@ -82,6 +82,35 @@ function osc(wave, duty = 0.5) {
 }
 function onePoleLP(cut) { let y = 0; const a = 1 - Math.exp(-TAU * cut / SR); return (x, c) => { if (c) { const b = 1 - Math.exp(-TAU * c / SR); y += b * (x - y); } else y += a * (x - y); return y; }; }
 function onePoleHP(cut) { const lp = onePoleLP(cut); return (x) => x - lp(x); }
+function bandpass(center, q = 1) {
+  const f = Math.max(20, Math.min(center, SR * 0.45)), w = TAU * f / SR;
+  const alpha = Math.sin(w) / (2 * Math.max(0.5, q));
+  const a0 = 1 + alpha, b0 = alpha / a0, b2 = -alpha / a0, a1 = -2 * Math.cos(w) / a0, a2 = (1 - alpha) / a0;
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  return (x) => { const y = b0 * x + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y; };
+}
+function sweptBandpass(q = 2) {
+  let count = 0, b0 = 0, b2 = 0, a1 = 0, a2 = 0, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  return (x, center) => {
+    if ((count++ & 63) === 0) {
+      const w = TAU * Math.max(30, Math.min(center, SR * 0.45)) / SR, alpha = Math.sin(w) / (2 * Math.max(0.5, q)), a0 = 1 + alpha;
+      b0 = alpha / a0; b2 = -alpha / a0; a1 = -2 * Math.cos(w) / a0; a2 = (1 - alpha) / a0;
+    }
+    const y = b0 * x + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y;
+  };
+}
+function coloredNoise(color = 'pink') {
+  let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, brown = 0;
+  const white = () => rnd() * 2 - 1;
+  return () => {
+    const w = white();
+    if (color === 'brown') { brown = (brown + 0.02 * w) / 1.02; return brown * 3.5; }
+    b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759;
+    b2 = 0.96900 * b2 + w * 0.1538520; b3 = 0.86650 * b3 + w * 0.3104856;
+    b4 = 0.55000 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.0168980;
+    const out = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11; b6 = w * 0.115926; return out;
+  };
+}
 
 class Buf {
   constructor(sec) { this.L = new Float32Array(Math.ceil(sec * SR)); this.R = new Float32Array(this.L.length); }
@@ -104,10 +133,95 @@ const INSTR = {
   pad: { wave: 'saw', a: 0.35, d: 0.5, s: 0.7, r: 0.5, vib: 0.05, gain: 0.045, lp: 1100, detune: 0.09 },
   bass: { wave: 'triangle', a: 0.004, d: 0.08, s: 0.9, r: 0.05, vib: 0, gain: 0.55 },
   bassSaw: { wave: 'saw', a: 0.004, d: 0.12, s: 0.6, r: 0.05, vib: 0, gain: 0.16, lp: 700 },
+  upright: { model: 'ks', decay: 1.2, thump: 0.045, gain: 0.26 },
+  piano: { model: 'piano', a: 0.003, decay: 2.5, release: 0.08, gain: 0.19 },
+  epiano: { model: 'epiano', a: 0.006, decay: 2, release: 0.08, gain: 0.17 },
+  sax: { model: 'sax', a: 0.04, gain: 0.12 },
+  strings: { model: 'strings', a: 0.4, gain: 0.09 },
+  choir: { model: 'choir', a: 0.45, gain: 0.09 },
+  harp: { model: 'ks', decay: 1.5, thump: 0.005, bright: 0.65, gain: 0.15 },
+  celesta: { model: 'celesta', a: 0.002, decay: 1.35, gain: 0.12 },
+  flute: { model: 'flute', a: 0.035, gain: 0.12 },
+  cello: { model: 'cello', a: 0.12, gain: 0.12 },
 };
+
+function renderModelNote(buf, start, dur, m, I, { pan = 0, vel = 1, slideFrom = null } = {}) {
+  const f0 = hz(m), i0 = Math.floor(start * SR), release = I.release ?? 0.08;
+  const total = dur + (I.model === 'ks' ? Math.min(0.22, release) : release);
+  const n = Math.floor(total * SR), attack = I.a ?? 0.01, gain = I.gain ?? 0.12;
+  const envAt = (t) => {
+    if (I.model === 'ks' || I.model === 'piano' || I.model === 'epiano' || I.model === 'celesta') {
+      const decay = I.decay ?? 2;
+      return t < dur ? Math.exp(-t / decay) : Math.exp(-dur / decay) * Math.exp(-(t - dur) / release);
+    }
+    if (t < attack) return t / attack;
+    return t < dur ? 0.78 + 0.22 * Math.exp(-(t - attack) / 0.7) : 0.78 * Math.max(0, 1 - (t - dur) / release);
+  };
+  const add = (k, v) => buf.add(i0 + k, v * envAt(k / SR) * gain * vel, pan);
+  if (I.model === 'ks') {
+    const delayN = Math.max(2, Math.round(SR / f0)), line = new Float32Array(delayN);
+    for (let j = 0; j < delayN; j++) line[j] = (rnd() * 2 - 1) * (I.bright ? 0.8 : 0.55);
+    let at = 0, lp = 0; const damping = I.bright ? 0.25 : 0.48;
+    for (let k = 0; k < n; k++) {
+      const t = k / SR, y = line[at];
+      const next = line[(at + 1) % delayN]; lp += damping * (next - lp);
+      let fb = (y + lp) * 0.5 * Math.exp(-delayN / (SR * (I.decay ?? 1.2)));
+      if (t >= dur) fb *= Math.exp(-1 / (SR * 0.07));
+      line[at] = fb; at = (at + 1) % delayN;
+      add(k, y);
+      if (I.thump && t < 0.035) add(k, (rnd() * 2 - 1) * Math.exp(-t * 120) * I.thump * 3);
+    }
+    return;
+  }
+  if (I.model === 'piano' || I.model === 'epiano' || I.model === 'celesta') {
+    let cp = 0, mp = 0, bellp = 0; const hammer = coloredNoise('brown'), hpf = onePoleHP(900);
+    const bright = 0.45 + vel * 0.55, stretch = I.model === 'piano' ? 1.006 : 1;
+    for (let k = 0; k < n; k++) {
+      const t = k / SR, env = envAt(t), f = slideFrom !== null && t < 0.06 ? hz(slideFrom + (m - slideFrom) * t / 0.06) : f0;
+      const inharm = I.model === 'piano' ? 0.006 : 0;
+      const ratio = I.model === 'celesta' ? 3.5 : 1;
+      const index = I.model === 'epiano' ? 1.8 * Math.exp(-t * 5) : I.model === 'celesta' ? 2.4 * Math.exp(-t * 4) : (1.2 + bright) * Math.exp(-t * 3.2);
+      mp += f * ratio * (1 + index * Math.sin(TAU * mp)) / SR; mp %= 1;
+      cp += f * (1 + inharm * Math.min(1, t * 5)) / SR; if (cp >= 1) cp -= 1;
+      bellp += f * 14 / SR; if (bellp >= 1) bellp -= 1;
+      let v = Math.sin(TAU * cp + index * Math.sin(TAU * mp));
+      if (I.model === 'piano') v = v * 0.78 + Math.sin(TAU * cp * 2.01) * 0.15 * bright * Math.exp(-t * 1.6) + Math.sin(TAU * cp * 3.04) * 0.07 * bright * Math.exp(-t * 2.4);
+      if (I.model === 'epiano') v = v * 0.78 + Math.sin(TAU * bellp) * 0.22 * Math.exp(-t * 16);
+      if (I.model === 'celesta') v = Math.sin(TAU * cp) * 0.72 + Math.sin(TAU * cp * 2.01) * 0.18 * Math.exp(-t * 1.4);
+      if (t < 0.012) v += hpf(hammer()) * Math.exp(-t * 360) * (I.model === 'piano' ? 0.13 : 0.04);
+      add(k, v);
+    }
+    return;
+  }
+  const saws = (I.model === 'strings') ? Array.from({ length: 5 }, (_, j) => osc('saw')) : [osc(I.model === 'sax' || I.model === 'cello' || I.model === 'choir' ? 'saw' : 'sine')];
+  const breath = coloredNoise('pink'), bpf1 = bandpass(I.model === 'sax' ? 500 : I.model === 'choir' ? 700 : 900, 1.1);
+  const bpf2 = bandpass(I.model === 'sax' ? 1500 : I.model === 'choir' ? 1150 : 1800, 1.2);
+  const bpf3 = I.model === 'choir' ? bandpass(2600, 1) : null, lp = onePoleLP(I.model === 'cello' ? 1800 : I.model === 'strings' ? 2500 : I.model === 'flute' ? 8000 : 6000);
+  for (let k = 0; k < n; k++) {
+    const t = k / SR; let cents = 0;
+    if (t > 0.18) cents += (I.model === 'sax' ? 18 : 12) * Math.sin(TAU * 5 * (t - 0.18)) * Math.min(1, (t - 0.18) * 3);
+    if (I.model === 'sax' && t < 0.06) cents -= 50 * (1 - t / 0.06);
+    if ((I.model === 'flute' || I.model === 'cello') && t > 0.22) cents += 10 * Math.sin(TAU * 5 * t);
+    const f = f0 * 2 ** (cents / 1200); let v = 0;
+    if (I.model === 'strings') {
+      for (let j = 0; j < 5; j++) v += saws[j](f * 2 ** (((j - 2) * 6) / 1200));
+      v /= 5;
+    } else if (I.model === 'flute') v = Math.sin(TAU * f * t) + 0.16 * Math.sin(TAU * f * 2 * t) + breath() * 0.025;
+    else {
+      const saw = saws[0](f);
+      if (I.model === 'sax') v = bpf1(saw) * 1.6 + bpf2(saw) * 1.3 + breath() * 0.07;
+      else if (I.model === 'choir') v = bpf1(saw) * 1.5 + bpf2(saw) * 1.2 + bpf3(saw) * 0.8;
+      else v = saw + breath() * 0.035;
+    }
+    v = lp(v);
+    if (I.model === 'sax' && t < 0.04) v *= t / 0.04;
+    add(k, v);
+  }
+}
 
 function renderNote(buf, start, dur, m, ins, { pan = 0, vel = 1, slideFrom = null } = {}) {
   const I = typeof ins === 'string' ? INSTR[ins] : ins;
+  if (I.model) return renderModelNote(buf, start, dur, m, I, { pan, vel, slideFrom });
   const total = dur + I.r;
   const n = Math.floor(total * SR);
   const i0 = Math.floor(start * SR);
@@ -161,6 +275,38 @@ const DRUM = {
   },
 };
 
+function organicDrums(kit) {
+  const kick = (buf, s, vel, pitched = false) => {
+    const o = osc('sine'), nz = coloredNoise('brown'), lp = onePoleLP(900), i0 = Math.floor(s * SR), n = (pitched ? 1.5 : 0.22) * SR;
+    for (let k = 0; k < n; k++) { const t = k / SR, f = pitched ? 55 + 95 * Math.exp(-t * 8) : 48 + 72 * Math.exp(-t * 28); const body = o(f) * Math.exp(-t * (pitched ? 2.8 : 18)) * (pitched ? 0.48 : 0.42); const click = lp(nz()) * Math.exp(-t * 70) * (pitched ? 0.12 : 0.035); buf.add(i0 + k, (body + click) * vel); }
+  };
+  const brush = (buf, s, vel, long = false) => {
+    const nz = coloredNoise('pink'), bp = bandpass(2600, 0.75), i0 = Math.floor(s * SR), n = (long ? 0.32 : 0.17) * SR;
+    for (let k = 0; k < n; k++) { const t = k / SR, swirl = 0.55 + 0.45 * Math.sin(TAU * 3.1 * t); const env = Math.min(1, t / 0.045) * Math.exp(-t * (long ? 3 : 8)); buf.add(i0 + k, bp(nz()) * env * swirl * 0.17 * vel, -0.2 + Math.sin(t * 8) * 0.18); }
+  };
+  const metallic = (buf, s, vel, crash = false) => {
+    const freqs = crash ? [501, 731, 1083, 1491, 2077, 2831] : [620, 877, 1163, 1637, 2197, 3011];
+    const os = freqs.map(() => osc('sine')), square = freqs.map(() => osc('square')), hp = onePoleHP(5000), nz = coloredNoise('pink');
+    const i0 = Math.floor(s * SR), n = (crash ? 1.45 : 0.8) * SR;
+    for (let k = 0; k < n; k++) { const t = k / SR; let v = nz() * (crash ? 0.15 : 0.07) * Math.exp(-t * (crash ? 2.4 : 4.5)); for (let j = 0; j < freqs.length; j++) v += (os[j](freqs[j]) * 0.12 + square[j](freqs[j] * (1 + j * 0.013)) * 0.05) * Math.exp(-t * (crash ? 2.3 : 5)); buf.add(i0 + k, hp(v) * vel * (crash ? 0.32 : 0.28), 0.3); }
+  };
+  const snare = (buf, s, vel, orchestral = false) => {
+    const nz = coloredNoise('pink'), hp = onePoleHP(1200), tone = osc('sine'), i0 = Math.floor(s * SR), n = (orchestral ? 0.48 : 0.2) * SR;
+    for (let k = 0; k < n; k++) { const t = k / SR; const wire = hp(nz()) * Math.exp(-t * (orchestral ? 8 : 22)) * (orchestral ? 0.27 : 0.11); const body = tone(orchestral ? 190 : 180) * Math.exp(-t * 22) * 0.13; buf.add(i0 + k, (wire + body) * vel, 0.05); }
+  };
+  const tick = (buf, s, vel, low = 4500) => { const nz = coloredNoise('pink'), hp = onePoleHP(low), i0 = Math.floor(s * SR), n = 0.12 * SR; for (let k = 0; k < n; k++) { const t = k / SR; buf.add(i0 + k, hp(nz()) * Math.exp(-t * 42) * 0.12 * vel, 0.25); } };
+  const click = (buf, s, vel, wood = false) => { const o = osc(wood ? 'sine' : 'triangle'), lp = onePoleLP(wood ? 3200 : 5000), i0 = Math.floor(s * SR), n = 0.12 * SR; for (let k = 0; k < n; k++) { const t = k / SR; const f = wood ? 980 : 1400; buf.add(i0 + k, lp(o(f)) * Math.exp(-t * (wood ? 35 : 20)) * (wood ? 0.25 : 0.18) * vel, -0.1); } };
+  const frameDrum = (buf, s, vel) => { const o = osc('sine'), nz = coloredNoise('brown'), lp = onePoleLP(1200), i0 = Math.floor(s * SR), n = 0.62 * SR; for (let k = 0; k < n; k++) { const t = k / SR; const f = 92 + 55 * Math.exp(-t * 14); const body = o(f) * Math.exp(-t * 7) * 0.32, skin = lp(nz()) * Math.exp(-t * 18) * 0.16; buf.add(i0 + k, (body + skin) * vel, 0.12); } };
+  if (kit === 'jazz') return {
+    k: (b, s, v) => kick(b, s, v * 0.82), s: (b, s, v) => brush(b, s, v), b: (b, s, v) => brush(b, s, v, true),
+    h: (b, s, v) => metallic(b, s, v), o: (b, s, v) => metallic(b, s, v, true), r: (b, s, v) => click(b, s, v),
+  };
+  return {
+    k: (b, s, v) => kick(b, s, v, true), s: (b, s, v) => snare(b, s, v, true), h: (b, s, v) => tick(b, s, v, 6500),
+    o: (b, s, v) => metallic(b, s, v, true), b: frameDrum, r: (b, s, v) => click(b, s, v, true),
+  };
+}
+
 // ───────────────────────── efectos ─────────────────────────
 function reverb(L, R, mix, size = 0.84) {
   const combs = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617];
@@ -181,6 +327,32 @@ function reverb(L, R, mix, size = 0.84) {
   };
   const wl = proc(L, 0), wr = proc(R, 23);
   for (let i = 0; i < L.length; i++) { L[i] += wl[i] * mix; R[i] += wr[i] * mix; }
+}
+function hallReverb(L, R, mix, size = 0.88) {
+  const combs = [1557, 1617, 1491, 1422, 1356, 1277, 1188, 1116];
+  const aps = [225, 341, 441, 556];
+  const render = (src, spread) => {
+    const out = new Float32Array(src.length);
+    for (let c = 0; c < combs.length; c++) {
+      const d = combs[c] + spread, line = new Float32Array(d); let p = 0, damp = 0, fb = size * (0.72 + 0.018 * c);
+      for (let i = 0; i < src.length; i++) { const y = line[p]; damp += 0.22 * (y - damp); line[p] = src[i] * 0.13 + damp * fb; p++; if (p === d) p = 0; out[i] += y * 0.125; }
+    }
+    for (let a = 0; a < aps.length; a++) {
+      const d = aps[a] + spread, line = new Float32Array(d); let p = 0, g = 0.5;
+      for (let i = 0; i < out.length; i++) { const x = out[i], b = line[p], y = b - x; line[p] = x + b * g; out[i] = y; if (++p === d) p = 0; }
+    }
+    return out;
+  };
+  const wl = render(L, 0), wr = render(R, 31);
+  for (let i = 0; i < L.length; i++) { L[i] += wl[i] * mix; R[i] += wr[i] * mix; }
+}
+function earlyRoom(L, R, mix) {
+  if (!mix) return;
+  const taps = [[0.019, 0.22], [0.031, 0.16], [0.047, 0.11], [0.071, 0.07]], delayN = taps.map(([t]) => Math.round(t * SR));
+  for (let i = Math.max(...delayN); i < L.length; i++) for (let j = 0; j < taps.length; j++) {
+    const d = delayN[j], g = taps[j][1] * mix;
+    const l = L[i - d], r = R[i - d]; L[i] += r * g; R[i] += l * g;
+  }
 }
 function delay(src, dstL, dstR, time, fb, mix) {
   const d = Math.floor(time * SR); const tmp = new Float32Array(src.L.length);
@@ -265,21 +437,23 @@ export function renderSong(song) {
       const harmOct = 12 * ((S.harmOct ?? 4) + 1);
       const tones = ch.iv.map((i) => harmOct + ch.root + i);
       const acc = S.acc ?? 'arp8';
-      if (acc === 'pad' || acc === 'padarp') for (const m of tones.slice(0, 4)) renderNote(pad, t(bar, 0), stepDur * spb * 0.98, m, 'pad');
+      const accIns = S.accIns ?? 'arp';
+      if (acc === 'pad' || acc === 'padarp') for (const m of tones.slice(0, 4)) renderNote(pad, t(bar, 0), stepDur * spb * 0.98, m, S.accIns ?? 'pad');
       if (acc === 'arp8' || acc === 'arp16' || acc === 'padarp') {
         const every = acc === 'arp16' ? 1 : 2;
         const seq = [...tones, tones[1] + 12, ...tones.slice(1).reverse()];
-        for (let st = 0, j = 0; st < spb; st += every, j++) renderNote(lead, t(bar, st), stepDur * every * 0.8, seq[j % seq.length], 'arp', { pan: 0.35 });
+        for (let st = 0, j = 0; st < spb; st += every, j++) renderNote(lead, t(bar, st), stepDur * every * 0.8, seq[j % seq.length], accIns, { pan: 0.35 });
       }
-      if (acc === 'stab') for (const st of [0, 6, 10]) for (const m of tones.slice(0, 3)) renderNote(dry, t(bar, st), stepDur * 1.2, m, 'arp', { pan: 0.2, vel: 1.3 });
+      if (acc === 'stab') for (const st of [0, 6, 10]) for (const m of tones.slice(0, 3)) renderNote(dry, t(bar, st), stepDur * 1.2, m, S.accIns ?? 'arp', { pan: 0.2, vel: 1.3 });
       // batería
       const dr = S.drums ?? {};
+      const drumKit = S.kit && S.kit !== 'chip' ? organicDrums(S.kit) : DRUM;
       for (const [k, pat] of Object.entries(dr)) {
-        if (!DRUM[k] || typeof pat !== 'string') continue;
+        if (!drumKit[k] || typeof pat !== 'string') continue;
         for (let st = 0; st < Math.min(spb, pat.length); st++) {
           const c = pat[st];
-          if (c === 'x' || c === 'X') DRUM[k](dry, t(bar, st), c === 'X' ? 1.2 : 0.9 + rnd() * 0.15);
-          else if (c === 'g') DRUM[k](dry, t(bar, st), 0.4);
+          if (c === 'x' || c === 'X') drumKit[k](dry, t(bar, st), c === 'X' ? 1.2 : 0.9 + rnd() * 0.15);
+          else if (c === 'g') drumKit[k](dry, t(bar, st), 0.4);
         }
       }
       bar++;
@@ -291,6 +465,7 @@ export function renderSong(song) {
   const fx = song.fx ?? {};
   delay(lead, L, R, (60 / song.bpm) * 0.75, fx.delayFb ?? 0.3, fx.delay ?? 0.16);
   reverb(L, R, fx.reverb ?? 0.22);
+  if (fx.hall) hallReverb(L, R, Math.max(0, Math.min(1, fx.hall)), 0.9);
   const lpL = onePoleLP(fx.lowpass ?? 9000), lpR = onePoleLP(fx.lowpass ?? 9000);
   for (let i = 0; i < L.length; i++) { L[i] = lpL(L[i]); R[i] = lpR(R[i]); }
   // bucle: la cola posterior al final se suma al principio → loop sin cortes
@@ -316,36 +491,131 @@ function normalize([L, R], peak, trim = false) {
 // capa: { wave, duty, f0, f1, curve:'lin'|'exp', t, dur, a, d, s?, vib:{rate,depth}, arp:[[t,mult]], lp, lp1, hp, gain, pan, crush, dist, rep }
 export function renderSfx(spec) {
   seed = 99;
-  const len = Math.max(...spec.layers.map((l) => (l.t ?? 0) + l.dur)) + (spec.reverb ? 0.6 : 0.05);
+  const tail = Math.max(spec.reverb ? 0.6 : 0, spec.hall ? 1.8 : 0, spec.room ? 0.1 : 0, 0.05);
+  const len = Math.max(...spec.layers.map((l) => (l.t ?? 0) + l.dur)) + tail;
   const buf = new Buf(len);
   for (const l of spec.layers) {
-    const o = osc(l.wave ?? 'square', l.duty ?? 0.5);
+    const wave = l.wave ?? 'square', o = ['pink', 'brown', 'ks', 'modal', 'fm', 'thump'].includes(wave) ? null : osc(wave, l.duty ?? 0.5);
+    const noise = wave === 'pink' ? coloredNoise('pink') : wave === 'brown' || wave === 'thump' ? coloredNoise('brown') : null;
     const hp = l.hp ? onePoleHP(l.hp) : null;
     const lp = onePoleLP(l.lp ?? 18000);
+    const sweepBp = l.q ? sweptBandpass(l.q) : null;
     const n = Math.floor(l.dur * SR), i0 = Math.floor((l.t ?? 0) * SR);
     const a = l.a ?? 0.002, s = l.s ?? 0, d = l.d ?? l.dur;
+    const f0 = l.f0 ?? 440, f1 = l.f1 ?? f0;
+    const presets = {
+      bell: [[0.5, 0.8, 2.1], [1, 1, 2.8], [1.19, 0.65, 1.8], [1.56, 0.5, 1.5], [2, 0.4, 1.3], [2.51, 0.3, 1.0], [2.66, 0.25, 0.9], [3.01, 0.2, 0.8]],
+      metal: [[1, 1, 1.8], [2.76, 0.55, 1.3], [5.4, 0.32, 0.9], [8.93, 0.2, 0.7]],
+      wood: [[1, 1, 0.18], [2.57, 0.55, 0.12], [4.21, 0.27, 0.09]],
+      glass: [[1, 1, 2.2], [2.32, 0.48, 1.7], [4.25, 0.26, 1.2], [6.63, 0.13, 0.9]],
+      anvil: [[1, 1, 1.4], [1.37, 0.72, 1.1], [1.91, 0.55, 0.9], [2.76, 0.42, 0.75], [3.92, 0.3, 0.6], [5.4, 0.19, 0.45]],
+    };
+    const modes = l.modes ?? presets[l.preset] ?? presets.bell;
+    const phases = modes.map(() => rnd());
+    let ksLine = null, ksAt = 0, ksLp = 0;
+    let fmCarrier = 0, fmMod = 0, noisePhase = 0, heldNoise = 0;
+    if (wave === 'ks') { const fmin = Math.max(25, Math.min(f0, f1)), size = Math.max(2, Math.ceil(SR / fmin) + 2); ksLine = new Float32Array(size); for (let j = 0; j < size; j++) ksLine[j] = rnd() * 2 - 1; }
     for (let k = 0; k < n; k++) {
       const tt = k / SR, u = tt / l.dur;
       const tRep = l.rep ? tt % l.rep : tt, uRep = l.rep ? tRep / l.dur : u;
-      let f = l.curve === 'exp' && l.f1 > 0 && l.f0 > 0 ? l.f0 * (l.f1 / l.f0) ** uRep : l.f0 + ((l.f1 ?? l.f0) - l.f0) * uRep;
+      let f = l.curve === 'exp' && f1 > 0 && f0 > 0 ? f0 * (f1 / f0) ** uRep : f0 + (f1 - f0) * uRep;
       for (const [at, mult] of l.arp ?? []) if (tt >= at) f = f * mult;
       if (l.vib) f *= 1 + l.vib.depth * Math.sin(TAU * l.vib.rate * tt);
       let env = tt < a ? tt / a : s + (1 - s) * Math.exp(-(tt - a) / Math.max(0.001, d / 4));
       env *= Math.min(1, (l.dur - tt) / 0.004);
-      let v = o(Math.max(1, f));
+      let v;
+      if (wave === 'modal') {
+        v = 0;
+        for (let j = 0; j < modes.length; j++) { const [ratio, level, decay] = modes[j]; v += Math.sin(TAU * (f0 * ratio) * tt + phases[j]) * level * Math.exp(-tt / Math.max(0.02, decay)); }
+        v *= 0.35;
+      } else if (wave === 'fm') {
+        const ratio = l.ratio ?? 2, index = (l.index ?? 2) * Math.exp(-tt / Math.max(0.02, d / 3));
+        fmMod += Math.max(1, f) * ratio / SR; fmMod %= 1;
+        fmCarrier += Math.max(1, f) / SR; fmCarrier %= 1;
+        v = Math.sin(TAU * fmCarrier + index * Math.sin(TAU * fmMod));
+      } else if (wave === 'ks') {
+        const delay = Math.max(2, Math.min(ksLine.length - 2, SR / Math.max(25, f)));
+        let read = ksAt - delay; while (read < 0) read += ksLine.length;
+        const ri = Math.floor(read), frac = read - ri, y = ksLine[ri] * (1 - frac) + ksLine[(ri + 1) % ksLine.length] * frac;
+        const next = ksLine[(ksAt + 1) % ksLine.length]; ksLp += 0.32 * (next - ksLp);
+        ksLine[ksAt] = (y + ksLp) * 0.5 * Math.exp(-delay / (SR * (l.decay ?? Math.max(0.15, l.dur))));
+        if (tt > l.dur * 0.72) ksLine[ksAt] *= Math.exp(-1 / (SR * 0.06));
+        if (++ksAt === ksLine.length) ksAt = 0;
+        v = y;
+      } else if (wave === 'pink' || wave === 'brown') {
+        if (sweepBp) v = noise();
+        else { noisePhase += Math.max(1, f) / SR * 8; while (noisePhase >= 1) { noisePhase -= 1; heldNoise = noise(); } v = heldNoise; }
+      }
+      else if (wave === 'thump') {
+        const pitch = f1 + (f0 - f1) * Math.exp(-tt * (l.pitchDrop ?? 38));
+        v = Math.sin(TAU * pitch * tt) * 0.72 + noise() * Math.exp(-tt * 55) * 0.5;
+      } else v = o(Math.max(1, f));
+      if (sweepBp && (wave === 'pink' || wave === 'brown')) v = sweepBp(v, Math.max(40, f));
       if (hp) v = hp(v);
-      v = lp(v, l.lp1 ? l.lp + (l.lp1 - l.lp) * u : 0);
+      v = lp(v, l.lp1 ? (l.lp ?? 18000) + (l.lp1 - (l.lp ?? 18000)) * u : 0);
       if (l.dist) v = Math.tanh(v * (1 + l.dist * 6)) / Math.tanh(1 + l.dist * 6);
       if (l.crush) v = Math.round(v * l.crush) / l.crush;
       buf.add(i0 + k, v * env * (l.gain ?? 0.7), l.pan ?? 0);
     }
   }
+  if (spec.room) earlyRoom(buf.L, buf.R, Math.max(0, Math.min(1, spec.room)));
   if (spec.reverb) reverb(buf.L, buf.R, spec.reverb, 0.8);
+  if (spec.hall) hallReverb(buf.L, buf.R, Math.max(0, Math.min(1, spec.hall)), 0.86);
   return normalize([buf.L, buf.R], spec.peak ?? 0.85, true);
 }
 
 // ───────────────────────── ambiente ─────────────────────────
+function renderOrganicAmbient(kind, sec) {
+  seed = ({ rain: 7101, wind: 7102, cave: 7103, 'city-rain': 7104, 'fantasy-cave': 7105 })[kind] ?? 7100;
+  const buf = new Buf(sec + 2), N = Math.floor(sec * SR), total = buf.L.length;
+  const rainMode = kind === 'rain' || kind === 'city-rain', caveMode = kind === 'cave' || kind === 'fantasy-cave';
+  const pinkL = coloredNoise('pink'), pinkR = coloredNoise('pink'), brownL = coloredNoise('brown'), brownR = coloredNoise('brown');
+  const rainLpL = onePoleLP(6500), rainLpR = onePoleLP(6500), windBpL = sweptBandpass(1.7), windBpR = sweptBandpass(1.7);
+  const rumbleL = onePoleLP(190), rumbleR = onePoleLP(190), lowL = onePoleLP(260), lowR = onePoleLP(260);
+  const d1 = osc('sine'), d2 = osc('sine');
+  for (let i = 0; i < total; i++) {
+    const t = i / SR, phase = (t % sec) / sec;
+    const gust = 0.32 + 0.68 * Math.pow(0.5 + 0.5 * Math.sin(TAU * (t / (rainMode ? 11 : 17)) + Math.sin(TAU * t / 29)), 2);
+    let l = 0, r = 0;
+    if (rainMode) {
+      const bedL = rainLpL(pinkL()) * 0.24, bedR = rainLpR(pinkR()) * 0.24;
+      l += bedL * (0.7 + gust * 0.3); r += bedR * (0.7 + gust * 0.3);
+      if (kind === 'city-rain') { l += rumbleL(brownL()) * 0.09 + windBpL(brownL(), 240 + 95 * Math.sin(TAU * t / 31)) * 0.055; r += rumbleR(brownR()) * 0.09 + windBpR(brownR(), 260 + 90 * Math.sin(TAU * t / 31 + 0.8)) * 0.055; }
+    } else if (kind === 'wind' || kind === 'fantasy-cave') {
+      const amount = kind === 'wind' ? 0.26 : 0.065;
+      l += windBpL(brownL(), 180 + 120 * (0.5 + 0.5 * Math.sin(TAU * t / 19))) * gust * amount;
+      r += windBpR(brownR(), 205 + 115 * (0.5 + 0.5 * Math.sin(TAU * t / 23 + 0.7))) * gust * amount;
+    }
+    if (caveMode) {
+      const drone = lowL(d1(48.99)) * 0.18 + lowR(d2(73.42)) * 0.08;
+      l += drone + brownL() * 0.025; r += drone + brownR() * 0.025;
+    }
+    // Soft independent ambience motion gives the bed stereo width without a hard loop seam.
+    buf.L[i] += l * (0.92 + 0.08 * Math.sin(TAU * phase));
+    buf.R[i] += r * (0.92 + 0.08 * Math.sin(TAU * phase + 1.1));
+  }
+  const droplets = rainMode ? Math.max(180, Math.floor(sec * 32)) : caveMode ? Math.max(18, Math.floor(sec * 1.4)) : 0;
+  for (let e = 0; e < droplets; e++) {
+    const at = rnd() * sec, pan = rnd() * 1.8 - 0.9, o = osc('sine'), f0 = rainMode ? 1200 + rnd() * 4200 : 540 + rnd() * 840;
+    const dur = rainMode ? 0.008 + rnd() * 0.035 : 0.11 + rnd() * 0.11, n = Math.floor(dur * SR), i0 = Math.floor(at * SR), amp = rainMode ? 0.035 + rnd() * 0.07 : 0.11 + rnd() * 0.09, decay = rainMode ? 90 + rnd() * 30 : 24;
+    for (let k = 0; k < n; k++) { const t = k / SR, f = rainMode ? f0 : f0 * (1 + 1.3 * Math.exp(-t * 28)); const env = Math.exp(-t * decay); buf.add(i0 + k, o(f) * env * amp, pan); }
+  }
+  if (rainMode) {
+    const drips = Math.max(3, Math.floor(sec / 7));
+    for (let e = 0; e < drips; e++) {
+      const at = rnd() * sec, i0 = Math.floor(at * SR), o = osc('sine'), f = 670 + rnd() * 450, n = Math.floor(0.22 * SR), pan = rnd() * 1.6 - 0.8;
+      for (let k = 0; k < n; k++) { const t = k / SR; buf.add(i0 + k, o(f * (1 + 0.8 * Math.exp(-t * 18))) * Math.exp(-t * 15) * 0.2, pan); }
+    }
+  }
+  const wet = kind === 'cave' ? 0.65 : kind === 'fantasy-cave' ? 0.5 : 0.22;
+  if (wet) hallReverb(buf.L, buf.R, wet, 0.9);
+  const X = SR;
+  for (let i = 0; i < X; i++) { const w = (i / X) * Math.PI / 2; buf.L[i] = buf.L[i] * Math.sin(w) + buf.L[N + i] * Math.cos(w); buf.R[i] = buf.R[i] * Math.sin(w) + buf.R[N + i] * Math.cos(w); }
+  return normalize([buf.L.subarray(0, N), buf.R.subarray(0, N)], 0.7);
+}
+
 export function renderAmbient(kind, sec = 24) {
+  if (!['zone1', 'zone2'].includes(kind)) return renderOrganicAmbient(kind, sec);
   seed = kind === 'zone2' ? 4242 : 2424;
   const buf = new Buf(sec + 2);
   const N = Math.floor(sec * SR);
@@ -405,7 +675,7 @@ function stats(file) {
   return { dur: +(n / SR).toFixed(2), peakDb: +(20 * Math.log10(pk)).toFixed(1), rmsDb: +(20 * Math.log10(rms + 1e-9)).toFixed(1), zcrHz: Math.round(zc / 2 / (n / SR)) };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [cmd, a, b, c] = process.argv.slice(2);
   if (cmd === 'song') { const s = JSON.parse(fs.readFileSync(a, 'utf8')); writeWav(b, renderSong(s)); console.log(b, stats(b)); }
   else if (cmd === 'sfx') {

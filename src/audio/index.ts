@@ -5,7 +5,7 @@ import { bus } from '../core/EventBus';
 import type { GameEventName } from '../types/events';
 import type { SfxKey } from '../types/assets';
 import { AudioDirector } from './AudioDirector';
-import { audioForZone } from './mixing';
+import { audioForZone, panFor, RARITY_DETUNE } from './mixing';
 import { preloadLazyAudio } from './manifest';
 
 export { AudioDirector } from './AudioDirector';
@@ -14,13 +14,9 @@ export { settings } from './settings';
 
 /** Mapa evento → SFX simple (los casos con lógica van en installAudio). */
 export const SFX_BY_EVENT: Partial<Record<GameEventName, SfxKey>> = {
-  'player:jump': 'sfx-jump',
   'player:land': 'sfx-land',
   'player:dash': 'sfx-dash',
   'player:hit': 'sfx-hurt',
-  'enemy:hit': 'sfx-hit',
-  'enemy:killed': 'sfx-enemy-death',
-  'item:picked': 'sfx-pickup',
   'chest:opened': 'sfx-chest',
   'checkpoint:reached': 'sfx-checkpoint',
   'ability:ready': 'sfx-ability-ready',
@@ -29,6 +25,8 @@ export const SFX_BY_EVENT: Partial<Record<GameEventName, SfxKey>> = {
 /** Fallback si alejandro/vicho aún no emiten ability:ended / player:respawned (SUP-seba-20261123-102354). */
 const SLOWMO_FALLBACK_MS = 3000;
 const LOW_HP_BEAT_MS = 900;
+export const PAUSE_DUCK = 0.5;
+export const PAUSE_FADE_MS = 900;
 
 /** Compatibilidad con el stub anterior. */
 export function playSfx(_scene: Phaser.Scene, key: SfxKey): void {
@@ -55,9 +53,35 @@ export function installAudio(scene: Phaser.Scene): void {
     bus.on(event, () => AudioDirector.sfx(key), ctx);
   }
 
+  // 3.35 / 3.36 — paneo sutil según la posición; fuera de cámara no suenan
+  const spatial = (x: number): number | null => {
+    const v = scene.cameras.main.worldView;
+    return panFor(x, v.x, v.width);
+  };
+  bus.on('enemy:hit', ({ x }) => { const pan = spatial(x); if (pan !== null) AudioDirector.sfx('sfx-hit', { pan }); }, ctx);
+  bus.on('enemy:killed', ({ x, kind }) => {
+    if (/boss/i.test(kind)) return; // el jefe tiene su propia fanfarria
+    const pan = spatial(x);
+    if (pan !== null) AudioDirector.sfx('sfx-enemy-death', { pan });
+  }, ctx);
+
+  // 3.22 — más agudo y brillante cuanto más raro; loot raro baja la música (3.34)
+  bus.on('item:picked', ({ rarity }) => {
+    AudioDirector.sfx('sfx-pickup', { detune: RARITY_DETUNE[rarity] ?? 0, volume: rarity === 'common' ? 1 : 1.15 });
+    if (rarity !== 'common') AudioDirector.duckFor(rarity === 'legendary' ? 0.3 : 0.5, rarity === 'legendary' ? 1200 : 600);
+  }, ctx);
+
+  // 3.12 — el doble salto suena más agudo
+  bus.on('player:jump', ({ air }) => AudioDirector.sfx('sfx-jump', air ? { detune: 400 } : {}), ctx);
+
   bus.on('player:attack', ({ combo }) => AudioDirector.sfx('sfx-swing', { variant: combo, volume: combo === 3 ? 1.2 : 1 }), ctx);
   bus.on('player:parry', ({ success }) => {
-    if (success) AudioDirector.sfx('sfx-parry', { detune: 0 });
+    if (success) {
+      // 5.45 — micro-silencio de 50 ms y la música se aparta para el campanazo
+      AudioDirector.microSilence(50);
+      AudioDirector.sfx('sfx-parry', { detune: 0 });
+      setTimeout(() => AudioDirector.duckFor(0.55, 350, 40, 500), 60);
+    }
     else AudioDirector.sfx('sfx-swing', { variant: 1, volume: 0.6, rate: 0.85 });
   }, ctx);
 
@@ -77,6 +101,7 @@ export function installAudio(scene: Phaser.Scene): void {
     if (phase !== 1 || inBoss) return;
     inBoss = true;
     preloadLazyAudio(scene);
+    AudioDirector.duckFor(0.2, 1800, 80, 400);
     AudioDirector.stopMusic(500);
     AudioDirector.playAmbient(null, 500);
     scene.time.delayedCall(550, () => AudioDirector.sfx('sfx-boss-roar', { detune: 0 }));
@@ -92,8 +117,8 @@ export function installAudio(scene: Phaser.Scene): void {
   }, ctx);
 
   bus.on('ability:used', ({ id }) => {
-    AudioDirector.sfx('sfx-timestop', { detune: 0 });
     if (!/time|tiempo|stop/i.test(id)) return;
+    AudioDirector.sfx('sfx-timestop', { detune: 0 });
     AudioDirector.slowmo(true);
     slowTimer?.remove();
     slowTimer = scene.time.delayedCall(SLOWMO_FALLBACK_MS, endSlow);
@@ -108,14 +133,16 @@ export function installAudio(scene: Phaser.Scene): void {
     AudioDirector.sfx('sfx-death', { detune: 0 });
     AudioDirector.playAmbient(null, 400);
     AudioDirector.stopMusic(400);
-    scene.time.delayedCall(900, () => { if (dead) { AudioDirector.playJingle('music-gameover', 0); AudioDirector.voice('vo-gameover'); } });
+    // 3.17 — voz TTS solo en la intro: el game over es solo el jingle corto
+    scene.time.delayedCall(700, () => { if (dead) AudioDirector.playJingle('music-gameover', 0); });
     // fallback si nunca llega player:respawned
     scene.time.delayedCall(4500, () => { if (dead) { dead = false; zoneMusic(1500); } });
   }, ctx);
   bus.on('player:respawned', () => { dead = false; zoneMusic(1200); }, ctx);
 
-  bus.on('game:paused', () => AudioDirector.duck(0.3), ctx);
-  bus.on('game:resumed', () => AudioDirector.duck(1), ctx);
+  // 4.43 (nota de Seba) — en pausa la música baja al 50 % en degradado y vuelve en degradado
+  bus.on('game:paused', () => AudioDirector.duck(PAUSE_DUCK, PAUSE_FADE_MS), ctx);
+  bus.on('game:resumed', () => AudioDirector.duck(1, PAUSE_FADE_MS), ctx);
 
   zoneMusic(1200);
   preloadLazyAudio(scene);
@@ -127,3 +154,4 @@ export function installAudio(scene: Phaser.Scene): void {
   });
 }
 export { SFX_KEYS, MUSIC_EAGER, MUSIC_LAZY, AMBIENT_KEYS, VOICE_KEYS, sfxFileKeys } from './manifest';
+export { playSplashSting, playPushupTick, STING_BEATS_MS } from './splashSting';

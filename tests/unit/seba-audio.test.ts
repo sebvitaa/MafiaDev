@@ -39,3 +39,24 @@ describe('mapa de audio', () => {
     expect(fadeAt(1, 0, 2)).toBe(0);
   });
 });
+
+describe('panFor (paneo estéreo sutil, 3.35/3.36)', () => {
+  it('centro = 0, bordes = ±max, fuera de cámara = null', async () => {
+    const { panFor } = await import('../../src/audio/mixing');
+    expect(panFor(240, 0, 480)).toBe(0);
+    expect(panFor(480, 0, 480)).toBe(0.4);
+    expect(panFor(0, 0, 480)).toBe(-0.4);
+    expect(panFor(1000, 0, 480)).toBeNull();
+    expect(panFor(-30, 0, 480)).toBeNull();
+    expect(panFor(-10, 0, 480)).toBe(-0.4); // dentro del margen
+  });
+});
+
+describe('RARITY_DETUNE (3.22)', () => {
+  it('sube de tono con la rareza', async () => {
+    const { RARITY_DETUNE } = await import('../../src/audio/mixing');
+    const order = (['common', 'rare', 'epic', 'legendary'] as const).map((r) => RARITY_DETUNE[r]);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(order[0]).toBe(0);
+  });
+});

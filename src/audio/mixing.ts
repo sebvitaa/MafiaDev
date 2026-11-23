@@ -1,8 +1,10 @@
 // Dominio: seba. Lógica pura del audio (sin Phaser): limitador anti-spam, mapa zona → pistas, variantes.
 import type { AmbientKey, MusicKey, SfxKey } from '../types/assets';
+import type { Rarity } from '../types/items';
 
 /** Nivel base de cada canal antes de los ajustes del jugador (pasada de mezcla, fase 6). */
-export const MIX = { music: 0.42, sfx: 0.75, ambient: 0.32, ui: 0.6, voice: 0.95 } as const;
+// Recalibrado para los ajustes por defecto 80/35/60 (3.39): misma mezcla efectiva que antes, con los SFX al frente.
+export const MIX = { music: 0.84, sfx: 1.0, ambient: 0.32, ui: 0.6, voice: 0.95 } as const;
 
 /** Realce por SFX: el parry y el tercer golpe deben destacar sobre todo lo demás. */
 export const SFX_GAIN: Partial<Record<SfxKey, number>> = {
@@ -63,3 +65,17 @@ export function createLimiter(maxVoices = 4, cooldownMs = 40) {
 
 /** Interpolación lineal de volumen para fundidos (t en 0..1). */
 export const fadeAt = (from: number, to: number, t: number): number => from + (to - from) * Math.min(1, Math.max(0, t));
+
+/** 3.22 — desafinación (cents) del sonido de recoger según la rareza. */
+export const RARITY_DETUNE: Record<Rarity, number> = { common: 0, rare: 300, epic: 500, legendary: 700 };
+
+/**
+ * 3.35 / 3.36 — paneo sutil (máx. ±0.4) según la posición en la vista; null si está fuera de cámara
+ * (con 24 px de margen).
+ */
+export function panFor(x: number, viewX: number, viewW: number, max = 0.4, margin = 24): number | null {
+  if (viewW <= 0) return 0;
+  if (x < viewX - margin || x > viewX + viewW + margin) return null;
+  const rel = (x - (viewX + viewW / 2)) / (viewW / 2);
+  return Math.round(Math.max(-1, Math.min(1, rel)) * max * 100) / 100;
+}
