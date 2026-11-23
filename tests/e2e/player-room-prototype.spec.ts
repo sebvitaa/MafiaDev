@@ -248,40 +248,63 @@ test('la espada se recoge en el lateral, se equipa visible y ejecuta un tajo ani
   await page.keyboard.up('ArrowRight');
   await page.keyboard.up('Shift');
   await place(page, 760, 400);
-  let s = await swordState();
+  const s = await swordState();
   expect(s).toMatchObject({ visible: false, hasSword: true, equipped: true, active: false, dummyHp: 100 });
   const restingSwordRotation = s.equippedRotation;
-  await page.locator('canvas').click({ position: { x: 480, y: 300 } });
-  s = await swordState();
-  expect(s).toMatchObject({ active: true, slashVisible: true });
-  const startingRotation = s.slashRotation;
-  const swordStartingRotation = s.equippedRotation;
-  await expect.poll(async () => (await state(page)).dummyHp).toBe(75);
-  expect((await state(page)).dummyHits).toBe(1);
-  await expect.poll(async () => (await swordState()).slashRotation, { intervals: [10, 20, 30] })
-    .not.toBeCloseTo(startingRotation, 2);
-  await expect.poll(async () => (await swordState()).equippedRotation, { intervals: [10, 20, 30] })
-    .not.toBeCloseTo(swordStartingRotation, 2);
-  await page.waitForTimeout(100);
-  await page.locator('canvas').click({ position: { x: 480, y: 300 } });
-  await expect.poll(async () => (await swordState()).comboAttack).toBe(2);
-  await expect.poll(async () => (await state(page)).dummyHp).toBe(45);
-  expect((await state(page)).dummyHits).toBe(2);
-  await expect.poll(async () => (await swordState()).active).toBe(false);
-  await page.locator('canvas').click({ position: { x: 480, y: 300 } });
-  await expect.poll(async () => (await swordState()).comboAttack).toBe(3);
-  await expect.poll(async () => (await state(page)).dummyHp).toBe(5);
-  expect((await state(page)).dummyHits).toBe(3);
-  await expect.poll(async () => (await swordState()).active).toBe(false);
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    const probe = { steps: [] as { step: number; hp: number; hits: number }[],
+      activeSeen: false, reactionSeen: false, slashMin: Infinity, slashMax: -Infinity,
+      weaponMin: Infinity, weaponMax: -Infinity };
+    (scene as any).__swordProbe = probe;
+    const observe = () => {
+      const { player, trainingDummy: dummy } = scene;
+      const step = player.attack.currentAttack;
+      if (!player.attack.slash.visible) return;
+      probe.activeSeen ||= player.attack.active;
+      probe.reactionSeen ||= dummy.reactionActive;
+      if (!probe.steps.some((sample) => sample.step === step)) {
+        probe.steps.push({ step, hp: dummy.hp, hits: dummy.hitCount });
+      }
+      if (step === 1) {
+        probe.slashMin = Math.min(probe.slashMin, player.attack.slash.rotation);
+        probe.slashMax = Math.max(probe.slashMax, player.attack.slash.rotation);
+        probe.weaponMin = Math.min(probe.weaponMin, player.equippedSword.rotation);
+        probe.weaponMax = Math.max(probe.weaponMax, player.equippedSword.rotation);
+      }
+    };
+    scene.events.on('postupdate', observe);
+    scene.events.once('shutdown', () => scene.events.off('postupdate', observe));
+  });
+  const box = (await page.locator('canvas').boundingBox())!;
+  // Enviar cada clic al terminar el golpe, sin gastar la ventana de combo
+  // haciendo múltiples viajes de lectura entre el navegador y el runner.
+  for (const [step, hp] of [[1, 75], [2, 45], [3, 5]]) {
+    await page.mouse.click(box.x + 480, box.y + 300);
+    await page.waitForFunction(({ step, hp }) => {
+      const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+      const completedStep = step === 3 ? 0 : step; // El remate reinicia el combo al terminar.
+      return scene.player.attack.currentAttack === completedStep && !scene.player.attack.active && scene.trainingDummy.hp === hp;
+    }, { step, hp }, { timeout: 5000 }).catch(async () => {
+      throw new Error(`Combo ${step}: ${JSON.stringify(await swordState())}`);
+    });
+  }
+  const probe = await page.evaluate(() => (window.__game!.scene.getScene('RoomPrototype') as any).__swordProbe);
+  expect(probe.steps).toEqual([{ step: 1, hp: 75, hits: 1 }, { step: 2, hp: 45, hits: 2 }, { step: 3, hp: 5, hits: 3 }]);
+  expect(probe.activeSeen).toBe(true);
+  expect(probe.reactionSeen).toBe(true);
+  expect(probe.slashMax - probe.slashMin).toBeGreaterThan(0.01);
+  expect(probe.weaponMax - probe.weaponMin).toBeGreaterThan(0.01);
   expect((await swordState()).slashVisible).toBe(false);
   expect((await swordState()).equippedRotation).toBeCloseTo(restingSwordRotation, 2);
 
-  await page.locator('canvas').click({ position: { x: 480, y: 300 } });
+  await page.mouse.click(box.x + 480, box.y + 300);
   await expect.poll(async () => (await state(page)).dummyHp).toBe(0);
   expect((await state(page)).dummyDefeated).toBe(true);
-  await page.waitForTimeout(2100);
-  expect((await state(page)).dummyHp).toBe(100);
-  expect((await state(page)).dummyDefeated).toBe(false);
+  await page.waitForFunction(() => {
+    const dummy = (window.__game!.scene.getScene('RoomPrototype') as RoomScene).trainingDummy;
+    return dummy.hp === 100 && !dummy.defeated;
+  });
 });
 
 test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo alcance una sola vez', async ({ page }) => {
@@ -359,27 +382,56 @@ test('E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en
   expect(aimed.fireballAimX).toBeCloseTo(820, 0);
   expect(aimed.fireballAimY).toBeCloseTo(400, 0);
   expect(aimed.dummyHp).toBe(100);
+  await page.evaluate(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    const probe = { releasePhase: '', releaseCooldown: 0, fallingSeen: false, fallingHpIntact: true,
+      explosionSeen: false, maxRadius: 0, burnSeen: false, impactHp: -1, impactHits: 0,
+      afterExplosionHp: -1, afterExplosionHits: 0, burnAtEnd: false, fadeComplete: false, fadeCooldown: 0 };
+    (scene as any).__fireballProbe = probe;
+    // RoomPlayer registró su release antes: leer aquí observa el mismo evento,
+    // antes de que avancen el reloj del juego o los comandos del runner.
+    scene.input.keyboard!.once('keyup-E', () => {
+      probe.releasePhase = scene.player.fireball.phase;
+      probe.releaseCooldown = scene.player.fireball.cooldownRemainingMs;
+    });
+    const observe = () => {
+      const fireball = scene.player.fireball, dummy = scene.trainingDummy;
+      if (fireball.phase === 'falling') {
+        probe.fallingSeen = true;
+        probe.fallingHpIntact &&= dummy.hp === 100;
+      }
+      if (fireball.phase === 'exploding') {
+        probe.explosionSeen ||= fireball.explosion.visible;
+        probe.maxRadius = Math.max(probe.maxRadius, fireball.explosionRadius);
+        probe.burnSeen ||= fireball.burnMark.visible;
+        probe.impactHp = dummy.hp;
+        probe.impactHits = dummy.hitCount;
+      }
+      if (probe.explosionSeen && fireball.phase === 'idle' && probe.afterExplosionHp < 0) {
+        probe.afterExplosionHp = dummy.hp;
+        probe.afterExplosionHits = dummy.hitCount;
+        probe.burnAtEnd = fireball.burnMark.visible;
+      }
+      if (probe.burnSeen && !fireball.burnMark.visible) {
+        probe.fadeComplete = true;
+        probe.fadeCooldown = fireball.cooldownRemainingMs;
+        scene.events.off('postupdate', observe);
+      }
+    };
+    scene.events.on('postupdate', observe);
+    scene.events.once('shutdown', () => scene.events.off('postupdate', observe));
+  });
   await page.keyboard.up('e');
-  expect((await state(page)).fireballPhase).toBe('falling');
-  expect((await state(page)).fireballCooldown).toBeGreaterThan(6900);
-  await page.waitForTimeout(500);
-  expect((await state(page)).fireballPhase).toBe('falling');
-  expect((await state(page)).dummyHp).toBe(100);
-  await expect.poll(async () => (await state(page)).dummyHp).toBe(50);
-  expect((await state(page)).dummyHits).toBe(1);
-  expect((await state(page)).fireballExplosion).toBe(true);
-  expect((await state(page)).fireballRadius).toBeGreaterThan(0);
-  expect((await state(page)).fireballBurnVisible).toBe(true);
-  await page.waitForTimeout(350);
-  expect((await state(page)).dummyHp).toBe(50);
-  expect((await state(page)).dummyHits).toBe(1);
-  await page.waitForTimeout(1800);
-  expect((await state(page)).fireballBurnVisible).toBe(true);
-  await expect.poll(async () => (await state(page)).fireballBurnVisible).toBe(false);
-  expect((await state(page)).fireballCooldown).toBeGreaterThan(2500);
+  await page.waitForFunction(() => (window.__game!.scene.getScene('RoomPrototype') as any).__fireballProbe.fadeComplete);
   await page.keyboard.down('e');
   expect((await state(page)).fireballAiming).toBe(false);
   await page.keyboard.up('e');
+  const probe = await page.evaluate(() => (window.__game!.scene.getScene('RoomPrototype') as any).__fireballProbe);
+  expect(probe).toMatchObject({ releasePhase: 'falling', releaseCooldown: 7000, fallingSeen: true,
+    fallingHpIntact: true, explosionSeen: true, burnSeen: true, impactHp: 50, impactHits: 1,
+    afterExplosionHp: 50, afterExplosionHits: 1, burnAtEnd: true, fadeComplete: true });
+  expect(probe.maxRadius).toBeGreaterThan(0);
+  expect(probe.fadeCooldown).toBeGreaterThan(2500);
   await page.keyboard.press('r');
   await expect.poll(async () => page.evaluate(() => {
     const scene = window.__game!.scene.getScene('RoomPrototype');
