@@ -215,6 +215,13 @@ test('doble pulsación de flecha derecha también activa dash', async ({ page })
   expect((await state(page)).vy).toBe(0);
 });
 
+// El tajo apunta al cursor: clic sobre el muñeco (mundo 820,383) en coordenadas del canvas 960x600.
+const DUMMY_AIM = { x: 820, y: 383 };
+const clickDummy = async (page: Page) => {
+  const box = (await page.locator('canvas').boundingBox())!;
+  await page.locator('canvas').click({ position: { x: box.width * DUMMY_AIM.x / 960, y: box.height * DUMMY_AIM.y / 600 } });
+};
+
 test('la espada se recoge en el lateral, se equipa visible y ejecuta un tajo animado', async ({ page }) => {
   const swordState = () => page.evaluate(() => {
     const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene & {
@@ -251,7 +258,7 @@ test('la espada se recoge en el lateral, se equipa visible y ejecuta un tajo ani
   let s = await swordState();
   expect(s).toMatchObject({ visible: false, hasSword: true, equipped: true, active: false, dummyHp: 100 });
   const restingSwordRotation = s.equippedRotation;
-  await page.locator('canvas').click({ position: { x: 480, y: 300 } });
+  await clickDummy(page);
   s = await swordState();
   expect(s).toMatchObject({ active: true, slashVisible: true });
   const startingRotation = s.slashRotation;
@@ -263,12 +270,12 @@ test('la espada se recoge en el lateral, se equipa visible y ejecuta un tajo ani
   await expect.poll(async () => (await swordState()).equippedRotation, { intervals: [10, 20, 30] })
     .not.toBeCloseTo(swordStartingRotation, 2);
   await page.waitForTimeout(100);
-  await page.locator('canvas').click({ position: { x: 480, y: 300 } });
+  await clickDummy(page);
   await expect.poll(async () => (await swordState()).comboAttack).toBe(2);
   await expect.poll(async () => (await state(page)).dummyHp).toBe(45);
   expect((await state(page)).dummyHits).toBe(2);
   await expect.poll(async () => (await swordState()).active).toBe(false);
-  await page.locator('canvas').click({ position: { x: 480, y: 300 } });
+  await clickDummy(page);
   await expect.poll(async () => (await swordState()).comboAttack).toBe(3);
   await expect.poll(async () => (await state(page)).dummyHp).toBe(5);
   expect((await state(page)).dummyHits).toBe(3);
@@ -276,7 +283,7 @@ test('la espada se recoge en el lateral, se equipa visible y ejecuta un tajo ani
   expect((await swordState()).slashVisible).toBe(false);
   expect((await swordState()).equippedRotation).toBeCloseTo(restingSwordRotation, 2);
 
-  await page.locator('canvas').click({ position: { x: 480, y: 300 } });
+  await clickDummy(page);
   await expect.poll(async () => (await state(page)).dummyHp).toBe(0);
   expect((await state(page)).dummyDefeated).toBe(true);
   await page.waitForTimeout(2100);
@@ -294,7 +301,7 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   });
   const box = await page.locator('canvas').boundingBox();
   if (!box) throw new Error('No se encontró el canvas del prototipo');
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.move(box.x + box.width * DUMMY_AIM.x / 960, box.y + box.height * DUMMY_AIM.y / 600);
   await page.mouse.down();
   await page.waitForTimeout(500);
   const charging = await state(page);
@@ -308,7 +315,7 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   expect(movedWhileCharging.y).toBeLessThan(charging.y);
   expect(movedWhileCharging.chargeEffectX).toBeCloseTo(movedWhileCharging.x, 0);
   expect(movedWhileCharging.chargeEffectY).toBeCloseTo(movedWhileCharging.y - 18, 0);
-  expect(movedWhileCharging.swordRotation).toBeCloseTo(Math.atan2(movedWhileCharging.facingY, movedWhileCharging.facingX), 1);
+  expect(movedWhileCharging.swordRotation).toBeCloseTo(Math.atan2(DUMMY_AIM.y - (movedWhileCharging.y - 17), DUMMY_AIM.x - movedWhileCharging.x), 1);
   expect(movedWhileCharging.dummyHp).toBe(100);
   await page.keyboard.press('c');
   await expect.poll(async () => (await state(page)).dash).toBe(true);

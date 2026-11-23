@@ -49,12 +49,12 @@ export class RoomPlayer {
     const dash = (event: KeyboardEvent) => { if (!event.repeat) this.dashQueued = true; };
     const attack = (pointer: Phaser.Input.Pointer) => {
       if (pointer.button === 0 && this.hasSword && !this.motion.dash.active) {
-        this.attack.beginInput(this.anchor.x, this.anchor.y, this.motion.height, this.motion.facing, this.equippedSword);
+        this.attack.beginInput(this.anchor.x, this.anchor.y, this.motion.height, this.aim(), this.equippedSword);
       }
     };
     const attackRelease = (pointer: Phaser.Input.Pointer) => {
       if (pointer.button === 0) {
-        this.attack.releaseInput(this.anchor.x, this.anchor.y, this.motion.height, this.motion.facing, this.equippedSword);
+        this.attack.releaseInput(this.anchor.x, this.anchor.y, this.motion.height, this.aim(), this.equippedSword);
       }
     };
     const aimDown = (event: KeyboardEvent) => {
@@ -161,6 +161,14 @@ export class RoomPlayer {
 
   equipSword(): void { this.hasSword = true; }
 
+  /** El golpe va hacia el cursor (no hacia donde se mueve). Recalcula con la cámara actual: worldX queda viejo si la cámara se mueve sin mover el ratón. */
+  private aim(): { x: number; y: number } {
+    const scene = this.anchor.scene;
+    const p = scene.input.activePointer.positionToCamera(scene.cameras.main) as Phaser.Math.Vector2;
+    const dx = p.x - this.anchor.x, dy = p.y - (this.anchor.y - this.motion.height - 17);
+    return Math.hypot(dx, dy) > 1 ? { x: dx, y: dy } : this.motion.facing;
+  }
+
   private updateTrail(): void {
     const scene = this.anchor.scene;
     this.trail.update(scene.time.now, this.motion.dash.active, this.anchor.x, this.anchor.y, this.motion.height);
@@ -176,9 +184,10 @@ export class RoomPlayer {
     this.visual.setAlpha(this.motion.dash.active ? 0.8 : 1);
     this.equippedSword.setVisible(this.hasSword);
     if (this.attack.holdingInput) {
-      this.attack.followChargePose(x, y, height, facing, this.equippedSword);
-      this.equippedSword.setPosition(facing.x * 11 + 7, -19 + facing.y * 5)
-        .setRotation(Math.atan2(facing.y, facing.x));
+      const raw = this.aim(), len = Math.hypot(raw.x, raw.y) || 1, aim = { x: raw.x / len, y: raw.y / len }; // la carga sigue al cursor
+      this.attack.followChargePose(x, y, height, aim, this.equippedSword);
+      this.equippedSword.setPosition(aim.x * 11 + 7, -19 + aim.y * 5)
+        .setRotation(Math.atan2(aim.y, aim.x));
     } else if (!this.attack.active) {
       this.equippedSword.setPosition(facing.x * 11 + 7, -19 + facing.y * 5)
         .setRotation(Math.atan2(facing.y, facing.x));
