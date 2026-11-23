@@ -83,7 +83,7 @@ Añadir un evento = cambio en `shared` (ver arriba). Nunca reutilices un evento 
 - Una clase/módulo por archivo. Entidades = sprite + `StateMachine` + componentes. Sin herencia profunda.
 - Números de equilibrio en `src/data/*.json`, nunca hardcodeados. Constantes de feel (gravedad, coyote, buffer, hitstop) en `src/data/tuning.json`.
 - Lógica pura separada de Phaser cuando se pueda (módulo sin `import Phaser`) para testearla con Vitest sin navegador.
-- Commits pequeños, prefijo de dominio: `feat(combat): parry window 150ms`. Rama `<owner>/<slug>`; merge a `main` cada ~1 h. `main` siempre jugable.
+- Commits pequeños, prefijo de dominio: `feat(combat): parry window 150ms`. Rama `<owner>/<slug>`; merge a `main` cada ~1 h vía `npm run ship` (§6). `main` siempre jugable.
 - No borres ni reescribas trabajo ajeno para que tu build pase. Si `main` está roto por otro dominio: pending `p0` al dueño + revert local solo en tu rama.
 
 ## 4. Memoria persistente: history, pendings, supuestos
@@ -131,5 +131,38 @@ Decisión tomada por un agente sin especificación explícita, que un humano deb
 1. `npm run build` y `npm test` (y `npm run test:e2e` si tocaste escenas, input o carga) → resultado en una entrada history.
 2. PEN para todo lo que quede roto o a medias; SUP para cada decisión no especificada.
 3. Actualiza el estado de los PEN que trabajaste.
-4. Commit del código, luego commit de `agents/`.
-5. Resume al humano en ≤5 líneas: hecho, tests, IDs creados/cerrados, siguiente paso.
+4. Commit del código, luego `npm run ship` con el commit de `agents/` (§6.2).
+5. Resume al humano en ≤5 líneas: hecho, tests, IDs creados/cerrados, **URL del PR**, siguiente paso.
+
+## 6. Git: commits, push y PR (los agentes publican solos)
+
+Los agentes PUEDEN hacer commit, push y abrir PR sin pedir permiso, **solo** por este flujo. `main` está protegida: exige el check `build-test` del CI y los PR se fusionan solos (squash) cuando pasa.
+
+### 6.1 Cuándo publicar
+- Al terminar una tarea con build + tests en verde (checklist §5).
+- Cada ~1 h aunque la tarea siga a medias, si `main` sigue jugable con tu cambio (detrás de un flag o sin engancharlo); si no, `--draft`.
+- Cuando el humano lo pida ("sube esto", "haz PR", "ship").
+- NO publiques: con tests en rojo, con archivos de otro dominio, ni cambios `shared` sin aviso explícito del humano en el chat.
+
+### 6.2 Flujo (el script hace las guardas)
+```
+git switch -c <owner>/<slug>                    # si estás en main (ship también lo hace)
+git add <archivos> && git commit -m "feat(<dominio>): qué"
+node scripts/agents.mjs new history ...          # commit: <hash del paso anterior>
+npm run ship -- --owner <OWNER> --agent <claude|gpt> \
+  --title "feat(<dominio>): qué" --message "chore(agents): HIS-..." --refs HIS-...,PEN-...
+```
+`ship`: verifica la rama `<owner>/*` → `git add -A` → **guardas** → commit de lo pendiente con `--message` → `git merge origin/main` → `npm run build` + `npm test` (`--e2e` añade Playwright) → push de la rama → crea o reutiliza el PR → `gh pr merge --auto --squash --delete-branch`. Imprime la URL del PR.
+- Guarda de dominio: aborta si el PR incluye archivos de otro OWNER (mapa de §2 en `scripts/ship.mjs`; `agents/**` y `tests/**` son libres salvo `tests/e2e/smoke.spec.ts`; lo no listado = `shared`; `public/assets/sprites/enemies/**` = basti). Archivos `shared` exigen `--shared`, que solo se usa con aviso explícito del humano + SUP `validator: equipo`.
+- Guarda de secretos: aborta con `.env*`, claves, `.claude/settings.local.json` o tokens en el diff.
+- Flags: `--draft` (sin auto-merge) · `--no-auto` (lo fusiona un humano) · `--dry-run` (guardas + build + tests sin publicar).
+
+### 6.3 Prohibido
+`git push --force` · push directo a `main` · `git rebase` / `commit --amend` sobre ramas ya publicadas · `git reset --hard` · `gh pr merge --admin` · cambiar ajustes del repo (`gh api`, `gh repo`). En Claude Code, `.claude/settings.json` ya permite el flujo y bloquea esto.
+
+### 6.4 Si algo falla
+- Conflicto al integrar `main`: ship aborta el merge. `git merge origin/main`, resuelve SOLO archivos de tu dominio, `git commit`, repite ship. Conflicto en dominio ajeno → pending `p0` a su dueño.
+- CI en rojo en tu PR: `gh pr checks` y `gh run view --log-failed`, arregla, commit y repite ship (actualiza el mismo PR; el auto-merge sigue activo).
+- `main` roto tras un merge: pending `p0` al autor del PR + PR de revert (`git revert <hash>` en una rama `<owner>/revert-...`), nunca push directo.
+- Codex/GPT: si su sandbox no tiene red, el humano ejecuta el mismo `npm run ship` que el agente le indique. ChatGPT web: el agente da el comando y el humano lo corre.
+
