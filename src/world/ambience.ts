@@ -13,7 +13,7 @@ const PARTICLES: Record<Biome, Phaser.Types.GameObjects.Particles.ParticleEmitte
   bright: { tint: [0xff7eb6, 0xffd75e, 0xffffff], frequency: 90, lifespan: 4500, speedX: { min: 8, max: 22 }, speedY: { min: 4, max: 14 }, rotate: { min: 0, max: 360 }, alpha: { start: 0.9, end: 0.2 } },
   arena: { tint: [0xff6a3d, 0xffb36b], frequency: 50, lifespan: 2600, speedX: { min: -8, max: 8 }, speedY: { min: -40, max: -18 }, alpha: { start: 1, end: 0 }, blendMode: Phaser.BlendModes.ADD },
 };
-const VIGNETTE: Record<Biome, number> = { ruins: 0.55, forest: 0.6, bright: 0.15, arena: 0.65 };
+const VIGNETTE: Record<Biome, number> = { ruins: 0.3, forest: 0.35, bright: 0.08, arena: 0.4 }; // suave: no tapar la pantalla
 
 export function installAmbience(
   scene: Phaser.Scene,
@@ -33,7 +33,7 @@ export function installAmbience(
   }).setDepth(9e4)])) as Record<Biome, Phaser.GameObjects.Particles.ParticleEmitter>;
   for (const c of hiddenFrom) c.ignore(Object.values(emitters));
 
-  const vignette = cam.filters.external.addVignette(0.5, 0.5, 0.5, VIGNETTE.ruins);
+  const vignette = cam.filters.external.addVignette(0.5, 0.5, 0.75, VIGNETTE.ruins);
   let biome: Biome | null = null;
 
   const onUpdate = () => {
