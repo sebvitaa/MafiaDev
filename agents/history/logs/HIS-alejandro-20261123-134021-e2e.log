@@ -1,0 +1,147 @@
+[WebServer] (node:5488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 17 tests using 2 workers
+
+(node:32180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:26872) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  2 [chromium] › tests\e2e\cinematicas-lore.spec.ts:14:1 › La Nota reproduce video y Escape devuelve el control al jugador (4.6s)
+  ok  1 [chromium] › tests\e2e\exploration-secrets.spec.ts:17:1 › pared ilusoria, atajo, coleccionable y viaje rápido (10.8s)
+  x   4 [chromium] › tests\e2e\player-room-prototype.spec.ts:56:1 › cámara fija encuadra la sala mientras WASD, flechas y carrera mueven al personaje (3.6s)
+(node:35224) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  5 [chromium] › tests\e2e\player-room-prototype.spec.ts:85:1 › salto visual, doble salto y sombra conservan el plano y la cámara (3.9s)
+  ok  3 [chromium] › tests\e2e\cinematicas-lore.spec.ts:25:1 › el acceso al escenario final reproduce los diez segundos y continúa (17.6s)
+  ok  6 [chromium] › tests\e2e\player-room-prototype.spec.ts:104:1 › dash diagonal conserva rapidez y no repite al mantener pulsado (3.9s)
+  x   8 [chromium] › tests\e2e\player-room-prototype.spec.ts:125:1 › obstáculos bloquean salto y dash, profundidad ordena por pies y R reinicia (4.4s)
+(node:19172) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  9 [chromium] › tests\e2e\player-room-prototype.spec.ts:160:1 › doble D desliza hacia D, genera estela y respeta cooldown sin cambiar cámara (3.7s)
+  ok 10 [chromium] › tests\e2e\player-room-prototype.spec.ts:182:1 › mantener WASD no esquiva y el dash por doble pulsación no atraviesa obstáculos (3.5s)
+  ok 11 [chromium] › tests\e2e\player-room-prototype.spec.ts:198:1 › el doble toque tolera 300 ms entre pulsaciones y conserva la dirección elegida (2.5s)
+  ok 12 [chromium] › tests\e2e\player-room-prototype.spec.ts:209:1 › doble pulsación de flecha derecha también activa dash (3.5s)
+  ok 13 [chromium] › tests\e2e\player-room-prototype.spec.ts:218:1 › la espada se recoge en el lateral, se equipa visible y ejecuta un tajo animado (10.0s)
+  ok 14 [chromium] › tests\e2e\player-room-prototype.spec.ts:287:1 › el dash cancela la carga y soltar una carga máxima hace un golpe de largo alcance una sola vez (9.4s)
+  x  15 [chromium] › tests\e2e\player-room-prototype.spec.ts:351:1 › E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en cooldown (4.5s)
+(node:34064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 16 [chromium] › tests\e2e\smoke.spec.ts:4:1 › arranca, entra al juego y el jugador se mueve (6.7s)
+  ok 17 [chromium] › tests\e2e\world-zones.spec.ts:12:1 › cruzar zonas emite zone:changed; descansar y morir reaparece en la hoguera (14.1s)
+  x   7 [chromium] › tests\e2e\cinematicas-lore.spec.ts:39:1 › El Set pausa y reanuda la partida una sola vez (36.2s)
+
+
+  1) [chromium] › tests\e2e\cinematicas-lore.spec.ts:39:1 › El Set pausa y reanuda la partida una sola vez
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForFunction: Test timeout of 30000ms exceeded.
+
+      43 |   await page.keyboard.press('Enter');
+      44 |   await playing(page);
+    > 45 |   await page.waitForFunction(() => window.__game?.scene.isActive('HudScene'));
+         |              ^
+      46 |   const enter = (roomId: string) => page.evaluate(async (roomId) => {
+      47 |     const url = '/src/core/EventBus.ts';
+      48 |     const { bus } = await import(/* @vite-ignore */ url);
+        at C:\Users\cosas\OneDrive\Documentos\ChatGPT\Juego\MafiaDev\tests\e2e\cinematicas-lore.spec.ts:45:14
+
+    Error Context: node_modules\.cache\codex-integracion\results\cinematicas-lore-El-Set-pa-32da4-uda-la-partida-una-sola-vez-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    node_modules\.cache\codex-integracion\results\cinematicas-lore-El-Set-pa-32da4-uda-la-partida-una-sola-vez-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace node_modules\.cache\codex-integracion\results\cinematicas-lore-El-Set-pa-32da4-uda-la-partida-una-sola-vez-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests\e2e\player-room-prototype.spec.ts:56:1 › cámara fija encuadra la sala mientras WASD, flechas y carrera mueven al personaje
+
+    Error: expect(received).toBeGreaterThan(expected)
+
+    Expected: > 0
+    Received:   -15.045934671969313
+
+      80 |   await page.keyboard.down('ArrowDown');
+      81 |   await expect.poll(async () => (await state(page)).vx).toBeLessThan(0);
+    > 82 |   expect((await state(page)).vy).toBeGreaterThan(0);
+         |                                  ^
+      83 | });
+      84 |
+      85 | test('salto visual, doble salto y sombra conservan el plano y la cámara', async ({ page }) => {
+        at C:\Users\cosas\OneDrive\Documentos\ChatGPT\Juego\MafiaDev\tests\e2e\player-room-prototype.spec.ts:82:34
+
+    Error Context: node_modules\.cache\codex-integracion\results\player-room-prototype-cáma-ae1ec-carrera-mueven-al-personaje-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    node_modules\.cache\codex-integracion\results\player-room-prototype-cáma-ae1ec-carrera-mueven-al-personaje-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace node_modules\.cache\codex-integracion\results\player-room-prototype-cáma-ae1ec-carrera-mueven-al-personaje-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › tests\e2e\player-room-prototype.spec.ts:125:1 › obstáculos bloquean salto y dash, profundidad ordena por pies y R reinicia
+
+    Error: expect(received).toBeCloseTo(expected, precision)
+
+    Expected: 265
+    Received: 480
+
+    Expected precision:    0
+    Expected difference: < 0.5
+    Received difference:   215
+
+      128 |   await page.keyboard.down('Shift');
+      129 |   await page.waitForTimeout(300);
+    > 130 |   expect((await state(page)).x).toBeCloseTo(265, 0);
+          |                                 ^
+      131 |   await page.keyboard.down('Space');
+      132 |   await page.keyboard.press('c');
+      133 |   await expect.poll(async () => (await state(page)).z).toBeGreaterThan(5);
+        at C:\Users\cosas\OneDrive\Documentos\ChatGPT\Juego\MafiaDev\tests\e2e\player-room-prototype.spec.ts:130:33
+
+    Error Context: node_modules\.cache\codex-integracion\results\player-room-prototype-obst-24cec-rdena-por-pies-y-R-reinicia-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    node_modules\.cache\codex-integracion\results\player-room-prototype-obst-24cec-rdena-por-pies-y-R-reinicia-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace node_modules\.cache\codex-integracion\results\player-room-prototype-obst-24cec-rdena-por-pies-y-R-reinicia-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › tests\e2e\player-room-prototype.spec.ts:351:1 › E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en cooldown
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 100
+    Received: 50
+
+      365 |   await page.waitForTimeout(500);
+      366 |   expect((await state(page)).fireballPhase).toBe('falling');
+    > 367 |   expect((await state(page)).dummyHp).toBe(100);
+          |                                       ^
+      368 |   await expect.poll(async () => (await state(page)).dummyHp).toBe(50);
+      369 |   expect((await state(page)).dummyHits).toBe(1);
+      370 |   expect((await state(page)).fireballExplosion).toBe(true);
+        at C:\Users\cosas\OneDrive\Documentos\ChatGPT\Juego\MafiaDev\tests\e2e\player-room-prototype.spec.ts:367:39
+
+    Error Context: node_modules\.cache\codex-integracion\results\player-room-prototype-E-ap-32cc0-o-doble-y-entra-en-cooldown-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    node_modules\.cache\codex-integracion\results\player-room-prototype-E-ap-32cc0-o-doble-y-entra-en-cooldown-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace node_modules\.cache\codex-integracion\results\player-room-prototype-E-ap-32cc0-o-doble-y-entra-en-cooldown-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    [chromium] › tests\e2e\cinematicas-lore.spec.ts:39:1 › El Set pausa y reanuda la partida una sola vez
+    [chromium] › tests\e2e\player-room-prototype.spec.ts:56:1 › cámara fija encuadra la sala mientras WASD, flechas y carrera mueven al personaje
+    [chromium] › tests\e2e\player-room-prototype.spec.ts:125:1 › obstáculos bloquean salto y dash, profundidad ordena por pies y R reinicia
+    [chromium] › tests\e2e\player-room-prototype.spec.ts:351:1 › E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en cooldown
+  13 passed (1.6m)
