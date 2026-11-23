@@ -197,13 +197,27 @@ test('mantener WASD no esquiva y el dash por doble pulsación no atraviesa obst�
 
 test('el doble toque tolera 300 ms entre pulsaciones y conserva la dirección elegida', async ({ page }) => {
   await page.keyboard.down('ArrowLeft');
-  await page.keyboard.press('d');
-  await page.waitForTimeout(300);
-  await page.keyboard.press('d');
-  await expect.poll(async () => (await state(page)).dash, { intervals: [10] }).toBe(true);
-  expect((await state(page)).vx).toBe(540);
-  expect((await state(page)).vy).toBe(0);
-  await page.keyboard.up('d');
+  // Controlar el intervalo DOM exacto: una espera del runner más el IPC puede
+  // exceder la ventana de 350 ms bajo carga. Los otros casos usan teclas nativas.
+  const dash = await page.evaluate(async () => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    const keyboard = scene.input.keyboard!;
+    const stamps: number[] = [];
+    const observeTap = (event: KeyboardEvent) => { stamps.push(event.timeStamp); };
+    keyboard.on('keydown-D', observeTap);
+    const start = performance.now();
+    for (const [type, offset] of [['keydown', 0], ['keyup', 1], ['keydown', 300], ['keyup', 301]] as const) {
+      const event = new KeyboardEvent(type, { key: 'd', code: 'KeyD', keyCode: 68, which: 68, bubbles: true });
+      Object.defineProperty(event, 'timeStamp', { value: start + offset });
+      window.dispatchEvent(event);
+      await new Promise<void>((resolve) => scene.events.once('postupdate', resolve));
+    }
+    keyboard.off('keydown-D', observeTap);
+    return { taps: stamps.length, gap: stamps[1] - stamps[0], active: scene.player.motion.dash.active,
+      vx: scene.player.body.velocity.x, vy: scene.player.body.velocity.y };
+  });
+  expect(dash).toEqual({ taps: 2, gap: 300, active: true, vx: 540, vy: 0 });
+  await page.keyboard.up('ArrowLeft');
 });
 
 test('doble pulsación de flecha derecha también activa dash', async ({ page }) => {
