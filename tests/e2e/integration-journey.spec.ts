@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import type {GameScene} from '../../src/scenes/GameScene';
 
 test('apertura completa, ambos videos, mundo, jefe y cierre sin créditos prematuros',async({page})=>{
-  test.setTimeout(150000);
+  test.setTimeout(180000);
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/?map=1&noEnemies=1');
   await page.waitForFunction(()=>window.__game?.scene.isActive('PreloadScene'));
@@ -66,9 +66,10 @@ test('apertura completa, ambos videos, mundo, jefe y cierre sin créditos premat
     b.heartTarget.takeSwordDamage(23,{x:1,y:0});
   });
   expect(await page.evaluate(()=>window.__game!.scene.isActive('CreditsScene'))).toBe(false);
-  await page.waitForFunction(()=>window.__game!.scene.isActive('EndingScene'));
-  await expect(page.getByText('LA BANCA NO PERDIÓ. LA CASA NUNCA PIERDE.',{exact:true})).toBeVisible();
-  await expect(page.getByText('EL CUENTO DE TULIO',{exact:true})).toBeVisible({timeout:20000});
+  await expect(video).toHaveAttribute('aria-label','Fin de transmisión',{timeout:12000});
+  await expect(video).toHaveAttribute('src',/cine3\.webm#t=0\.82$/);
+  await expect.poll(()=>video.evaluate(v=>(v as HTMLVideoElement).currentTime),{timeout:45000}).toBeGreaterThan(30.6);
+  expect(await page.evaluate(()=>window.__game!.scene.isActive('CreditsScene'))).toBe(false);
   await page.screenshot({path:'test-results/integration-tulio.png'});
   await page.waitForFunction(()=>window.__game!.scene.isActive('CreditsScene'),{},{timeout:25000});
   await page.waitForTimeout(350); // Credits installs return controls after its entrance.

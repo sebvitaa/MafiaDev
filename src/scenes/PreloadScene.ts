@@ -4,6 +4,7 @@
 // → zoom al logo, que pasa a ser el del título. Cualquier tecla (salvo X) salta la animación.
 // Cada dominio añade sus claves pidiéndolo a seba (pending) o exportando una función preload*() desde su index.ts.
 import Phaser from 'phaser';
+import { preloadCodexHeart } from '../enemies/codexHeart';
 import type { PlaceholderKey } from '../types/assets';
 import { AudioDirector, playPushupTick, playSplashSting, preloadAudio, settings, STING_BEATS_MS } from '../audio';
 import { buildLogo, idleShine, LOGO_TITLE_Y, makeCodexMark, shineLogo, type Logo } from '../ui/logo';
@@ -87,10 +88,14 @@ export class PreloadScene extends Phaser.Scene {
     if (!skipIntro()) this.startIntro();
 
     if (this.opts.replay) return;
+    preloadCodexHeart(this);
     this.load.image('title-sky', 'assets/ui/title/title-sky.png');
     this.load.image('title-skyline', 'assets/ui/title/title-skyline.png');
     this.load.image('title-street', 'assets/ui/title/title-street.png');
     // El cuerpo del jugador sigue midiendo 12 × 24 en todas las partidas.
+    for (const pose of ['reportero', 'mazo', 'impacto']) {
+      this.load.image('bodoque-' + pose, 'assets/sprites/enemies/bodoque-' + pose + '.png');
+    }
     this.load.image('rios', 'assets/sprites/player/rios.png');
     preloadAudio(this);
     // Ejemplos de otros dominios (descomentar cuando existan):

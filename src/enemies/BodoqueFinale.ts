@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
+import { HEART_CUT_FRAME, HEART_LAST_FRAME, HEART_TEXTURE } from './codexHeart';
 import { hdLayer } from '../ui/hd/HdLayer';
 import type { BodoqueBrain, BodoquePoint } from './BodoqueBrain';
 
 // SUP-basti-20261123-144553: local broadcast visuals; brief caption 1500ms, defeat 1600ms in enemies.json.
-// PEN-basti-20261123-144553: replace explicitly labelled CODEX TEMP marker with approved official local asset.
+// Uses Alejandro’s local Codex seal sheet; official branding approval remains a team decision.
 /** Local-only broadcast/chest/core presentation. All effects are pooled Graphics, no timers/listeners. */
 export class BodoqueFinale {
   readonly core: Phaser.GameObjects.Graphics;
@@ -14,9 +15,11 @@ export class BodoqueFinale {
   private readonly atmosphere: Phaser.GameObjects.Graphics;
   private readonly wheel: Phaser.GameObjects.Graphics;
   private readonly chest: Phaser.GameObjects.Graphics;
-  private readonly placeholder: Phaser.GameObjects.Text;
+  readonly emblem: Phaser.GameObjects.Image;
+  private readonly lastFrame: number;
   private readonly owned: Phaser.GameObjects.GameObject[];
   private timeMs = 0;
+  private renderBudgetMs = 0;
   private interruptionMs = 0;
   private hitMs = 0;
   private destroyed = false;
@@ -29,9 +32,8 @@ export class BodoqueFinale {
     this.wheel=scene.add.graphics().setName('room-codex-roulette').setVisible(false);
     this.chest = scene.add.graphics().setName('room-codex-chest');
     this.core = scene.add.graphics().setName('room-codex-core').setVisible(false);
-    this.placeholder = scene.add.text(0, 0, 'CODEX\nTEMP', { fontFamily: 'monospace', fontSize: '8px',
-      align: 'center', color: '#fff1ff', stroke: '#290e2c', strokeThickness: 2 })
-      .setOrigin(0.5).setName('room-codex-placeholder').setVisible(false);
+    this.lastFrame = overlay === scene ? HEART_LAST_FRAME : HEART_CUT_FRAME;
+    this.emblem = scene.add.image(0,0,HEART_TEXTURE,0).setName('bodoque-heart-emblem').setVisible(false);
     this.channel = overlay.add.text(942, 67, 'CANAL 23 · EN VIVO', { fontFamily: 'monospace',
       fontSize: '12px', color: '#ffb1b7', backgroundColor: '#171320' }).setOrigin(1, 0).setDepth(12001)
       .setName('room-codex-channel');
@@ -41,7 +43,7 @@ export class BodoqueFinale {
     this.monitors = [241, 790].map((x) => overlay.add.text(x + 39, 133, '23\nEN VIVO', {
       fontFamily: 'monospace', fontSize: '12px', align: 'center', color: '#deb0f8',
     }).setOrigin(0.5).setDepth(9002).setName('room-codex-monitor-text'));
-    this.owned = [this.wheel, this.atmosphere, this.panels, this.chest, this.core, this.placeholder,
+    this.owned = [this.wheel, this.atmosphere, this.panels, this.chest, this.core, this.emblem,
       this.channel, this.caption, ...this.monitors];
     const screenRoot = overlay.add.container(0,0,[this.atmosphere,this.panels,this.channel,this.caption,...this.monitors])
       .setScale(overlay.scale.width/960,overlay.scale.height/600).setDepth(12000).setScrollFactor(0);
@@ -68,6 +70,10 @@ export class BodoqueFinale {
     this.timeMs += Math.max(0, dtMs);
     this.interruptionMs = Math.max(0, this.interruptionMs - Math.max(0, dtMs));
     this.hitMs = Math.max(0, this.hitMs - Math.max(0, dtMs));
+    this.renderBudgetMs+=Math.max(0,dtMs);
+    // Only presentation is capped at 30Hz; FSM, damage and timers keep their original cadence.
+    if(dtMs>0&&this.renderBudgetMs<1000/30)return;
+    this.renderBudgetMs=0;
     const live = brain.state !== 'inactive';
     this.channel.setVisible(live);
     this.panels.setVisible(live).clear();
@@ -115,7 +121,8 @@ export class BodoqueFinale {
     }
     this.chest.clear().setVisible(final && end < 1).setPosition(body.x, body.y - 19).setDepth(body.y + 2);
     this.core.clear().setVisible(final && end < 1).setPosition(heart.x, heart.y).setDepth(body.y + 10);
-    this.placeholder.setVisible(final && end < 0.25).setPosition(heart.x, heart.y).setDepth(body.y + 11);
+    this.emblem.setVisible(final && end < 1).setPosition(heart.x, heart.y).setDepth(body.y + 11)
+      .setDisplaySize(56,56).setFrame(dying ? Math.round(this.lastFrame * end) : 0);
     if(this.dom){
       this.dom.channel.textContent=this.channel.text;this.dom.channel.hidden=!live;
       this.dom.caption.textContent=this.caption.text;this.dom.caption.hidden=!this.caption.visible;
@@ -136,7 +143,7 @@ export class BodoqueFinale {
     this.core.fillStyle(0xc92068, 0.07 + opening * 0.07).fillCircle(0, 0, 46)
       .fillStyle(brain.critical ? 0xff334b : 0xc83cbd, 0.17).fillCircle(0, 0, 29);
     if (!dying) {
-      this.core.fillStyle(0x301e4d).fillCircle(0, 0, 15).lineStyle(2, 0xf5ade5, 0.95).strokeCircle(0, 0, 15);
+      // Sprite and hitbox share the heart position; the glow does not change its radius.
       if (this.hitMs > 0) this.core.fillStyle(0xffe9f7, this.hitMs / 220).fillCircle(0, 0, 17);
       const cracks = Math.ceil(6 * (1 - brain.hp / brain.config.heart.hp));
       for (let i = 0; i < cracks; i++) {
@@ -153,7 +160,8 @@ export class BodoqueFinale {
         .fillCircle(Math.cos(a) * r, Math.sin(a) * r, dying ? 3 : 1.5);
     }
     this.core.setAlpha(brain.state === 'opening' ? opening : 1);
-    this.placeholder.setAlpha(opening);
+    this.emblem.setAlpha(opening).setRotation(Math.sin(this.timeMs/500)*0.1)
+      .setDisplaySize(56*(1+pulse*0.045),56*(1+pulse*0.045));
   }
 
   destroy(): void {

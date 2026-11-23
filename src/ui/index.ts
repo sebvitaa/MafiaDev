@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { bus } from '../core/EventBus';
 import { installGlobalKeys } from './globalKeys';
 import { fadeIn } from './transitions';
+import { hdLayer } from './hd/HdLayer';
 
 export { HudScene } from './HudScene';
 export { OptionsScene } from './scenes/OptionsScene';
@@ -17,7 +18,6 @@ export function installUi(scene: Phaser.Scene): void {
   const ctx = {};
   bus.on('room:entered', ({ roomId }) => {
     if (roomId !== 'set' || scene.registry.get('setCinematicSeen') || !scene.scene.isActive()) return;
-    scene.registry.set('setCinematicSeen', true);
     const resumeHud = scene.scene.isActive('HudScene');
     if (resumeHud) scene.scene.pause('HudScene');
     scene.scene.pause();
@@ -44,7 +44,8 @@ export function installUi(scene: Phaser.Scene): void {
     endingStarted = true;
     scene.scene.pause();
     scene.scene.pause('HudScene');
-    scene.scene.launch('EndingScene', { from: scene.scene.key });
+    hdLayer(scene).remove();hdLayer(scene.scene.get('HudScene')).remove();
+    scene.scene.launch('CinematicScene', { stage: 'ending' });
   }, ctx);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     keyboard?.off('keydown-ESC', pause);

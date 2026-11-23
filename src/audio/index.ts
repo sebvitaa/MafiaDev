@@ -92,20 +92,16 @@ export function installAudio(scene: Phaser.Scene): void {
     } else if (hp > 1 || hp <= 0) stopHeartbeat();
   }, ctx);
 
-  bus.on('zone:changed', ({ zone: z }) => { zone = z; if (!dead) zoneMusic(); }, ctx);
+  bus.on('zone:changed', ({ zone: z }) => { zone = z; if (!dead && !inBoss && z !== 'boss') zoneMusic(); }, ctx);
   bus.on('room:entered', ({ zone: z }) => {
-    if (z && z !== zone) { zone = z; if (!dead && !inBoss) zoneMusic(); }
+    if (z && z !== zone) { zone = z; if (!dead && !inBoss && z !== 'boss') zoneMusic(); }
   }, ctx);
 
   bus.on('boss:phase', ({ phase }) => {
     if (phase !== 1 || inBoss) return;
     inBoss = true;
-    preloadLazyAudio(scene);
-    AudioDirector.duckFor(0.2, 1800, 80, 400);
-    AudioDirector.stopMusic(500);
-    AudioDirector.playAmbient(null, 500);
-    scene.time.delayedCall(550, () => AudioDirector.sfx('sfx-boss-roar', { detune: 0 }));
-    scene.time.delayedCall(1700, () => { if (inBoss && !dead) AudioDirector.playMusic('music-boss', 300); });
+    AudioDirector.playAmbient(null, 120);
+    AudioDirector.playMusic('music-boss', 160, {seek:Number(scene.registry.get('bossMusicOffset')??0)});
   }, ctx);
 
   bus.on('enemy:killed', ({ kind }) => {

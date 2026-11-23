@@ -8,6 +8,7 @@ import { installExploration, stageStart } from '../exploration';
 import { installCharacter } from '../character';
 import type { Player } from '../player';
 import { RoomPlayer } from '../player/room-prototype/RoomPlayer';
+import { safeSpawn } from '../player/room-prototype/safeSpawn';
 import { SwordPickup } from '../player/room-prototype/SwordPickup';
 import { installAudio } from '../audio';
 import { installUi } from '../ui';
@@ -56,6 +57,7 @@ export class GameScene extends Phaser.Scene {
       if(GameState.data.equipped.weapon)hero.equipSword();
     }
     GameState.data.maxHp=hero.maxHp/balance.pointsPerHeart;GameState.data.hp=Math.ceil(hero.hp/balance.pointsPerHeart);
+    if(this.stage === 3)hero.equipSword();
     this.hero = hero;
     this.boss = boss = installBoss(this, hero, world);
     // Espadas de prueba del lab en los objetos type "sword" del mapa.
@@ -78,10 +80,16 @@ export class GameScene extends Phaser.Scene {
     });
     // shortcut: tipado como Player lateral para no romper el typecheck de tests de basti; en runtime es el punto de suelo (x/y). Quitar al integrar.
     this.player = hero.anchor as unknown as Player;
-    installCamera(this, hero.anchor); // sigue el punto de suelo, no el sprite que sube al saltar
     const { fog } = installExploration(this, world, hero.anchor);
     const start = this.stage ? stageStart(world.map, this.stage) : null;
     if (start) (hero.anchor.body as Phaser.Physics.Arcade.Body).reset(start.x, start.y);
+    const safe=safeSpawn(hero.anchor,world.bounds.width,world.bounds.height,(x,y)=>
+      !world.solids.getTilesWithinWorldXY(x-6,y-5,12,10).some(t=>t.collides)
+      && !world.obstacles.getChildren().some(o=>{const b=(o as Phaser.GameObjects.GameObject).body as Phaser.Physics.Arcade.StaticBody;return b&&x+6>b.x&&x-6<b.right&&y+5>b.y&&y-5<b.bottom;}));
+    hero.body.reset(safe.x,safe.y);hero.motion.velocity={x:0,y:0};hero.sync();
+    installCamera(this, hero.anchor);
+    this.cameras.main.setZoom(this.stage===3?0.5:0.75).centerOn(safe.x,safe.y);
+    if(this.stage===3)GameState.data.checkpointId='cp4';
     const mapCams = installMapViews(this, world.map, hero.anchor, fog);
     installAmbience(this, world.map, hero.anchor, mapCams);
     installAreaTitles(this, world.map, hero.anchor, mapCams);

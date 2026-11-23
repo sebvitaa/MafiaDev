@@ -51,10 +51,12 @@ export class BodoqueBoss {
   readonly heartTarget: SwordDamageTarget & FireballDamageTarget;
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly body: Phaser.GameObjects.Container;
+  private reporter?: Phaser.GameObjects.Image;
   private readonly damageLabel: Phaser.GameObjects.Text;
   private readonly hitFlash: Phaser.GameObjects.Graphics;
   private readonly marksRemaining: number[] = [];
   private damageLabelRemainingMs = 0;
+  private healthSignature = '';
   private debtBurstRemainingMs = 0;
   private readonly hooks: BodoqueBossHooks;
   private readonly worldMonitors: Phaser.GameObjects.Graphics;
@@ -207,6 +209,11 @@ export class BodoqueBoss {
       }
     }
 
+    if (this.reporter) {
+      const pose = intent?.id === 'microphoneMallet' && this.state === 'telegraph' ? 'mazo'
+        : this.state === 'active' ? 'impacto' : 'reportero';
+      this.reporter.setTexture('bodoque-' + pose).setFlipX(player.x < this.x);
+    }
     this.updatePresentation();
     if (this.brain.state !== 'active' || !intent || playerHeight > (intent.config.jumpAvoidHeight??Infinity)) return;
     const currentEnd = intent.id === 'lastHour' ? { x: this.x, y: this.y } : intent.destination;
@@ -333,7 +340,7 @@ export class BodoqueBoss {
       }
     }
     this.telegraph.setVisible(true);
-    const label = intent.id === 'microphoneMallet' ? 'MICRÓFONO-MAZO · PARRYABLE'
+    const label = intent.id === 'microphoneMallet' ? 'MICRÓFONO-MAZO · ESQUIVA EL ARCO'
       : intent.id === 'cameraFlash' ? 'FLASH DE CÁMARA · SAL DE LA ZONA'
         : 'ÚLTIMA HORA · TRAYECTORIA ANUNCIADA';
     const phaseLabels: Record<string,string> = {spectralRace:'CARRERA · CARRIL SUPERIOR SEGURO',betTickets:'BOLETOS · SAL DE LOS CÍRCULOS',collectors:'COBRADORES · REFUERZOS',timeTheft:'ROBO DE TIEMPO',monitorShift:'TRASPASAR · MONITORES',cableSweep:'CABLE-LÁTIGO · SALTA'};
@@ -343,6 +350,9 @@ export class BodoqueBoss {
   }
 
   private drawHealth(): void {
+    const signature=this.hp+':'+this.brain.phase+':'+this.brain.state+':'+this.brain.critical;
+    if(this.healthSignature===signature)return;
+    this.healthSignature=signature;
     if(this.screenTexts[1])this.screenTexts[1].textContent = this.brain.phase===3&&this.hp<=config.heart.hp ? 'CORAZÓN CODEX — '+this.hp+' HP'+(this.brain.critical?' · ERROR 23':'') : ['LA NOTA','LA APUESTA','SIN SEÑAL'][this.brain.phase-1]+' · '+this.hp+'/'+this.maxHp;
     const ratio = Math.max(0, this.hp / this.maxHp);
     this.healthBar.clear()
@@ -384,6 +394,10 @@ export class BodoqueBoss {
   }
 
   private createReporterVisual(): Phaser.GameObjects.Container {
+    if (this.scene.textures.exists('bodoque-reportero')) {
+      this.reporter = this.scene.add.image(0, 0, 'bodoque-reportero').setOrigin(0.5, 1).setScale(0.72);
+      return this.scene.add.container(0, 0, [this.reporter]);
+    }
     const g = this.scene.add.graphics();
     // Placeholder: recognizable red rabbit reporter silhouette, fedora and vintage mic.
     g.fillStyle(0x871f35).fillEllipse(0, -18, 38, 38);

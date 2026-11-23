@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import classes from '../../data/classes.json';
+import { preloadCodexHeart } from '../../enemies/codexHeart';
 import { RoomPlayer } from './RoomPlayer';
 import { SwordPickup } from './SwordPickup';
 import { TrainingDummy } from './TrainingDummy';
@@ -20,6 +21,11 @@ export class RoomScene extends Phaser.Scene {
   private healthLabel!: Phaser.GameObjects.Text;
 
   constructor() { super('RoomPrototype'); }
+
+  preload(): void {
+    preloadCodexHeart(this);
+    for(const pose of ['reportero','mazo','impacto'])this.load.image('bodoque-'+pose, import.meta.env.BASE_URL+'assets/sprites/enemies/bodoque-'+pose+'.png');
+  }
 
   create(): void {
     this.enemies = undefined;

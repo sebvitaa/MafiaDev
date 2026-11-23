@@ -17,7 +17,7 @@ export interface TutorialStep {
 }
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
-  { id: 'move', text: '{left}{right} Moverte', actions: ['left', 'right', 'up', 'down'], event: null, holdMs: 500 },
+  { id: 'move', text: '{up}{left}{down}{right} Moverte', actions: ['left', 'right', 'up', 'down'], event: null, holdMs: 500 },
   {
     id: 'jump', text: '{jump} Saltar · otra vez en el aire', actions: ['jump'], event: 'player:jump', times: 2,
     // primero un salto desde el suelo, después uno en el aire

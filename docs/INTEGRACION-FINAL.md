@@ -6,9 +6,9 @@ Base: origin/main 3c75dfa6e8 (PR #11 ya fusionado). Worktree MafiaDev-integracio
 
 - Vicente: los tres JSON de mapas, biomas, obstáculos, exploración, cofres, checkpoints, minimapa, mapa grande, viaje rápido, cámara y entrada de El Set se conservan desde main. La arena instala BodoqueBoss en vez del knight provisional.
 - Basti: se fusiona feature/basti-movement-combat preservando sus commits. En cada conflicto se mantienen la salud, navegación, balance y apuntado al cursor de main, junto a Eco/Deuda/Lluvia y Corazón Codex de la rama.
-- Alejandro: main ya contiene sus cuatro marcas TP y las cinemáticas publicadas en su rama de integración. Comparar su tip revela versiones anteriores de Teleport sin colisión de tiles, del HUD y de controles: no se sustituyen las correcciones nuevas de main. Se completa el registro de habilidades de clase (I), sin una segunda instalación de Teleport.
-- Seba: BootScene, PreloadScene, logo.ts, CinematicScene y todos los assets publicados de UI/audio/sprites se conservan. TitleScene mantiene su animación y añade selector de clase. El HUD usa los estados reales y hay un solo enrutador de victoria.
-- Shared: se registra EndingScene y se repara la lectura CRLF del índice de agentes. Autorización de preparación transversal en el pedido de Basti; validación del equipo pendiente en SUP-basti-20261123-150950 antes de fusionar a main.
+- Alejandro: se fusiona además alejandro/final-jugable e707b00 (PR #12): tres poses de Bodoque, sello animado Codex, cine3 completo y continuidad musical desde cine2. main ya contiene sus cuatro marcas TP y las cinemáticas publicadas en su rama de integración. Comparar su tip revela versiones anteriores de Teleport sin colisión de tiles, del HUD y de controles: no se sustituyen las correcciones nuevas de main. Se completa el registro de habilidades de clase (I), sin una segunda instalación de Teleport.
+- Seba: La apertura de BootScene/PreloadScene/logo.ts y los assets publicados se conservan. Se retiran consejos de parry/bloqueo inexistentes y se conectan los recursos nuevos en PreloadScene/CinematicScene. TitleScene mantiene su animación y añade selector de clase. El HUD usa los estados reales y hay un solo enrutador de victoria.
+- Shared: se conserva CinematicScene para el cierre y se repara la lectura CRLF del índice de agentes. Autorización de preparación transversal en el pedido de Basti; validación del equipo pendiente en SUP-basti-20261123-150950 antes de fusionar a main.
 
 ## Controles
 
@@ -22,18 +22,17 @@ El Eco selecciona desde su propia posición un objetivo previo válido o el más
 
 La Nota conserva mazo, flash y embestida. La Apuesta añade carriles de caballos espectrales, boletos anunciados e invocación acotada de Cobradores. Sin Señal añade robo de tiempo, traspasar por monitores y cable que puede saltarse. Datos de windup/ventana/recuperación/daño en enemies.json; el balance nuevo es provisional.
 
-A 100 HP: clamp de overkill, apertura invulnerable de 1200 ms, sin segunda vida. Solo heartTarget queda vulnerable y usa las mismas coordenadas del núcleo dibujado. A 23 HP: ERROR 23/«¡Queda una pura...!»/APUESTA una vez, manteniendo combate activo. A 0 HP: ruptura completa antes del único enemy:killed kind boss. El enrutador pasa por epílogo, viñetas de Tulio, FIN y créditos originales.
+A 100 HP: clamp de overkill, apertura invulnerable de 1200 ms, sin segunda vida. Solo heartTarget queda vulnerable y usa las mismas coordenadas del núcleo dibujado. A 23 HP: ERROR 23/«¡Queda una pura...!»/APUESTA una vez, manteniendo combate activo. A 0 HP: ruptura completa antes del único enemy:killed kind boss. El enrutador pasa por cine3 con epílogo, Tulio y FIN y créditos originales.
 
 ## Recursos provisionales
 
-El logo oficial Codex sigue pendiente (PEN-basti-20261123-144553); el marcador CODEX/TEMP es explícito.
-El cuento final usa viñetas originales de Graphics y subtítulos rotulados provisionales. No se usan voces de actores ni la grabación de 31 Minutos: la cortina se sustituye por el sting original existente de MafiaDev. Arte y voces finales requieren recursos autorizados.
+El sello local de Alejandro sustituye CODEX/TEMP y se anima con su spritesheet de 48 frames. El video cine3 incluye el desenlace y Tulio: se reutiliza sin reconstruirlo. La condición de asset oficial/aprobación del logo queda para el equipo (PEN-basti-20261123-144553).
 
 ## Verificación y límites de la evidencia
 
 Los comandos obligatorios son npm ci, npm run typecheck, npm test, npm run build y npm run test:e2e.
 Playwright usa el puerto aislado 5184 para no probar por accidente el servidor de otra rama. No hay tests omitidos: las tres pruebas laterales obsoletas se adaptaron al jugador cenital real.
-La prueba integration-journey abre sin skipIntro, observa apertura completa y ambos videos sin saltarlos, entra en la arena por el sistema real de zonas y termina epílogo/viñetas/créditos/regreso al menú. Usa fixtures de posición y daño para comprobar la orquestación de fases de forma determinista; no se presenta como una victoria manual sin ayudas.
+La prueba integration-journey abre sin skipIntro, observa apertura completa y ambos videos sin saltarlos, entra en la arena por el sistema real de zonas y termina cine3 completo/créditos/regreso al menú. Usa fixtures de posición y daño para comprobar la orquestación de fases de forma determinista; no se presenta como una victoria manual sin ayudas.
 Los mapas tienen pruebas separadas de conectividad, exploración y secretos en las tres variantes. Alcance, impactos únicos, fases y umbrales tienen pruebas unitarias. Las habilidades y colisiones se comprueban con sus E2E.
 Capturas: test-results/integration-opening.png, integration-title.png, integration-boss.png, integration-error23.png, integration-tulio.png.
 

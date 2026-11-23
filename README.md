@@ -1,6 +1,6 @@
 # MafiaDev
 
-Metroidvania 2D de acción en pixel art para la hackatón: movimiento estilo Hollow Knight, combate con combos y parry, loot con rareza, exploración con checkpoints y minijefes, y dos clases (Luchador que para el tiempo y Mago de almas).
+Juego de acción 2D cenital 3/4 para la hackatón: exploración con checkpoints, espada con combos y carga, dash, Eco del Reverso, deuda y Lluvia Italiana. Luchador detiene el tiempo y Mago dispara almas.
 
 **Stack:** Phaser 4.2 · TypeScript (strict) · Vite · Arcade Physics · Tiled · Vitest · Playwright.
 **Investigación completa:** [`investigacion-stack.html`](investigacion-stack.html) (descárgalo y ábrelo en el navegador) · [versión web](https://claude.ai/artifact/8kGdW2VRMzrM6nV4BCsahJ) · copia en Markdown al final de este README.
@@ -23,7 +23,9 @@ npm run dev            # http://localhost:8080
 | `npm run test:e2e` | Smoke test en Chromium (Playwright). La primera vez: `npx playwright install chromium` |
 | `npm run agents:status -- --owner <nombre>` | Pendientes, supuestos por validar e historial de esa persona |
 
-Controles provisionales: flechas o A/D para moverse, Espacio o Z para saltar (doble salto en el aire), ESC o P para pausar.
+Controles: WASD/flechas mover, Shift correr, Espacio/Z salto doble, C/K o doble dirección dash, clic izquierdo espada (mantener para carga), R mantener/apuntar/soltar Lluvia Italiana, I habilidad de clase, Q + clic derecho papel TP, Q + clic izquierdo o 1–4 viajar a marcas, E interactuar, M/N mapa y minimapa, F viaje entre hogueras, Esc/P pausa.
+
+Para probar directamente al jefe: JUGAR → elegir «3 · FINAL» con las flechas. Empieza en El Set con espada. Para recorrer todo: «1 · INICIO». [Detalles de integración](docs/INTEGRACION-FINAL.md).
 
 Cada push a `main` pasa por CI (build, tests unitarios y e2e) y se publica en GitHub Pages.
 
