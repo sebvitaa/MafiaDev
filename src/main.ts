@@ -6,6 +6,7 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { TitleScene } from './scenes/TitleScene';
 import { GameScene } from './scenes/GameScene';
 import { PauseScene } from './scenes/PauseScene';
+import { CinematicScene } from './ui/scenes/CinematicScene';
 import { HudScene, OptionsScene, GameOverScene, CreditsScene } from './ui';
 
 const game = new Phaser.Game({
@@ -20,7 +21,7 @@ const game = new Phaser.Game({
     default: 'arcade',
     arcade: { gravity: { x: 0, y: tuning.gravity }, debug: false },
   },
-  scene: [BootScene, PreloadScene, TitleScene, GameScene, PauseScene, HudScene, OptionsScene, GameOverScene, CreditsScene],
+  scene: [BootScene, PreloadScene, TitleScene, CinematicScene, GameScene, PauseScene, HudScene, OptionsScene, GameOverScene, CreditsScene],
 });
 
 // Gancho para tests e2e y depuración desde consola (solo en dev).

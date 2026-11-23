@@ -15,6 +15,14 @@ export function installUi(scene: Phaser.Scene): void {
   installGlobalKeys(scene, { inGame: true }); // M = mapa y F = viaje rápido (vicho): aquí solo 0 silencia
   scene.input.setDefaultCursor('none');
   const ctx = {};
+  bus.on('room:entered', ({ roomId }) => {
+    if (roomId !== 'set' || scene.registry.get('setCinematicSeen') || !scene.scene.isActive()) return;
+    scene.registry.set('setCinematicSeen', true);
+    const resumeHud = scene.scene.isActive('HudScene');
+    if (resumeHud) scene.scene.pause('HudScene');
+    scene.scene.pause();
+    scene.scene.launch('CinematicScene', { stage: 3, fromRoom: true, resumeHud });
+  }, ctx);
   const pause = () => {
     if (!scene.scene.isActive() || scene.scene.isActive('PauseScene') || scene.scene.isActive('GameOverScene')) return;
     scene.scene.pause();

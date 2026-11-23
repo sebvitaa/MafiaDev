@@ -36,6 +36,7 @@ export class RoomPlayer {
   private readonly shift: Phaser.Input.Keyboard.Key;
   private readonly pointer: Phaser.GameObjects.Triangle;
   private readonly eyes: Phaser.GameObjects.Rectangle;
+  private readonly reporter?: Phaser.GameObjects.Image;
   private jumpQueued = false;
   private dashQueued = false;
   private dashDirection?: { x: number; y: number };
@@ -154,6 +155,11 @@ export class RoomPlayer {
     this.eyes = scene.add.rectangle(0, -30, 7, 2, 0xf9db98);
     this.pointer = scene.add.triangle(0, 0, -4, -3, 5, 0, -4, 3, 0xf9db98);
     this.visual = scene.add.container(x, y, [cloak, belt, hood, face, this.equippedSword, this.eyes, this.pointer]);
+    if (scene.textures.exists('rios')) {
+      for (const part of [cloak, belt, hood, face, this.eyes]) part.setVisible(false);
+      this.reporter = scene.add.image(0, 0, 'rios').setOrigin(0.5, 1).setDisplaySize(22, 40);
+      this.visual.addAt(this.reporter, 4);
+    }
     this.trail = new DashTrail(scene);
     scene.events.on(Phaser.Scenes.Events.POST_UPDATE, this.updateTrail, this);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -264,5 +270,6 @@ export class RoomPlayer {
     this.pointer.setPosition(facing.x * 22, -17 + facing.y * 16)
       .setRotation(Math.atan2(facing.y, facing.x));
     this.eyes.setPosition(facing.x * 3, -30 + facing.y * 3);
+    if (facing.x !== 0) this.reporter?.setFlipX(facing.x < 0);
   }
 }
