@@ -150,7 +150,7 @@ test('obstáculos bloquean salto y dash, profundidad ordena por pies y R reinici
   await page.keyboard.up('ArrowUp');
   expect((await state(page)).x).toBeGreaterThanOrEqual(63);
   expect((await state(page)).y).toBeGreaterThanOrEqual(108);
-  await page.keyboard.press('r');
+  await page.keyboard.press('t');
   await expect.poll(async () => (await state(page)).x).toBe(480);
   await page.keyboard.down('d');
   await expect.poll(async () => (await state(page)).vx).toBe(150);
@@ -390,7 +390,7 @@ test('clic derecho mantenido apunta la bola con mouse, cae 600 ms, explota con d
   const box = await canvas.boundingBox();
   if (!box) throw new Error('No se encontró el canvas del prototipo');
   await page.mouse.move(box.x + box.width * 820 / 960, box.y + box.height * 400 / 600);
-  await page.mouse.down({ button: 'right' });
+  await page.keyboard.down('r');
   await expect.poll(async () => (await state(page)).fireballAiming).toBe(true);
   const aimed = await state(page);
   expect(aimed.fireballAimX).toBeCloseTo(820, 0);
@@ -404,7 +404,7 @@ test('clic derecho mantenido apunta la bola con mouse, cae 600 ms, explota con d
     (scene as any).__fireballProbe = probe;
     // RoomPlayer registró su release antes: leer aquí observa el mismo evento,
     // antes de que avancen el reloj del juego o los comandos del runner.
-    scene.input.once('pointerup', () => {
+    scene.input.keyboard!.once('keyup-R', () => {
       probe.releasePhase = scene.player.fireball.phase;
       probe.releaseCooldown = scene.player.fireball.cooldownRemainingMs;
     });
@@ -435,21 +435,21 @@ test('clic derecho mantenido apunta la bola con mouse, cae 600 ms, explota con d
     scene.events.on('postupdate', observe);
     scene.events.once('shutdown', () => scene.events.off('postupdate', observe));
   });
-  await page.mouse.up({ button: 'right' });
+  await page.keyboard.up('r');
   await page.waitForFunction(() => (window.__game!.scene.getScene('RoomPrototype') as any).__fireballProbe.fadeComplete);
-  await page.mouse.down({ button: 'right' });
+  await page.keyboard.down('r');
   expect((await state(page)).fireballAiming).toBe(false);
-  await page.mouse.up({ button: 'right' });
+  await page.keyboard.up('r');
   const probe = await page.evaluate(() => (window.__game!.scene.getScene('RoomPrototype') as any).__fireballProbe);
-  expect(probe).toMatchObject({ releasePhase: 'falling', releaseCooldown: 7000, fallingSeen: true,
-    fallingHpIntact: true, explosionSeen: true, burnSeen: true, impactHp: 50, impactHits: 1,
-    afterExplosionHp: 50, afterExplosionHits: 1, burnAtEnd: true, fadeComplete: true });
+  expect(probe).toMatchObject({ releasePhase: 'falling', releaseCooldown: 20000, fallingSeen: true,
+    fallingHpIntact: true, explosionSeen: true, burnSeen: true, impactHp: 0, impactHits: 1,
+    afterExplosionHp: 0, afterExplosionHits: 1, burnAtEnd: true, fadeComplete: true });
   expect(probe.maxRadius).toBeGreaterThan(0);
   expect(probe.fadeCooldown).toBeGreaterThan(2500);
-  await page.keyboard.press('r');
+  await page.keyboard.press('t');
   await expect.poll(async () => page.evaluate(() => {
     const scene = window.__game!.scene.getScene('RoomPrototype');
     return scene.children.list.filter((object: Phaser.GameObjects.GameObject) =>
       object.name.startsWith('room-fireball-')).length;
-  })).toBe(4);
+  })).toBe(3);
 });

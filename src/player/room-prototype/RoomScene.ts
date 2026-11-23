@@ -3,7 +3,7 @@ import classes from '../../data/classes.json';
 import { RoomPlayer } from './RoomPlayer';
 import { SwordPickup } from './SwordPickup';
 import { TrainingDummy } from './TrainingDummy';
-import { EnemySystem } from '../../enemies';
+import { EnemySystem, BodoqueBoss } from '../../enemies';
 
 export const ROOM = { width: 960, height: 600, left: 56, top: 104, right: 904, bottom: 544 };
 
@@ -13,6 +13,8 @@ export class RoomScene extends Phaser.Scene {
   swordPickup!: SwordPickup;
   trainingDummy!: TrainingDummy;
   enemies?: EnemySystem;
+  bodoque!: BodoqueBoss;
+  readonly localBossEvents = { phases: [] as number[], hits: 0, killed: false };
   obstacles: Phaser.GameObjects.Container[] = [];
   private status!: Phaser.GameObjects.Text;
   private healthLabel!: Phaser.GameObjects.Text;
@@ -29,9 +31,17 @@ export class RoomScene extends Phaser.Scene {
     this.block(solids, 640, 270, 96, 40, 68);
     this.block(solids, 480, 170, 112, 32, 42);
     this.block(solids, 700, 450, 80, 40, 34);
+    this.localBossEvents.phases.length = 0; this.localBossEvents.hits = 0; this.localBossEvents.killed = false;
+    this.bodoque = new BodoqueBoss(this, 780, 232, {
+      onPhase: ({phase}) => this.localBossEvents.phases.push(phase),
+      onHit: () => { this.localBossEvents.hits++; }, onKilled: () => { this.localBossEvents.killed = true; },
+      onPlayerHit: damage => { this.player.takeEnemyDamage(damage, {x:0,y:1}); },
+    });
+    const activate = () => this.bodoque.activate(); this.input.keyboard!.on('keydown-B', activate);
+    this.events.once('shutdown', () => this.input.keyboard?.off('keydown-B', activate));
     this.trainingDummy = new TrainingDummy(this, 820, 400);
     this.player = new RoomPlayer(this, 480, 400, { ...classes.luchador.stats },
-      () => [this.trainingDummy, ...(this.enemies?.targets ?? [])]);
+      () => [this.trainingDummy, ...(this.enemies?.targets ?? []), ...this.bodoque.damageTargets]);
     const combatEnabled = new URLSearchParams(window.location.search).get('enemies') === '1';
     if (combatEnabled) {
       this.enemies = new EnemySystem(this, this.player, solids);
@@ -55,10 +65,10 @@ export class RoomScene extends Phaser.Scene {
     this.status = this.add.text(896, 565, '', {
       fontFamily: 'monospace', fontSize: '12px', color: '#9fb5b5',
     }).setOrigin(1, 0).setDepth(10_000);
-    this.add.text(64, 565, 'CAMARA FIJA  /  R REINICIA', {
+    this.add.text(64, 565, 'CAMARA FIJA  /  T REINICIA', {
       fontFamily: 'monospace', fontSize: '12px', color: '#9fb5b5',
     }).setDepth(10_000);
-    this.input.keyboard!.once('keydown-R', () => this.scene.restart());
+    this.input.keyboard!.once('keydown-T', () => this.scene.restart());
     const sync = () => this.player.sync();
     this.events.on(Phaser.Scenes.Events.POST_UPDATE, sync);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.POST_UPDATE, sync));
@@ -68,6 +78,7 @@ export class RoomScene extends Phaser.Scene {
     this.trainingDummy.update(dtMs);
     this.player.update(dtMs);
     this.enemies?.update(dtMs);
+    if (this.player.alive) this.bodoque.update(dtMs, this.player.anchor, this.player.motion.height);
     if (this.swordPickup.update(this.time.now, this.player.anchor.x, this.player.anchor.y)) {
       this.player.equipSword();
     }
@@ -78,7 +89,7 @@ export class RoomScene extends Phaser.Scene {
     this.trainingDummy.defeatedLabel.setDepth(this.trainingDummy.visual.y + 23);
     this.healthLabel.setColor(this.player.alive ? '#a3f3c8' : '#ff8290').setText(this.player.alive
       ? `VIDA ${this.player.hp}/${this.player.maxHp}${this.enemies ? ` | ENEMIGOS ${this.enemies.targets.length}` : ''}`
-      : 'DERROTADO / R PARA REINICIAR');
+      : 'DERROTADO / T PARA REINICIAR');
     const { motion } = this.player;
     const label = motion.dash.active ? 'DASH' : motion.height > 0 ? 'AIRE' : 'SUELO';
     const swordLabel = this.player.hasSword ? this.player.attack.active ? ' / ATAQUE' : ' / ESPADA' : '';

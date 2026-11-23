@@ -2,6 +2,7 @@
 // Corazones con juice · viñeta y latido con 1 corazón · barra del jefe con barra fantasma ·
 // enfriamiento de la habilidad · avisos de objetos por rareza · tutorial contextual.
 import Phaser from 'phaser';
+import { balance } from '../combat';
 import { bus } from '../core/EventBus';
 import { GameState } from '../core/GameState';
 import { BINDINGS } from '../core/Input';
@@ -24,6 +25,8 @@ export class HudScene extends Phaser.Scene {
   private boss!: { root: Phaser.GameObjects.Container; fill: Phaser.GameObjects.Rectangle; ghost: Phaser.GameObjects.Rectangle; hp: number; max: number };
   private ability!: { fill: Phaser.GameObjects.Rectangle; frame: Phaser.GameObjects.Rectangle; tween: Phaser.Tweens.Tween | null };
   private toastY = 0;
+  private abilityLabel!: Phaser.GameObjects.Text;
+  private lastAbilityId = 'teleport';
 
   constructor() {
     super('HudScene');
@@ -43,11 +46,11 @@ export class HudScene extends Phaser.Scene {
 
     bus.on('player:hit', (e) => this.onHit(e.hp, e.maxHp), this);
     bus.on('player:died', () => this.setLowHp(false), this);
-    bus.on('boss:phase', ({ phase }) => { if (phase === 1) this.showBoss(); }, this);
+    bus.on('boss:phase', ({ phase }) => { if (phase === 1 && !this.scene.isActive('GameScene')) this.showBoss(); }, this);
     bus.on('enemy:hit', ({ id, dmg }) => { if (isBoss(id)) this.damageBoss(id, dmg); }, this); // solo el jefe: los mobs vaciaban la barra
     bus.on('enemy:killed', ({ id, kind }) => { if (isBoss(kind) || isBoss(id)) this.hideBoss(); }, this);
     bus.on('ability:used', ({ id }) => this.abilityUsed(id), this);
-    bus.on('ability:ready', () => this.abilityReady(), this);
+    bus.on('ability:ready', ({id}) => {if(id===this.lastAbilityId)this.abilityReady();}, this);
     bus.on('item:picked', ({ itemId, rarity }) => {
       const def = (items as ItemDef[]).find((i) => i.id === itemId);
       this.toast(`+ ${(def?.name ?? itemId).toUpperCase()}`, RARITY_COLOR[rarity] ?? C.text);
@@ -58,6 +61,13 @@ export class HudScene extends Phaser.Scene {
 
     const tutorial = new TutorialOverlay(this);
     if (this.registry.get('newGame') === true && !settings.get().tutorialDone) this.time.delayedCall(800, () => tutorial.start());
+  }
+
+  update(): void {
+    const game=this.scene.get('GameScene') as Phaser.Scene & {hero?:{hp:number;maxHp:number}};
+    if(!game.hero)return;
+    const hp=Math.ceil(game.hero.hp/balance.pointsPerHeart),max=game.hero.maxHp/balance.pointsPerHeart;
+    if(hp!==this.hp||max!==this.maxHp){this.hp=hp;this.maxHp=max;this.drawHearts();this.setLowHp(hp===1);}
   }
 
   // ───────── corazones ─────────
@@ -130,11 +140,12 @@ export class HudScene extends Phaser.Scene {
     const x = 14, y = h - 16;
     const frame = this.add.rectangle(x, y, 14, 14, C.panelDark).setStrokeStyle(1, C.accent2);
     const fill = this.add.rectangle(x - 6, y + 6, 12, 12, C.accent2, 0.6).setOrigin(0, 1);
-    text(this, x, y, BINDINGS.ability[0], { color: C.text, align: 'center' }).setOrigin(0.5);
+    this.abilityLabel = text(this, x, y, BINDINGS.ability[0], { color: C.text, align: 'center' }).setOrigin(0.5);
     this.ability = { fill, frame, tween: null };
   }
 
   private abilityUsed(id: string): void {
+    this.lastAbilityId=id;this.abilityLabel.setText(id==='teleport'?'Q':id==='italian_rain'?'R':'I');
     const cd = (abilities as Record<string, { cooldownMs?: number }>)[id]?.cooldownMs ?? 12000;
     const a = this.ability;
     a.tween?.stop();

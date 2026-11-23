@@ -9,6 +9,11 @@ import type { SwordDamageTarget } from './SwordCombat';
 import { RoomFireball } from './RoomFireball';
 import type { FireballDamageTarget } from './FireballCombat';
 import tuning from '../../data/tuning.json';
+import { RoomEcho } from './RoomEcho';
+import { Inventory } from '../../character/Inventory';
+import { getItem } from '../../items';
+import { normalizedDirection } from '../../combat/direction';
+import { GameState } from '../../core/GameState';
 import { createAbilitySlots } from '../../abilities';
 import { Health, balance, playerMaxHp, playerSwordDamage } from '../../combat';
 import { bus } from '../../core/EventBus';
@@ -23,12 +28,15 @@ export class RoomPlayer {
   readonly motion: RoomMotion;
   readonly attack: SwordAttack;
   readonly fireball: RoomFireball;
+  readonly echo: RoomEcho;
   readonly health: Health;
+  readonly inventory: Inventory;
   readonly radius = 8;
   private readonly abilities: ReturnType<typeof createAbilitySlots>;
   private readonly abilityModifier: Phaser.Input.Keyboard.Key;
   private readonly abilityKeys: Phaser.Input.Keyboard.Key[];
   private hurtMs = 0;
+  private previousRainCooldown = 0;
   private hurtDirection = { x: 0, y: 0 };
   private suppressAttackRelease = false;
   hasSword = false;
@@ -52,8 +60,10 @@ export class RoomPlayer {
     abilities?: ReturnType<typeof createAbilitySlots>,
   ) {
     this.motion = new RoomMotion(stats);
+    this.inventory = new Inventory(stats);
     this.health = new Health(playerMaxHp(stats), balance.hurtInvulnerabilityMs);
-    this.attack = new SwordAttack(scene, targets, playerSwordDamage(stats));
+    this.echo = new RoomEcho(scene, targets);
+    this.attack = new SwordAttack(scene, targets, () => playerSwordDamage(stats), swing => this.echo.recordSwing(swing));
     this.fireball = new RoomFireball(scene, targets);
     this.input = new Input(scene);
     const keyboard = scene.input.keyboard!;
@@ -65,6 +75,9 @@ export class RoomPlayer {
       return key;
     });
     this.shift = keyboard.addKey('SHIFT');
+    const classAbility = (event: KeyboardEvent) => {if(!event.repeat&&this.alive)this.abilities.tryActivate(1);};
+    keyboard.on('keydown-I',classAbility);
+    scene.events.once('shutdown',()=>keyboard.off('keydown-I',classAbility));
     const jumpKeys = BINDINGS.jump;
     const dashKeys = BINDINGS.dash.filter((key) => key !== 'SHIFT');
     const jump = (event: KeyboardEvent) => { if (!event.repeat) this.jumpQueued = true; };
@@ -81,17 +94,15 @@ export class RoomPlayer {
         this.attack.releaseInput(this.anchor.x, this.anchor.y, this.motion.height, this.aim(), this.equippedSword);
       }
     };
-    // Ulti (bola): mantener clic derecho apunta al cursor, soltar la lanza. Q + derecho es del papel de TP (abilities).
-    const aimDown = (pointer: Phaser.Input.Pointer) => {
-      if (pointer.button !== 2 || this.abilityModifier.isDown || !this.alive || this.hurtMs > 0) return;
-      const p = this.cursor();
-      this.fireball.beginAim(p.x, p.y);
+    const aimDown = (event: KeyboardEvent) => {
+      if (event.repeat || this.abilityModifier.isDown || !this.alive || this.hurtMs > 0) return;
+      const p = this.cursor(); this.fireball.beginAim(p.x, p.y);
     };
-    const aimUp = (pointer: Phaser.Input.Pointer) => { if (pointer.button === 2) this.fireball.releaseAim(); };
+    const aimUp = () => { if (this.alive && this.fireball.releaseAim()) bus.emit('ability:used',{id:'italian_rain'}); };
     scene.input.on(Phaser.Input.Events.POINTER_DOWN, attack);
     scene.input.on(Phaser.Input.Events.POINTER_UP, attackRelease);
-    scene.input.on(Phaser.Input.Events.POINTER_DOWN, aimDown);
-    scene.input.on(Phaser.Input.Events.POINTER_UP, aimUp);
+    keyboard.on('keydown-R', aimDown);
+    keyboard.on('keyup-R', aimUp);
     // SUP-basti-20261123-110158: give physical double taps a forgiving 350 ms window.
     const taps = new DoubleTapDash(tuning.roomPrototype.doubleTapWindowMs);
     const tapListeners = (['W', 'A', 'S', 'D', 'UP', 'LEFT', 'DOWN', 'RIGHT'] as TapKey[]).map((key) => {
@@ -126,8 +137,8 @@ export class RoomPlayer {
       scene.game.events.off(Phaser.Core.Events.BLUR, clear);
       scene.input.off(Phaser.Input.Events.POINTER_DOWN, attack);
       scene.input.off(Phaser.Input.Events.POINTER_UP, attackRelease);
-      scene.input.off(Phaser.Input.Events.POINTER_DOWN, aimDown);
-      scene.input.off(Phaser.Input.Events.POINTER_UP, aimUp);
+      keyboard.off('keydown-R', aimDown);
+      keyboard.off('keyup-R', aimUp);
       keyboard.off('keydown-Q', enterAbilityMode);
     });
 
@@ -167,18 +178,32 @@ export class RoomPlayer {
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       scene.events.off(Phaser.Scenes.Events.POST_UPDATE, this.updateTrail, this);
     });
+    const restore = () => { this.health.hp=this.health.maxHp;this.hurtMs=0;this.body.enable=true;this.echo.cancel();
+      for(const key of this.abilityKeys)key.enabled=true;
+      bus.emit('player:hit',{dmg:0,hp:Math.ceil(this.hp/balance.pointsPerHeart),maxHp:this.maxHp/balance.pointsPerHeart}); };
+    bus.on('item:picked',({itemId})=>{const item=getItem(itemId);if(!item)return;this.inventory.collect(item);
+      if(item.maxHp){this.health.maxHp+=item.maxHp*balance.pointsPerHeart;this.health.hp+=item.maxHp*balance.pointsPerHeart;}
+      if(item.heal)this.health.hp=Math.min(this.health.maxHp,this.health.hp+item.heal*balance.pointsPerHeart);
+      if(scene.scene.key==='GameScene'){GameState.data.inventory.push(itemId);GameState.data.maxHp=this.maxHp/balance.pointsPerHeart;GameState.data.hp=Math.ceil(this.hp/balance.pointsPerHeart);GameState.save();}
+    },this);
+    bus.on('player:respawned',restore,this);bus.on('checkpoint:reached',restore,this);
+    scene.events.once('shutdown',()=>bus.offContext(this));
     this.sync();
   }
 
   update(dtMs: number): void {
     this.health.update(dtMs);
+    this.inventory.update(dtMs);
     this.hurtMs = Math.max(0, this.hurtMs - dtMs);
     this.input.update();
     this.abilities.update(dtMs);
+    this.fireball.update(dtMs);
+    if(this.previousRainCooldown>0&&this.fireball.cooldownRemainingMs===0)bus.emit('ability:ready',{id:'italian_rain'});
+    this.previousRainCooldown=this.fireball.cooldownRemainingMs;
     if (!this.alive) { this.body.setVelocity(0, 0); return; }
     this.attack.update(dtMs);
     if (this.fireball.aiming) { const p = this.cursor(); this.fireball.aimAt(p.x, p.y); } // la cámara se mueve aunque el ratón no
-    this.fireball.update(dtMs);
+    this.echo.update(dtMs);
     if (this.hurtMs > 0) {
       this.motion.update({ x: 0, y: 0, run: false, jumpHeld: false,
         jumpPressed: false, dashPressed: false }, dtMs);
@@ -196,14 +221,25 @@ export class RoomPlayer {
       dashPressed: this.dashQueued && (!this.attack.active || this.attack.canCancelWithDash),
       dashDirection: this.dashDirection,
     }, dtMs);
-    if (events.dashed) this.attack.cancelByDash();
+    if (events.dashed) {
+      this.attack.cancelByDash(); this.fireball.cancelAim();
+      this.echo.startDash({ x: this.anchor.x, y: this.anchor.y, height: this.motion.height });
+      bus.emit('player:dash', {});
+    }
+    if (events.jump) bus.emit('player:jump', { air: events.jump === 'air' });
+    if (events.landed) bus.emit('player:land', { vy: 0 });
     this.jumpQueued = false;
     this.dashQueued = false;
     this.dashDirection = undefined;
-    this.body.setVelocity(this.motion.velocity.x, this.motion.velocity.y);
+    const slow = Number(this.anchor.scene.registry.get('heroSlowUntil')??0)>this.anchor.scene.time.now ? 0.6 : 1;
+    this.body.setVelocity(this.motion.velocity.x * slow, this.motion.velocity.y * slow);
   }
 
-  equipSword(): void { this.hasSword = true; }
+  equipSword(): void {
+    if(this.hasSword)return;
+    this.hasSword=true;
+    if(this.anchor.scene.scene.key==='GameScene'){GameState.data.equipped.weapon='sword';GameState.save();bus.emit('item:picked',{itemId:'sword',rarity:'common'});}
+  }
 
   /** El golpe va hacia el cursor (no hacia donde se mueve). Recalcula con la cámara actual: worldX queda viejo si la cámara se mueve sin mover el ratón. */
   private cursor(): Phaser.Math.Vector2 {
@@ -222,6 +258,7 @@ export class RoomPlayer {
   get maxHp(): number { return this.health.maxHp; }
 
   takeEnemyDamage(damage: number, direction: { x: number; y: number }): boolean {
+    if (this.motion.dash.active || this.anchor.scene.registry.get('bossEnding')) return false;
     const result = this.health.damage(damage);
     if (result.applied === 0) return false;
     this.attack.interrupt();
@@ -229,11 +266,12 @@ export class RoomPlayer {
     this.fireball.cancelAim();
     this.suppressAttackRelease = true;
     this.hurtMs = balance.hurtLockMs;
-    this.hurtDirection = { ...direction };
+    this.hurtDirection = normalizedDirection(direction);
     this.motion.velocity = { x: 0, y: 0 };
     bus.emit('player:hit', { dmg: result.applied / balance.pointsPerHeart,
       hp: Math.ceil(this.hp / balance.pointsPerHeart), maxHp: this.maxHp / balance.pointsPerHeart });
     if (result.killed) {
+      this.echo.cancel();this.fireball.cancelAll();
       this.motion.height = 0;
       this.motion.verticalVelocity = 0;
       for (const key of this.abilityKeys) { key.reset(); key.enabled = false; }
@@ -265,6 +303,8 @@ export class RoomPlayer {
       this.attack.followChargePose(x, y, height, aim, this.equippedSword);
       this.equippedSword.setPosition(aim.x * 11 + 7, -19 + aim.y * 5)
         .setRotation(Math.atan2(aim.y, aim.x));
+    } else if (this.attack.active) {
+      this.attack.followSwingPose(x,y,height);
     } else if (!this.attack.active) {
       this.equippedSword.setPosition(facing.x * 11 + 7, -19 + facing.y * 5)
         .setRotation(Math.atan2(facing.y, facing.x));

@@ -1,6 +1,8 @@
 // Dominio: vicho — composition root (SUP-seba-20261123-084249). SIN lógica de juego aquí:
 // cada dominio se engancha con su install*() exportado desde su index.ts.
 import Phaser from 'phaser';
+import { GameState } from '../core/GameState';
+import { balance } from '../combat';
 import { installAmbience, installAreaTitles, installCamera, installEncounters, installMapViews, installWorld, preloadWorld } from '../world';
 import { installExploration, stageStart } from '../exploration';
 import { installCharacter } from '../character';
@@ -15,6 +17,10 @@ import { installBoss, type Boss } from '../world/boss';
 export class GameScene extends Phaser.Scene {
   /** Público para tests e2e (tests/e2e/smoke.spec.ts). */
   player!: Player;
+  hero!: RoomPlayer;
+  boss?: Boss;
+  combatTargets = () => this.targets();
+  private targets: () => readonly (import('../player/room-prototype/SwordCombat').SwordDamageTarget & import('../player/room-prototype/FireballCombat').FireballDamageTarget)[] = () => [];
 
   constructor() {
     super('GameScene');
@@ -33,17 +39,25 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     const world = installWorld(this);
-    const character = installCharacter(this, 'luchador');
+    const character = installCharacter(this, this.registry.get('classId') === 'mago' ? 'mago' : 'luchador');
     // PROVISIONAL (vicho, rama vicho/mundo-abierto): jugador cenital del lab de basti hasta que exponga
     // su install*() (PEN-basti pendiente). Volver a installPlayer cuando exista.
     let enemies: ReturnType<typeof installEncounters>;
     let boss: Boss | undefined;
+    this.targets = () => [...(enemies?.targets ?? []), ...(boss?.targets ?? [])];
     const hero = new RoomPlayer(this, world.spawn.x, world.spawn.y, character.stats,
       () => [...(enemies?.targets ?? []), ...(boss?.targets ?? [])], character.abilities);
     this.physics.add.collider(hero.anchor, world.solids);
     this.physics.add.collider(hero.anchor, world.obstacles);
     enemies = installEncounters(this, hero, world);
-    boss = installBoss(this, hero, world);
+    if(!this.registry.get('newGame')) {
+      hero.health.maxHp=GameState.data.maxHp*balance.pointsPerHeart;
+      hero.health.hp=GameState.data.hp*balance.pointsPerHeart;
+      if(GameState.data.equipped.weapon)hero.equipSword();
+    }
+    GameState.data.maxHp=hero.maxHp/balance.pointsPerHeart;GameState.data.hp=Math.ceil(hero.hp/balance.pointsPerHeart);
+    this.hero = hero;
+    this.boss = boss = installBoss(this, hero, world);
     // Espadas de prueba del lab en los objetos type "sword" del mapa.
     const swords = world.map.filterObjects('objects', (o) => o.type === 'sword')!.map((o) => new SwordPickup(this, o.x!, o.y!));
     const tick = (t: number, dt: number) => {

@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import tuning from '../../data/tuning.json';
-import { lineClear } from '../../enemies/navigation';
+import { combatLineClear } from '../../combat/visibility';
+import type { EchoableSwordSwing } from './EchoDebtCombat';
+import { bus } from '../../core/EventBus';
 import {
   SwordCharge,
   SwordCombo,
@@ -50,7 +52,8 @@ export class SwordAttack {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly targets: () => readonly SwordDamageTarget[] = () => [],
-    private readonly baseDamage = tuning.roomPrototype.swordAttackDamage,
+    private readonly damageSource: number | (()=>number) = tuning.roomPrototype.swordAttackDamage,
+    private readonly onSwing?: (swing: EchoableSwordSwing) => void,
   ) {
     this.slashShape = scene.add.graphics();
     this.slash = scene.add.container(0, 0, [this.slashShape]).setVisible(false);
@@ -59,6 +62,8 @@ export class SwordAttack {
     this.chargeEffect = scene.add.container(0, 0, [this.chargeShape]).setDepth(10_000).setVisible(false);
     this.chargeEffect.setName('room-sword-charge');
   }
+
+  private get baseDamage(): number {return typeof this.damageSource === 'number' ? this.damageSource : this.damageSource();}
 
   get active(): boolean { return this.combo.active || this.charge.isHolding || this.chargedRemainingMs > 0; }
   get currentAttack(): ComboAttack | 0 { return this.combo.currentAttack; }
@@ -222,6 +227,8 @@ export class SwordAttack {
     this.swingEase = attack === 3 ? 'Cubic.In' : 'Cubic.Out';
     this.hitRemainingMs = hitWindow;
     this.hitTracker.beginSwing();
+    this.notifySwing(attack);
+    bus.emit('player:attack', { combo: attack });
     this.drawSlash(attack, range, halfAngle);
     this.applyHitbox();
     this.animateWeapon(attack, duration, false);
@@ -245,6 +252,8 @@ export class SwordAttack {
     this.swingTravel = 32;
     this.swingEase = 'Cubic.Out';
     this.hitTracker.beginSwing();
+    this.notifySwing('charged');
+    bus.emit('player:attack', { combo: 3 });
     this.drawSlash(3, this.hitRange, this.hitAngle, true);
     this.applyHitbox();
     this.animateWeapon(3, config.swordChargeDurationMs, true);
@@ -325,6 +334,17 @@ export class SwordAttack {
       .setVisible(true).setDepth(this.origin.y + 50);
   }
 
+  private notifySwing(attack: EchoableSwordSwing['attack']): void {
+    this.onSwing?.({ attack, origin: { ...this.origin, height: this.height }, direction: { ...this.facing },
+      damage: this.hitDamage, range: this.hitRange, halfAngleDeg: this.hitAngle, knockback: this.hitKnockback,
+      durationMs: this.swingDurationMs, hitWindowMs: this.hitRemainingMs, travel: this.swingTravel, ease: this.swingEase });
+  }
+
+  followSwingPose(x:number,y:number,height:number): void {
+    if(!this.active||this.charge.isHolding)return;
+    this.origin={x,y};this.height=height;
+  }
+
   private applyHitbox(): void {
     const t = Math.max(0, Math.min(1, this.swingElapsedMs / this.swingDurationMs));
     const eased = this.swingEase === 'Cubic.In' ? t ** 3 : 1 - (1 - t) ** 3;
@@ -332,8 +352,7 @@ export class SwordAttack {
       x: this.origin.x + this.facing.x * this.swingTravel * eased,
       y: this.origin.y + this.facing.y * this.swingTravel * eased,
     };
-    const solids = [...this.scene.physics.world.staticBodies].filter((body) => body.enable);
-    const targets = this.targets().filter((target) => lineClear(this.origin, target, solids));
+    const targets = this.targets().filter((target) => combatLineClear(this.scene, this.origin, target));
     this.hitTracker.apply(hitOrigin, this.facing, targets, this.hitRange,
       this.hitAngle, this.hitDamage, this.hitKnockback);
   }

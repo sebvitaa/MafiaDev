@@ -1,27 +1,187 @@
 {
   "slime": {
-    "name": "SLIME", "hp": 50, "dmg": 25, "speed": 65, "aggroRange": 220,
-    "windupMs": 350, "activeMs": 140, "recoveryMs": 900, "staggerMs": 180,
-    "attackRange": 36, "halfAngleDeg": 58, "radius": 14, "lungeSpeed": 140,
-    "armored": false, "color": 10446804, "loot": "enemy_basic"
+    "name": "SLIME",
+    "hp": 50,
+    "dmg": 25,
+    "speed": 65,
+    "aggroRange": 220,
+    "windupMs": 350,
+    "activeMs": 140,
+    "recoveryMs": 900,
+    "staggerMs": 180,
+    "attackRange": 36,
+    "halfAngleDeg": 58,
+    "radius": 14,
+    "lungeSpeed": 140,
+    "armored": false,
+    "color": 10446804,
+    "loot": "enemy_basic"
   },
   "cobrador": {
-    "name": "COBRADOR", "hp": 100, "dmg": 25, "speed": 105, "aggroRange": 270,
-    "windupMs": 450, "activeMs": 130, "recoveryMs": 720, "staggerMs": 140,
-    "attackRange": 52, "halfAngleDeg": 38, "radius": 14, "lungeSpeed": 100,
-    "armored": false, "color": 13272140, "loot": "enemy_basic"
+    "name": "COBRADOR",
+    "hp": 100,
+    "dmg": 25,
+    "speed": 105,
+    "aggroRange": 270,
+    "windupMs": 450,
+    "activeMs": 130,
+    "recoveryMs": 720,
+    "staggerMs": 140,
+    "attackRange": 52,
+    "halfAngleDeg": 38,
+    "radius": 14,
+    "lungeSpeed": 100,
+    "armored": false,
+    "color": 13272140,
+    "loot": "enemy_basic"
   },
   "knight": {
-    "name": "KNIGHT", "hp": 150, "dmg": 50, "speed": 55, "aggroRange": 260,
-    "windupMs": 750, "activeMs": 180, "recoveryMs": 1100, "staggerMs": 120,
-    "attackRange": 64, "halfAngleDeg": 55, "radius": 18, "lungeSpeed": 55,
-    "armored": true, "color": 6389420, "loot": "enemy_basic"
+    "name": "KNIGHT",
+    "hp": 150,
+    "dmg": 50,
+    "speed": 55,
+    "aggroRange": 260,
+    "windupMs": 750,
+    "activeMs": 180,
+    "recoveryMs": 1100,
+    "staggerMs": 120,
+    "attackRange": 64,
+    "halfAngleDeg": 55,
+    "radius": 18,
+    "lungeSpeed": 55,
+    "armored": true,
+    "color": 6389420,
+    "loot": "enemy_basic"
   },
   "boss": {
-    "name": "BODOQUE", "hp": 750, "dmg": 50, "speed": 70, "aggroRange": 600,
-    "windupMs": 650, "activeMs": 180, "recoveryMs": 1100, "staggerMs": 120,
-    "attackRange": 64, "halfAngleDeg": 55, "radius": 24, "lungeSpeed": 55,
-    "armored": true, "color": 14242859, "loot": "miniboss"
+    "name": "BODOQUE",
+    "hp": 750,
+    "dmg": 50,
+    "speed": 70,
+    "aggroRange": 600,
+    "windupMs": 650,
+    "activeMs": 180,
+    "recoveryMs": 1100,
+    "staggerMs": 120,
+    "attackRange": 64,
+    "halfAngleDeg": 55,
+    "radius": 24,
+    "lungeSpeed": 55,
+    "armored": true,
+    "color": 14242859,
+    "loot": "miniboss"
   },
-  "miniboss": { "hp": 30, "dmg": 2, "speed": 70, "windupMs": 500, "loot": "miniboss" }
+  "miniboss": {
+    "hp": 30,
+    "dmg": 2,
+    "speed": 70,
+    "windupMs": 500,
+    "loot": "miniboss"
+  },
+  "bodoque": {
+    "hp": 600,
+    "radius": 28,
+    "idleMs": 420,
+    "phaseThresholds": [
+      0.66,
+      0.33
+    ],
+    "heart": {
+      "hp": 100,
+      "openingMs": 1200,
+      "defeatMs": 1600,
+      "criticalHp": 23
+    },
+    "bounds": {
+      "left": 56,
+      "right": 904,
+      "top": 104,
+      "bottom": 544
+    },
+    "attacks": {
+      "microphoneMallet": {
+        "windupMs": 500,
+        "activeMs": 180,
+        "recoveryMs": 470,
+        "damage": 12,
+        "range": 92,
+        "halfAngleDeg": 42,
+        "parryable": true,
+        "jumpAvoidHeight": 35
+      },
+      "cameraFlash": {
+        "windupMs": 760,
+        "activeMs": 100,
+        "recoveryMs": 540,
+        "damage": 18,
+        "range": 190,
+        "halfAngleDeg": 42,
+        "parryable": false
+      },
+      "lastHour": {
+        "windupMs": 680,
+        "activeMs": 280,
+        "recoveryMs": 620,
+        "damage": 22,
+        "range": 250,
+        "halfWidth": 25,
+        "distance": 230,
+        "parryable": false
+      },
+      "spectralRace": {
+        "windupMs": 1000,
+        "activeMs": 700,
+        "recoveryMs": 650,
+        "damage": 25,
+        "range": 320,
+        "halfWidth": 20,
+        "parryable": false
+      },
+      "betTickets": {
+        "windupMs": 850,
+        "activeMs": 180,
+        "recoveryMs": 650,
+        "damage": 18,
+        "range": 210,
+        "halfWidth": 20,
+        "parryable": false
+      },
+      "collectors": {
+        "windupMs": 900,
+        "activeMs": 120,
+        "recoveryMs": 1100,
+        "damage": 0,
+        "range": 200,
+        "parryable": false
+      },
+      "timeTheft": {
+        "windupMs": 850,
+        "activeMs": 1000,
+        "recoveryMs": 500,
+        "damage": 12,
+        "range": 155,
+        "halfAngleDeg": 85,
+        "parryable": false
+      },
+      "monitorShift": {
+        "windupMs": 650,
+        "activeMs": 150,
+        "recoveryMs": 700,
+        "damage": 18,
+        "range": 65,
+        "halfAngleDeg": 65,
+        "parryable": false
+      },
+      "cableSweep": {
+        "windupMs": 800,
+        "activeMs": 300,
+        "recoveryMs": 700,
+        "damage": 25,
+        "range": 150,
+        "halfAngleDeg": 89,
+        "parryable": false,
+        "jumpAvoidHeight": 60
+      }
+    }
+  }
 }

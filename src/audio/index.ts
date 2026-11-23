@@ -112,6 +112,7 @@ export function installAudio(scene: Phaser.Scene): void {
     if (!/boss/i.test(kind)) return; // 'boss' o 'miniboss' (enemies.json)
     inBoss = false;
     AudioDirector.stopMusic(200);
+    if (kind === 'boss') { AudioDirector.playAmbient('amb-zone1',500); return; }
     AudioDirector.sfx('sfx-fanfare', { detune: 0, volume: 1.1 });
     scene.time.delayedCall(3600, () => { if (!dead) zoneMusic(1500); });
   }, ctx);

@@ -28,8 +28,7 @@ async function clickWorld(page: Page, x: number, y: number, button: 'left' | 'ri
 
 test.beforeEach(async ({ page }) => {
   const response = await page.request.get(room);
-  test.skip(!(await response.text()).includes('id="room-prototype"'),
-    'El laboratorio de Basti todavía no está integrado en esta rama; ver PEN-basti-20261123-122352.');
+  expect(await response.text()).toContain('id="room-prototype"');
   await page.goto(room);
   await page.waitForFunction(() => (window.__game?.scene.getScene('RoomPrototype') as any)?.player);
   await page.waitForFunction(() => window.__game!.loop.frame > 5);
@@ -95,7 +94,7 @@ test('1–4 hacen TP directo con números estables y comparten recarga con Q + c
   await page.keyboard.press('1');
   await expect.poll(async () => (await state(page)).x).toBeCloseTo(480, -1);
 
-  await page.keyboard.press('r');
+  await page.keyboard.press('t');
   await expect.poll(async () => (await state(page)).marks.length).toBe(0);
   await page.keyboard.press('1');
   expect((await state(page)).x).toBeCloseTo(480);
@@ -215,7 +214,7 @@ test('marca sigue al enemigo, TP llega a su lado, limpia muerte y reinicio', asy
   });
   await expect.poll(async () => (await state(page)).marks.length).toBe(0);
   await page.keyboard.up('q');
-  await page.keyboard.press('r');
+  await page.keyboard.press('t');
   await expect.poll(async () => (await state(page)).x).toBeCloseTo(480);
   await page.keyboard.down('q');
   await clickWorld(page, 200, 400, 'right');

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { bus } from '../core/EventBus';
 import { EnemySystem, type BasicEnemyKind } from '../enemies';
 import { prop } from '../exploration/tiled';
 
@@ -37,6 +38,9 @@ export function installEncounters(
       spawned.add(spawn.id);
     }
   };
+  const reset=()=>{enemies.clear();spawned.clear();activate();};
+  bus.on('player:respawned',reset,enemies);
+  scene.events.once('shutdown',()=>bus.offContext(enemies));
   scene.events.on(Phaser.Scenes.Events.UPDATE, activate);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, activate));
   activate();

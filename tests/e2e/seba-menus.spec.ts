@@ -28,7 +28,8 @@ test('apertura, título, menú, pausa y opciones', async ({ page }) => {
   await shot(page, '3-menu');
 
   // Opciones desde el título y volver
-  await key(page, 'ArrowDown'); // JUGAR → OPCIONES (CONTINUAR oculto sin partida)
+  await key(page, 'ArrowDown'); // JUGAR → CLASE
+  await key(page, 'ArrowDown'); // CLASE → OPCIONES (CONTINUAR oculto sin partida)
   await key(page, 'Enter');
   await active(page, 'OptionsScene');
   await key(page, 'ArrowDown'); // MÚSICA (por defecto 35 %)
@@ -40,6 +41,7 @@ test('apertura, título, menú, pausa y opciones', async ({ page }) => {
   await key(page, 'Escape');
   await page.waitForFunction(() => !(window as any).__game.scene.isActive('OptionsScene'));
 
+  await key(page, 'ArrowUp'); // CLASE
   await key(page, 'ArrowUp'); // JUGAR
   await key(page, 'ArrowRight'); // escenario 2
   await key(page, 'ArrowRight'); // escenario 3

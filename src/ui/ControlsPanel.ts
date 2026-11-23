@@ -48,14 +48,14 @@ export function showControls(scene: Phaser.Scene): Promise<void> {
     // Controles reales del mundo cenital (RoomPlayer + abilities + exploration), sin teclas duplicadas.
     const leftX = px + 16, rightX = px + pw / 2 + 5;
     const colRight = px + pw / 2 - 10;
-    const rowY = py + 32, step = 23;
+    const rowY = py + 32, step = 21;
     const left: [string, string[]][] = [
       ['MOVERSE', ['WASD', '←↑↓→']], ['CORRER', ['SHIFT']], ['SALTAR', BINDINGS.jump], ['DASH', ['C', 'K', '2×DIR']],
-      ['ATACAR', ['CLIC IZQ']], ['ULTI', ['CLIC DER']], ['PAPEL TP', ['Q+CLIC DER']],
+      ['ATACAR', ['CLIC IZQ']], ['ULTI', ['R (MANTENER)']], ['PAPEL TP', ['Q+CLIC DER']],
     ];
     const right: [string, string[]][] = [
       ['IR A PAPEL', ['Q+CLIC IZQ', '1-4']], ['INTERACTUAR', ['E']], ['VIAJAR', ['F']], ['MAPA', ['M', 'N']],
-      ['PAUSA', BINDINGS.pause], ['SILENCIO', ['0']], ['PANT. COMPLETA', ['F (MENÚ)']],
+      ['HAB. CLASE', ['I']], ['PAUSA', BINDINGS.pause], ['SILENCIO', ['0']], ['PANT. COMPLETA', ['F (MENÚ)']],
     ];
     left.forEach(([name, keys], i) => row(name, keys, leftX, rowY + step * i, colRight));
     right.forEach(([name, keys], i) => row(name, keys, rightX, rowY + step * i, px + pw - 16));

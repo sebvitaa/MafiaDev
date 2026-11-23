@@ -3,11 +3,13 @@ import { Health } from '../combat/Health';
 import { bus } from '../core/EventBus';
 import { registerTeleportTarget } from '../abilities';
 import { EnemyBrain, type EnemyDefinition } from './EnemyBrain';
-import { lineClear, nextWaypoint } from './navigation';
+import { nextWaypoint } from './navigation';
 import { intersectsSector, type SwordDamageTarget, type SwordDirection } from '../player/room-prototype/SwordCombat';
 import type { FireballDamageTarget } from '../player/room-prototype/FireballCombat';
 import type { Point, Rect } from '../abilities/markGeometry';
 import tuning from '../data/tuning.json';
+import { DebtMarkLedger } from '../player/room-prototype/EchoDebtCombat';
+import { combatLineClear } from '../combat/visibility';
 
 export interface EnemyPlayer {
   anchor: Phaser.GameObjects.Rectangle;
@@ -33,6 +35,7 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
   private knockbackMs = 0;
   private knockback: Point = { x: 0, y: 0 };
   private destroyed = false;
+  private readonly debt = new DebtMarkLedger(tuning.roomPrototype.debtMarkMax, tuning.roomPrototype.debtMarkDurationMs);
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -70,12 +73,14 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
 
   update(dtMs: number): void {
     if (!this.alive) return;
+    if (Number(this.scene.registry.get('timeStopRemaining')??0)>0) {this.body.stop();return;}
+    this.debt.update(dtMs);
     const solids = this.obstacles();
     this.flashMs = Math.max(0, this.flashMs - dtMs);
     this.knockbackMs = Math.max(0, this.knockbackMs - dtMs);
     this.thinkMs -= dtMs;
     const target = this.player.alive ? this.player.anchor : null;
-    this.brain.update(dtMs, this.anchor, target, target ? lineClear(this.anchor, target, solids) : false);
+    this.brain.update(dtMs, this.anchor, target, target ? combatLineClear(this.scene, this.anchor, target) : false);
     let velocity: Point = { x: 0, y: 0 };
     if (this.knockbackMs > 0) velocity = this.knockback;
     else if (this.state === 'chase' && target) {
@@ -95,11 +100,11 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
 
   /** Después de física: resolver la ventana sobre posiciones reales, no las del dibujo. */
   postUpdate(): void {
-    if (!this.alive) return;
+    if (!this.alive || Number(this.scene.registry.get('timeStopRemaining')??0)>0) return;
     if (this.brain.canStrike && this.player.alive
       && intersectsSector(this.anchor, this.brain.facing, { x: this.player.anchor.x, y: this.player.anchor.y, radius: this.player.radius },
         this.definition.attackRange, this.definition.halfAngleDeg)
-      && lineClear(this.anchor, this.player.anchor, this.obstacles())) {
+      && combatLineClear(this.scene, this.anchor, this.player.anchor)) {
       this.brain.consumeHit();
       this.player.takeEnemyDamage(this.definition.dmg, this.brain.facing);
     }
@@ -131,6 +136,11 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
     }
   }
 
+  addDebtMark(): void { if (this.alive) this.debt.add(this.id); }
+  consumeDebtMarks(): number { return this.debt.consume(this.id); }
+  get debtMarkCount(): number { return this.debt.count(this.id); }
+  onDebtDetonated(): void { this.flashMs = 260; }
+
   takeFireDamage(damage: number, direction: SwordDirection): void { this.takeSwordDamage(damage, direction); }
 
   private draw(): void {
@@ -152,6 +162,7 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
     g.fillStyle(0xffeea2).fillCircle(this.brain.facing.x * r * 0.45, -r * 1.2 + this.brain.facing.y * r * 0.25, 2);
     this.bar.clear().fillStyle(0x10151d).fillRect(-r, -r * 2.7, r * 2, 4)
       .fillStyle(0xe87575).fillRect(-r, -r * 2.7, r * 2 * this.hp / this.health.maxHp, 4);
+    for(let i=0;i<this.debtMarkCount;i++)g.fillStyle(0xd779ff).fillCircle((i-1)*7,-r*3.8,2.5);
     this.label.setText(`${this.definition.name} ${this.hp}/${this.health.maxHp}`);
     this.visual.setPosition(this.x, this.y).setDepth(this.y);
     this.warning.clear().setDepth(this.y - 0.5);

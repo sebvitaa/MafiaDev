@@ -37,14 +37,14 @@ export function installUi(scene: Phaser.Scene): void {
   scene.game.events.on(Phaser.Core.Events.BLUR, onBlur);
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
   bus.on('player:died', () => scene.scene.launch('GameOverScene', { from: scene.scene.key }), ctx);
+  let endingStarted = false;
   // 6.28 — fin de la demo: al caer el jefe, tras la fanfarria, «gracias por jugar» + créditos
   bus.on('enemy:killed', ({ kind }) => {
-    if (!/boss/i.test(kind)) return;
-    scene.time.delayedCall(4500, () => {
-      if (!scene.scene.isActive()) return;
-      scene.scene.pause();
-      scene.scene.launch('CreditsScene', { from: scene.scene.key });
-    });
+    if (kind !== 'boss' || endingStarted) return;
+    endingStarted = true;
+    scene.scene.pause();
+    scene.scene.pause('HudScene');
+    scene.scene.launch('EndingScene', { from: scene.scene.key });
   }, ctx);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     keyboard?.off('keydown-ESC', pause);

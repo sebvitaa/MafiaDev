@@ -1,6 +1,6 @@
 /** Vida en puntos de combate. El HUD puede representarla como corazones. */
 export class Health {
-  readonly maxHp: number;
+  maxHp: number;
   hp: number;
   private protectedMs = 0;
 

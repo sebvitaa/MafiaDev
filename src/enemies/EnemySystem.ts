@@ -34,10 +34,11 @@ export class EnemySystem {
 
   private postUpdate(): void { for (const enemy of this.enemies) enemy.postUpdate(); }
 
-  private destroy(): void {
-    this.scene.events.off('postupdate', this.postUpdate, this);
+  clear(): void {
     for (const collider of this.colliders) if (collider.world) collider.destroy();
     for (const enemy of this.enemies) enemy.destroy();
-    this.enemies.length = 0;
+    this.enemies.length = 0;this.colliders.length=0;
   }
+
+  private destroy():void {this.scene.events.off('postupdate',this.postUpdate,this);this.clear();}
 }

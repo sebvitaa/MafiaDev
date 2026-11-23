@@ -9,6 +9,7 @@ export interface SwordDamageTarget {
   readonly x: number;
   readonly y: number;
   readonly radius: number;
+  addDebtMark?(): void;
   takeSwordDamage(damage: number, direction: SwordDirection, knockback?: number): void;
 }
 
@@ -215,6 +216,7 @@ export class SwordHitTracker {
         || !intersectsSector(origin, facing, target, range, halfAngleDeg)) continue;
       this.hitIds.add(target.id);
       target.takeSwordDamage(damage, facing, knockback);
+      target.addDebtMark?.();
       hit.push(target.id);
     }
     return hit;

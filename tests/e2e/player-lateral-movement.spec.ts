@@ -1,91 +1,66 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { GameScene } from '../../src/scenes/GameScene';
-// PEN-basti-20261123-144846: GameScene ya es cenital (RoomPlayer); estos casos prueban el Player lateral que ya no se instancia.
 
-async function playerState(page: Page) {
-  return page.evaluate(() => {
-    const p = (window.__game!.scene.getScene('GameScene') as GameScene).player;
-    return { x: p.x, y: p.y, vx: p.body.velocity.x, vy: p.body.velocity.y,
-      state: p.fsm.current, invulnerable: p.isInvulnerable, airJumps: p.airJumps,
-      gravity: p.body.allowGravity, cooldown: p.dash.cooldownRemainingMs };
-  });
-}
-
-test.beforeEach(async ({ page }) => {
-  await page.goto('/?skipIntro=1');
-  await page.waitForFunction(() => window.__game?.scene.isActive('TitleScene'));
-  await page.keyboard.press('Space');
-  await page.waitForFunction(() => window.__game?.scene.isActive('GameScene'));
-  await expect.poll(async () => (await playerState(page)).vy).toBe(0);
+// Replaces the three obsolete skipped lateral cases with the real integrated top-down player.
+const state=(page:Page)=>page.evaluate(()=>{
+  const p=(window.__game!.scene.getScene('GameScene') as GameScene).hero;
+  return {x:p.anchor.x,y:p.anchor.y,vx:p.body.velocity.x,vy:p.body.velocity.y,
+    z:p.motion.height,dash:p.motion.dash.active,cooldown:p.motion.dash.cooldownRemainingMs,
+    jumps:p.motion.airJumpsRemaining,hp:p.hp,gravity:p.body.allowGravity};
 });
-
-test.skip('Shift corre sin disparar dash y conserva salto y doble salto', async ({ page }) => {
+test.beforeEach(async({page})=>{
+  await page.goto('/?skipIntro=1&map=1&noEnemies=1');
+  await page.getByRole('menuitem',{name:/JUGAR/}).click();
+  await page.waitForFunction(()=>window.__game?.scene.isActive('GameScene'));
+});
+test('Shift corre sin dash y salto/doble salto usan altura independiente',async({page})=>{
   await page.keyboard.down('d');
-  await expect.poll(async () => (await playerState(page)).vx).toBe(120);
+  await expect.poll(async()=>(await state(page)).vx).toBe(150);
   await page.keyboard.down('Shift');
-  await expect.poll(async () => (await playerState(page)).vx).toBe(198);
-  expect((await playerState(page)).state).not.toBe('dash');
-  await page.keyboard.up('Shift');
-  await expect.poll(async () => (await playerState(page)).vx).toBe(120);
-  await page.keyboard.up('d');
+  await expect.poll(async()=>(await state(page)).vx).toBe(247.5);
+  expect((await state(page)).dash).toBe(false);
+  await page.keyboard.up('d');await page.keyboard.up('Shift');
   await page.keyboard.down('Space');
-  await expect.poll(async () => (await playerState(page)).vy).toBeLessThan(0);
+  await page.waitForFunction(()=>(window.__game!.scene.getScene('GameScene') as GameScene).hero.motion.height>10);
   await page.keyboard.up('Space');
-  await page.waitForTimeout(40);
   await page.keyboard.down('z');
-  await expect.poll(async () => (await playerState(page)).airJumps).toBe(0);
+  await page.waitForFunction(()=>(window.__game!.scene.getScene('GameScene') as GameScene).hero.motion.airJumpsRemaining===0);
   await page.keyboard.up('z');
+  expect((await state(page)).gravity).toBe(false);
 });
-
-test.skip('dash tiene fin, invulnerabilidad temporal y no se repite al mantener C', async ({ page }) => {
-  const before = await playerState(page);
+test('dash finaliza, evita daño durante su ventana y no se repite al mantener C',async({page})=>{
+  const result=await page.evaluate(()=>new Promise<{hp:number;during:boolean;ended:boolean}>(resolve=>{
+    const s=window.__game!.scene.getScene('GameScene') as GameScene,p=s.hero;
+    const hp=p.hp;let during=false;
+    const listener=()=>{
+      if(p.motion.dash.active){during=true;p.takeEnemyDamage(25,{x:1,y:0});}
+      else if(during){s.events.off('postupdate',listener);resolve({hp:p.hp,during,ended:hp===p.hp});}
+    };s.events.on('postupdate',listener);s.input.keyboard!.emit('keydown-C',{repeat:false});
+  }));
+  expect(result).toEqual({hp:125,during:true,ended:true});
   await page.keyboard.down('c');
-  await expect.poll(async () => (await playerState(page)).state, { intervals: [10] }).toBe('dash');
-  const active = await playerState(page);
-  expect(active.vx).toBe(360);
-  expect(active.gravity).toBe(false);
-  expect(active.invulnerable).toBe(true);
-  await expect.poll(async () => (await playerState(page)).state).not.toBe('dash');
-  const ended = await playerState(page);
-  expect(ended.gravity).toBe(true);
-  expect(ended.invulnerable).toBe(false);
-  expect(ended.cooldown).toBeGreaterThan(0);
-  await page.keyboard.press('k');
-  expect((await playerState(page)).state).not.toBe('dash');
-  await page.waitForTimeout(600);
-  const held = await playerState(page);
-  expect(held.state).not.toBe('dash');
-  expect(held.x - before.x).toBeGreaterThan(25);
-  expect(held.x - before.x).toBeLessThan(75);
+  expect((await state(page)).dash).toBe(false);
+  await page.waitForTimeout(700);
+  expect((await state(page)).dash).toBe(false);
   await page.keyboard.up('c');
-  await page.keyboard.down('a');
-  await page.keyboard.down('k');
-  await expect.poll(async () => (await playerState(page)).vx, { intervals: [10] }).toBe(-360);
-  await page.keyboard.up('k');
-  await page.keyboard.up('a');
 });
-
-test.skip('dash aéreo conserva saltos y restaura gravedad; las paredes siguen bloqueando', async ({ page }) => {
-  const errors: string[] = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+test('dash aéreo conserva saltos y el tilemap sigue bloqueando el plano del suelo',async({page})=>{
   await page.keyboard.down('Space');
-  await expect.poll(async () => (await playerState(page)).vy).toBeLessThan(0);
-  const jumping = await playerState(page);
-  await page.keyboard.down('c');
-  await expect.poll(async () => (await playerState(page)).state, { intervals: [10] }).toBe('dash');
-  expect((await playerState(page)).airJumps).toBe(jumping.airJumps);
-  await page.keyboard.up('c');
+  await page.waitForFunction(()=>(window.__game!.scene.getScene('GameScene') as GameScene).hero.motion.height>5);
+  const jumps=(await state(page)).jumps;
+  await page.keyboard.press('c');
+  expect((await state(page)).jumps).toBe(jumps);
   await page.keyboard.up('Space');
-  await expect.poll(async () => (await playerState(page)).gravity).toBe(true);
-  await expect.poll(async () => (await playerState(page)).cooldown).toBe(0);
-  await page.evaluate(() => {
-    const p = (window.__game!.scene.getScene('GameScene') as GameScene).player;
-    p.body.reset(950, 230);
+  await page.waitForTimeout(750);
+  const wall=await page.evaluate(()=>{
+    const s=window.__game!.scene.getScene('GameScene') as GameScene;
+    const layer=s.children.list.find((o:any)=>o.layer?.name==='walls') as any;
+    const tile=layer.getTilesWithin().find((t:any)=>t.collides && t.x>2 && !layer.getTileAt(t.x-1,t.y)?.collides);
+    if(!tile)throw Error('No wall fixture found');
+    s.hero.body.reset(tile.pixelX-12,tile.pixelY+8);s.hero.motion.facing={x:1,y:0};
+    return tile.pixelX;
   });
-  await page.keyboard.down('d');
-  await page.keyboard.press('k');
-  await page.waitForTimeout(250);
-  expect((await playerState(page)).x).toBeLessThanOrEqual(954);
+  await page.keyboard.down('d');await page.keyboard.press('k');await page.waitForTimeout(220);
   await page.keyboard.up('d');
-  expect(errors).toEqual([]);
+  expect((await state(page)).x).toBeLessThan(wall);
 });

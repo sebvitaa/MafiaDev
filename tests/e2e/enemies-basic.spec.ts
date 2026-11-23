@@ -141,6 +141,7 @@ test('pilares bloquean daño, muerte deshabilita acciones y R limpia/reinicia el
   const dashAfterDeath = await page.evaluate(() => {
     const player = (window.__game!.scene.getScene('RoomPrototype') as any).player;
     player.motion.dash.tryStart(1, 650);
+    player.motion.dash.update(151);
     player.takeEnemyDamage(500, { x: 1, y: 0 });
     return player.motion.dash.active as boolean;
   });
@@ -153,7 +154,7 @@ test('pilares bloquean daño, muerte deshabilita acciones y R limpia/reinicia el
   await page.keyboard.up('q');
   expect((await snapshot(page)).marks).toHaveLength(0);
   expect((await snapshot(page)).x).toBeCloseTo(before.x);
-  await page.keyboard.press('r');
+  await page.keyboard.press('t');
   await expect.poll(async () => (await snapshot(page)).hp).toBe(125);
   expect((await snapshot(page)).enemies.every((enemy) => enemy.enabled)).toBe(true);
   await page.keyboard.down('q');
