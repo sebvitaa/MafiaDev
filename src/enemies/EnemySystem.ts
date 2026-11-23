@@ -57,11 +57,13 @@ export class EnemySystem {
 
   clear(): void {
     for (const enemy of this.enemies) enemy.destroy();
-    this.enemies.length=0;this.bodies.clear(false,false);
+    this.enemies.length=0;
+    // Phaser may have destroyed physics groups before this shutdown listener runs.
+    if(this.bodies.children)this.bodies.clear(false,false);
   }
   private destroy():void {
     this.scene.events.off('postupdate',this.postUpdate,this);this.clear();
     for (const collider of this.colliders) if(collider.world)collider.destroy();
-    this.colliders.length=0;this.bodies.destroy();
+    this.colliders.length=0;if(this.bodies.children)this.bodies.destroy();
   }
 }

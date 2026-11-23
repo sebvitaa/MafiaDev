@@ -1,6 +1,6 @@
 # Integración final — candidata a revisión del equipo
 
-Base: origin/main 3c75dfa6e8 (PR #11 ya fusionado). Worktree MafiaDev-integracion, rama basti/integracion-definitiva. La rama original de Basti y sus archivos locales no se modifican. No se vuelve a fusionar #11.
+Base inicial: origin/main 3c75dfa6e8 (PR #11 ya fusionado); main avanzó a 0f68477 con el cierre de Alejandro (#12). Worktree MafiaDev-integracion, rama basti/integracion-definitiva. La rama original de Basti y sus archivos locales no se modifican. No se vuelve a fusionar #11.
 
 ## Fuentes y resolución de incompatibilidades
 
@@ -27,6 +27,10 @@ A 100 HP: clamp de overkill, apertura invulnerable de 1200 ms, sin segunda vida.
 ## Recursos provisionales
 
 El sello local de Alejandro sustituye CODEX/TEMP y se anima con su spritesheet de 48 frames. El video cine3 incluye el desenlace y Tulio: se reutiliza sin reconstruirlo. La condición de asset oficial/aprobación del logo queda para el equipo (PEN-basti-20261123-144553).
+
+## Rendimiento y aparición
+
+Se integran las optimizaciones publicadas en alejandro/publicar-optimizaciones: grupos Arcade, simulación de enemigos cercanos, snapshots y navegación reutilizada, mapa overview y niebla compactada. La aparición se valida contra límites, tiles y props; la cámara se centra después de colocar al personaje y FINAL empieza equipado. Los efectos finales redibujan a 30Hz manteniendo lógica/daño a cada frame.
 
 ## Verificación y límites de la evidencia
 
