@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T16:19:20.268Z
 title: V28 Dos o tres mapas más y elección aleatoria al empezar
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done             # open | in_progress | blocked | done | wontfix
 area: world
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: fde754f
 ---
 
 ## Contexto
