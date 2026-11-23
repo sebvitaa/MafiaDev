@@ -11,7 +11,7 @@ async function playerState(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?skipIntro=1');
   await page.waitForFunction(() => window.__game?.scene.isActive('TitleScene'));
   await page.keyboard.press('Space');
   await page.waitForFunction(() => window.__game?.scene.isActive('GameScene'));

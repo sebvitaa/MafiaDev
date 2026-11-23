@@ -1,5 +1,11 @@
 # Laboratorio Isaac + Hades
 
+## Enemigos y TP integrados
+
+Abrir `/src/player/room-prototype/?enemies=1` para combatir contra slime (50 HP), Cobrador ágil (100) y knight resistente (150). El Luchador tiene 125 HP y espada 25/30/40. Tras recibir daño obtiene 600 ms de protección. R restaura vida/enemigos/marcas. La entrada sin el parámetro conserva el muñeco y la práctica de movimiento.
+
+Mantener Q + derecho lanza marcas, Q + izquierdo hace TP bajo el cursor y 1–4 hacen TP directo. Los clics destinados a TP no inician ni liberan una carga de espada. Hay cuatro marcas reutilizables y 500 ms de recarga compartida. Los enemigos aceptan marcas, conservan colisiones y pierden sus marcas al morir. Ver `src/enemies/README.md` para configuración y contratos.
+
 Prototipo independiente de movilidad de Basti. Una sala rectangular, cámara superior fija y profundidad visual 3/4 en Phaser 4 + TypeScript. No sustituye la entrada principal ni el Player lateral.
 
 ## Ejecutar

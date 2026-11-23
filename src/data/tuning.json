@@ -55,6 +55,18 @@
     "fireballResidueDurationMs": 2800
   },
   "combat": {
+    "balance": {
+      "pointsPerHeart": 25,
+      "pointsPerAttackStat": 12.5,
+      "hurtInvulnerabilityMs": 600,
+      "hurtLockMs": 150,
+      "playerKnockbackSpeed": 110,
+      "knockbackMs": 120,
+      "knockbackScale": 6,
+      "navigationIntervalMs": 150,
+      "hitFlashMs": 120,
+      "deathFadeMs": 220
+    },
     "hitStopMs": 70,
     "comboWindowMs": 250,
     "parryWindowMs": 150

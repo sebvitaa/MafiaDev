@@ -221,10 +221,10 @@ export class SwordHitTracker {
   }
 }
 
-function intersectsSector(
+export function intersectsSector(
   origin: SwordDirection,
   direction: SwordDirection,
-  target: SwordDamageTarget,
+  target: Pick<SwordDamageTarget, 'x' | 'y' | 'radius'>,
   range: number,
   halfAngleDeg: number,
 ): boolean {

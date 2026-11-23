@@ -7,7 +7,7 @@ agent: gpt
 created: 2026-11-23T15:23:52.000Z
 title: adoptar controles Q marcas y registrar enemigos TP
 priority: p1
-status: open
+status: in_progress
 area: abilities
 refs: [SUP-alejandro-20261123-121806, PEN-basti-20261123-115351]
 closed_by:
@@ -32,3 +32,7 @@ Contrato documentado en src/abilities/README.md. Conserva movimiento y combate d
 
 ## Ampliación: teclas numéricas
 El humano pidió también 1, 2, 3 y 4 para TP directo, sin mantener Q. Implementados en abilities con la misma recarga de 500 ms y limpieza propia, sin cambios adicionales a RoomPlayer. Los números de los papeles coinciden con esas teclas y son estables al retirar/reemplazar otros. Incluir este control al documentar el laboratorio. Validación: 29 unit y 6 e2e PASS; HIS-alejandro-20261123-123733 y SUP-alejandro-20261123-123733.
+
+
+## Avance local de enemigos básicos
+El humano pidió programar slime, Cobrador ágil y knight resistente. En basti/basic-enemies se integró el combate 5cd9c45 con main 0c3cd69, Q/pointerup/carga, los tres cuerpos dinámicos registrados para TP, daño y muerte reales. Ver HIS-basti-20261123-133221 (94 unit/28 e2e PASS). Falta adopción/publicación oficial y conexión con mapas/jefe; no cerrar este pending todavía.

@@ -24,10 +24,16 @@ test('Luchador usa cuatro marcas, teclas 1–4 y Q + mouse con recarga compartid
     scene.player.body.reset(48, 230);
     scene.cameras.main.stopFollow().setScroll(0, 0);
   });
-  const ready = () => page.waitForFunction(() => {
-    const scene = window.__game!.scene.getScene('GameScene') as any;
-    return scene.children.getByName('teleport-status').text.includes('| TP LISTO');
-  });
+  const ready = async () => {
+    // La posición cambia en el input; el HUD se sincroniza al terminar el frame.
+    await page.evaluate(() => new Promise<void>((resolve) => {
+      window.__game!.scene.getScene('GameScene').events.once('postupdate', () => resolve());
+    }));
+    await page.waitForFunction(() => {
+      const scene = window.__game!.scene.getScene('GameScene') as any;
+      return scene.children.getByName('teleport-status').text.includes('| TP LISTO');
+    });
+  };
 
   await page.keyboard.down('q');
   for (const x of [80, 160, 240, 320]) await clickWorld(page, x, 230, 'right');

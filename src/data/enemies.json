@@ -1,5 +1,21 @@
 {
-  "slime": { "hp": 3, "dmg": 1, "speed": 40, "aggroRange": 96, "loot": "enemy_basic" },
-  "knight": { "hp": 6, "dmg": 1, "speed": 60, "aggroRange": 128, "windupMs": 400, "loot": "enemy_basic" },
+  "slime": {
+    "name": "SLIME", "hp": 50, "dmg": 25, "speed": 65, "aggroRange": 220,
+    "windupMs": 350, "activeMs": 140, "recoveryMs": 900, "staggerMs": 180,
+    "attackRange": 36, "halfAngleDeg": 58, "radius": 14, "lungeSpeed": 140,
+    "armored": false, "color": 10446804, "loot": "enemy_basic"
+  },
+  "cobrador": {
+    "name": "COBRADOR", "hp": 100, "dmg": 25, "speed": 105, "aggroRange": 270,
+    "windupMs": 450, "activeMs": 130, "recoveryMs": 720, "staggerMs": 140,
+    "attackRange": 52, "halfAngleDeg": 38, "radius": 14, "lungeSpeed": 100,
+    "armored": false, "color": 13272140, "loot": "enemy_basic"
+  },
+  "knight": {
+    "name": "KNIGHT", "hp": 150, "dmg": 50, "speed": 55, "aggroRange": 260,
+    "windupMs": 750, "activeMs": 180, "recoveryMs": 1100, "staggerMs": 120,
+    "attackRange": 64, "halfAngleDeg": 55, "radius": 18, "lungeSpeed": 55,
+    "armored": true, "color": 6389420, "loot": "enemy_basic"
+  },
   "miniboss": { "hp": 30, "dmg": 2, "speed": 70, "windupMs": 500, "loot": "miniboss" }
 }
