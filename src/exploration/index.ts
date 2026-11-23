@@ -47,3 +47,10 @@ export function installExploration(
   installCollectibles(scene, map, player);
   return { fog: installFog(scene, map, player) };
 }
+
+/** Escenario elegido en el título (seba): 1 inicio · 2 hub · 3 antes de la arena. PEN-vicho-20261123-114613. */
+const STAGE_START: Record<number, string> = { 1: 'spawn', 2: 'cp2', 3: 'cp4' };
+export function stageStart(map: Phaser.Tilemaps.Tilemap, stage: number): { x: number; y: number } | null {
+  const o = map.findObject('objects', (obj) => obj.name === STAGE_START[stage]);
+  return o ? { x: o.x!, y: o.y! + 10 } : null;
+}
