@@ -1,0 +1,5 @@
+{
+  "slime": { "hp": 3, "dmg": 1, "speed": 40, "aggroRange": 96, "loot": "enemy_basic" },
+  "knight": { "hp": 6, "dmg": 1, "speed": 60, "aggroRange": 128, "windupMs": 400, "loot": "enemy_basic" },
+  "miniboss": { "hp": 30, "dmg": 2, "speed": 70, "windupMs": 500, "loot": "miniboss" }
+}

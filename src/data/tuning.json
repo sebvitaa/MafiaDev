@@ -1,0 +1,15 @@
+{
+  "gravity": 900,
+  "player": {
+    "jumpVelocity": 300,
+    "airJumpMultiplier": 0.85,
+    "jumpCutDamping": 0.85,
+    "coyoteMs": 100,
+    "jumpBufferMs": 120
+  },
+  "combat": {
+    "hitStopMs": 70,
+    "comboWindowMs": 250,
+    "parryWindowMs": 150
+  }
+}

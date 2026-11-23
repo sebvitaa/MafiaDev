@@ -1,0 +1,22 @@
+{
+  "enemy_basic": [
+    { "id": null, "w": 60 },
+    { "id": "pocion_menor", "w": 35 },
+    { "id": "fragmento_corazon", "w": 5 }
+  ],
+  "miniboss": [
+    { "id": "fragmento_corazon", "w": 50 },
+    { "id": "elixir_furia", "w": 40 },
+    { "id": "hoja_eclipse", "w": 10 }
+  ],
+  "chest": [
+    { "id": "pocion_menor", "w": 60 },
+    { "id": "fragmento_corazon", "w": 28 },
+    { "id": "elixir_furia", "w": 10 },
+    { "id": "hoja_eclipse", "w": 2 }
+  ],
+  "chest_hidden": [
+    { "id": "elixir_furia", "w": 70 },
+    { "id": "hoja_eclipse", "w": 30 }
+  ]
+}

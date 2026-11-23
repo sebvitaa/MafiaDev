@@ -1,0 +1,22 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env
+.env.*
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Logs de npm (los logs de agentes SÍ se versionan)
+npm-debug.log*
+*.log
+!agents/history/logs/
+!agents/history/logs/*.log
+
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

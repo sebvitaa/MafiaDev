@@ -1,0 +1,804 @@
+<title>Stack del Metroidvania</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: manual técnico de una sola columna con índice fijo a la izquierda en pantallas anchas.
+   Paleta de noche pixel-art: índigo profundo, magenta de acento y turquesa secundario. Los colores de rareza son los del juego. */
+:root{
+  --bg:#13111c; --panel:#1b1828; --panel-2:#221e33; --line:#2f2a45;
+  --fg:#ebe7f4; --muted:#a39eb8; --accent:#ff5fa2; --teal:#45d6c4; --gold:#f2c14e;
+  --code-bg:#0d0b15; --code-fg:#e3def0;
+  --r-common:#bdb8cc; --r-rare:#5aa8ff; --r-epic:#b874ff; --r-legend:#ffb347;
+  --font-display:"Pixelify Sans", "Courier New", monospace;
+  --font-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#f7f5fb; --panel:#ffffff; --panel-2:#f0ecf8; --line:#e0daee;
+  --fg:#1d1a2b; --muted:#5d5873; --accent:#c2236f; --teal:#0b7a6e; --gold:#8f6200;
+  --code-bg:#f1eef8; --code-fg:#251f38;
+  --r-common:#6b6680; --r-rare:#1f6fd1; --r-epic:#7a3bd6; --r-legend:#b0600a;
+  color-scheme:light;
+}}
+:root[data-theme="light"]{
+  --bg:#f7f5fb; --panel:#ffffff; --panel-2:#f0ecf8; --line:#e0daee;
+  --fg:#1d1a2b; --muted:#5d5873; --accent:#c2236f; --teal:#0b7a6e; --gold:#8f6200;
+  --code-bg:#f1eef8; --code-fg:#251f38;
+  --r-common:#6b6680; --r-rare:#1f6fd1; --r-epic:#7a3bd6; --r-legend:#b0600a;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:0 64px}
+a{color:var(--teal);text-underline-offset:2px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px}
+@media (min-width:1100px){.wrap{grid-template-columns:220px minmax(0,1fr)}}
+nav.toc{display:none}
+@media (min-width:1100px){
+  nav.toc{display:block;position:sticky;top:calc(env(safe-area-inset-top, 0px) + 24px);align-self:start;max-height:calc(100vh - 48px);overflow:auto;padding-top:24px}
+}
+nav.toc p{font-family:var(--font-display);color:var(--accent);margin:0 0 8px;font-size:15px}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;font-size:14px}
+nav.toc a{color:var(--muted);text-decoration:none;display:block;padding:3px 0}
+nav.toc a:hover{color:var(--fg)}
+main{min-width:0}
+header.hero{padding-block:48px 24px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(2.2rem,6vw,3.6rem);line-height:1.05;margin:10px 0 16px;text-wrap:balance}
+h1 span{color:var(--accent)}
+h2{font-family:var(--font-display);font-weight:700;font-size:clamp(1.5rem,3.5vw,2rem);line-height:1.15;margin:0 0 6px;text-wrap:balance}
+h3{font-size:1.1rem;margin:28px 0 8px}
+section{padding-block:44px 8px;border-bottom:1px solid var(--line)}
+section > p,section > ul,section > ol,.lede{max-width:72ch}
+.lede{font-size:1.12rem;color:var(--fg)}
+.sub{color:var(--muted);margin:0 0 20px;max-width:72ch}
+.muted{color:var(--muted)}
+code{font-family:var(--font-mono);font-size:.88em;background:var(--panel-2);padding:1px 5px;border-radius:4px}
+.verdict{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));margin-top:24px}
+.vcard{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.vcard b{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+.vcard strong{font-size:1.05rem}
+.vcard p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.callout{border-left:3px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 8px 8px 0;max-width:80ch;margin:18px 0}
+.callout.teal{border-left-color:var(--teal)}
+.callout p{margin:0}
+.tbl{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:640px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{background:var(--panel-2);font-weight:600;font-size:13px;letter-spacing:.02em}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.pick{background:color-mix(in srgb, var(--teal) 10%, transparent)}
+.chip{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.06em;padding:2px 7px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+.must{color:var(--teal)} .should{color:var(--gold)} .could{color:var(--r-epic)} .cut{color:var(--muted);text-decoration:line-through}
+.scope{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));margin:18px 0}
+.scope > div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.scope ul{margin:8px 0 0;padding-left:18px;font-size:14.5px}
+.scope li{margin:2px 0}
+.rarity{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.rarity span{font-family:var(--font-mono);font-size:12px;padding:3px 9px;border-radius:4px;border:1px solid currentColor}
+.loop{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0;font-size:14.5px}
+.loop span{background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:6px}
+.loop i{color:var(--accent);font-style:normal;font-family:var(--font-mono)}
+/* Diagrama de capas */
+.arch{display:grid;gap:8px;margin:18px 0;max-width:820px}
+.layer{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.layer b{font-family:var(--font-mono);font-size:12px;color:var(--accent);padding-top:2px}
+.layer div{font-size:14px;min-width:0}
+.layer small{display:block;color:var(--muted);font-size:12.5px}
+@media (max-width:560px){.layer{grid-template-columns:1fr}}
+.arrow{font-family:var(--font-mono);color:var(--muted);font-size:12px;padding-left:14px}
+/* Código */
+.code{position:relative;margin:14px 0 20px;max-width:900px}
+.code .label{font-family:var(--font-mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px}
+.code pre{margin:0;background:var(--code-bg);color:var(--code-fg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--font-mono);font-size:13px;line-height:1.55;tab-size:2}
+.code button{font:inherit;font-size:11px;background:var(--panel-2);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:2px 8px;cursor:pointer}
+.code button:hover{border-color:var(--accent)}
+.cm{color:var(--muted)}
+.two{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.two > div{min-width:0}
+ul.check{list-style:none;padding-left:0}
+ul.check li{padding-left:24px;position:relative;margin:6px 0}
+ul.check li::before{content:"▸";position:absolute;left:4px;color:var(--accent)}
+.src{font-size:14px;columns:2 320px;column-gap:32px}
+.src li{break-inside:avoid;margin:3px 0}
+footer{padding-top:24px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:no-preference){.vcard,.scope>div{transition:border-color .15s}.vcard:hover,.scope>div:hover{border-color:var(--accent)}}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Índice">
+  <p>Índice</p>
+  <ol>
+    <li><a href="#veredicto">Veredicto</a></li>
+    <li><a href="#alcance">Alcance para 1 día</a></li>
+    <li><a href="#motores">Motores comparados</a></li>
+    <li><a href="#arquitectura">Arquitectura y patrones</a></li>
+    <li><a href="#codigo">Código base</a></li>
+    <li><a href="#animacion">Animación y game feel</a></li>
+    <li><a href="#arte">Personajes y arte</a></li>
+    <li><a href="#mapa">Mapa y niveles</a></li>
+    <li><a href="#sonido">Sonido y música</a></li>
+    <li><a href="#ia">Flujo con IA</a></li>
+    <li><a href="#plan">Roles y horario</a></li>
+    <li><a href="#opensource">Open source</a></li>
+    <li><a href="#riesgos">Riesgos</a></li>
+    <li><a href="#arranque">Arranque</a></li>
+    <li><a href="#fuentes">Fuentes</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Hackatón · 4 personas · 1 día · investigación del 23-11-2026</div>
+  <h1>Stack del <span>Metroidvania</span></h1>
+  <p class="lede">Guía para construir con ayuda de IA el juego del tablero de mecánicas: plataformas 2D de acción con el movimiento de Hollow Knight, combate con combos y parry, loot con rareza, exploración con checkpoints y minijefes, y dos clases (Luchador que para el tiempo y Mago de almas).</p>
+  <p class="muted">Cubre lenguaje, motor, patrones de diseño, animaciones, arte, mapas, sonido, el flujo de trabajo con agentes de IA, un horario hora a hora y repositorios open source de los que aprender. Las versiones, estrellas y licencias se comprobaron en GitHub y npm el 23 de noviembre de 2026.</p>
+</header>
+
+<!-- ============ 1 ============ -->
+<section id="veredicto">
+  <h2>Veredicto</h2>
+  <p class="sub">Si solo leéis una sección, que sea esta.</p>
+  <p><strong>Usad Phaser 4 con TypeScript y Vite</strong>, en pixel art 2D de scroll lateral y desplegado en el navegador. Todo el juego vive en archivos de código, sin escenas de editor, así que cuatro personas con cuatro agentes de IA pueden trabajar en paralelo sin pisarse. Además, el repositorio oficial de Phaser incluye 28 <em>skills</em> para agentes de IA que enseñan la API de la versión 4 al modelo.</p>
+  <div class="verdict">
+    <div class="vcard"><b>Motor</b><strong>Phaser 4.2 + Arcade Physics</strong><p>Versión estable desde abril de 2026; la última en npm es la 4.2.1.</p></div>
+    <div class="vcard"><b>Lenguaje</b><strong>TypeScript estricto</strong><p>Los tipos son el contrato entre personas y agentes, y el compilador detecta errores del código generado.</p></div>
+    <div class="vcard"><b>Mapas</b><strong>Tiled → JSON</strong><p>Phaser lo importa de forma nativa. Las capas de objetos sirven para spawns, cofres y checkpoints.</p></div>
+    <div class="vcard"><b>Sprites</b><strong>Aseprite / LibreSprite + packs CC0</strong><p>PixelLab (vía MCP) genera personajes y animaciones con IA.</p></div>
+    <div class="vcard"><b>Sonido</b><strong>jsfxr / ChipTone + Kenney audio</strong><p>ElevenLabs SFX para efectos realistas. BeepBox o Bosca Ceoil para la música.</p></div>
+    <div class="vcard"><b>IA</b><strong>Claude Code + skills de Phaser</strong><p>Más el MCP de Playwright para que el agente juegue y saque capturas, y FreeLLMAPI para los datos.</p></div>
+  </div>
+  <div class="callout teal"><p><strong>Plan B: Godot 4.6 con GDScript</strong>, solo si al menos dos personas del equipo ya han terminado un juego en Godot. Tiene mejores herramientas visuales de animación y tilemaps, y el MCP <code>hi-godot/godot-ai</code> conecta Claude Code al editor. A cambio, las escenas <code>.tscn</code> dan conflictos de merge y los modelos confunden a menudo la sintaxis de Godot 3 con la de Godot 4.</p></div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="alcance">
+  <h2>Alcance realista para un día</h2>
+  <p class="sub">El tablero describe un juego de varios meses. Esta es la priorización MoSCoW de cada nota adhesiva.</p>
+
+  <h3>Propuesta de valor (borrador para validar)</h3>
+  <p class="lede">«Un metroidvania de acción en pixel art donde puedes <em>detener el tiempo</em> para encadenar combos imposibles y saquear cofres de rareza creciente.»</p>
+
+  <h3>Bucle jugable (core loop)</h3>
+  <div class="loop" aria-label="Bucle jugable">
+    <span>Explorar sala</span><i>→</i><span>Combatir</span><i>→</i><span>Loot con rareza</span><i>→</i><span>Equipar / mejorar</span><i>→</i><span>Abrir zona nueva o minijefe</span><i>→</i><span>Checkpoint</span><i>↺</i>
+  </div>
+
+  <div class="scope">
+    <div>
+      <span class="chip must">MUST · sin esto no hay demo</span>
+      <ul>
+        <li>Caminar, correr, saltar y doble salto</li>
+        <li>Ataque básico con combo de 3 golpes</li>
+        <li>Esquivar (dash con invulnerabilidad breve)</li>
+        <li>Barra de vida del jugador y de los enemigos</li>
+        <li>2 tipos de enemigo y 1 minijefe</li>
+        <li>Drop de enemigos y cofres con rareza</li>
+        <li>Checkpoints; al morir, los enemigos reaparecen</li>
+        <li>Entre 4 y 6 salas en 1 o 2 zonas</li>
+        <li>Pantalla de título, HUD y muerte</li>
+      </ul>
+    </div>
+    <div>
+      <span class="chip should">SHOULD · si vamos bien en la hora 5</span>
+      <ul>
+        <li>Parry con ventana de unos 150 ms</li>
+        <li>Ataque cargado</li>
+        <li>Luchador: <em>parar el tiempo</em></li>
+        <li>Minimapa con las salas visitadas</li>
+        <li>Consumibles, buff temporal y corazón extra</li>
+        <li>Equipamiento en una sola ranura (arma)</li>
+        <li>Cofres ocultos</li>
+        <li>Sala tutorial</li>
+      </ul>
+    </div>
+    <div>
+      <span class="chip could">COULD · solo si sobra tiempo</span>
+      <ul>
+        <li>Bloqueo y contraataque</li>
+        <li>Clase Mago con almas como munición</li>
+        <li>Teletransporte / atravesar</li>
+        <li>Coleccionables en el mapa</li>
+        <li>Mejoras permanentes en un banco</li>
+      </ul>
+    </div>
+    <div>
+      <span class="chip cut">CUT · fuera de la hackatón</span>
+      <ul>
+        <li>Árbol de habilidades completo (como mucho 3 nodos)</li>
+        <li>Farmeo y recolección de recursos</li>
+        <li>Mundo abierto 3D (las imágenes de ambientación sirven como referencia de paleta y tono)</li>
+        <li>Guardado en la nube y multijugador</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Rarezas (contrato compartido de datos)</h3>
+  <div class="rarity">
+    <span style="color:var(--r-common)">common · 60 %</span>
+    <span style="color:var(--r-rare)">rare · 28 %</span>
+    <span style="color:var(--r-epic)">epic · 10 %</span>
+    <span style="color:var(--r-legend)">legendary · 2 %</span>
+  </div>
+  <p class="muted">Los porcentajes son un punto de partida para la tabla de cofres normales. Los cofres ocultos y los minijefes usan tablas propias más generosas.</p>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="motores">
+  <h2>Motores comparados</h2>
+  <p class="sub">Criterios ponderados para este caso: cuatro personas, un día, mucho código generado por IA, plataformas 2D y una demo jugable delante del jurado.</p>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Opción</th><th>Programación con IA</th><th>4 personas en paralelo</th><th>Herramientas 2D de plataformas</th><th>Entrega / demo</th><th>Riesgo principal</th></tr></thead>
+    <tbody>
+      <tr class="pick"><td><strong>Phaser 4 + TS</strong><br><span class="chip must">RECOMENDADO</span></td><td>Todo es código. Hay 28 skills oficiales en <code>phaserjs/phaser/skills</code> y un MCP oficial, Phaser Game Agent.</td><td>Muy buena: hay un archivo por sistema y ninguna escena de editor.</td><td>Arcade Physics, tilemaps de Tiled, importador de Aseprite, cámaras, partículas y tweens.</td><td>Se juega en el navegador con un enlace. Despliegue en itch.io, Vercel o GitHub Pages.</td><td>La v4 es reciente y los modelos mezclan la API de la v3. Se mitiga con las skills.</td></tr>
+      <tr><td><strong>Godot 4.6 + GDScript</strong><br><span class="chip should">PLAN B</span></td><td>Los archivos son texto. Hay varios MCP: godot-ai (★3,6k) y godot-mcp (★454).</td><td>Media: los <code>.tscn</code> chocan si dos personas tocan la misma escena.</td><td>Excelentes: AnimationPlayer, TileMapLayer, CharacterBody2D y editor visual.</td><td>Exporta a web y escritorio. Hay que instalar las plantillas de exportación.</td><td>Confusión entre Godot 3 y 4. Hace falta experiencia previa con el editor.</td></tr>
+      <tr><td><strong>Unity 6 (C#)</strong></td><td>C# se genera bien, pero el editor no se automatiza tan fácilmente.</td><td>Mala: escenas y prefabs en YAML dan merges dolorosos.</td><td>Muy completas, pero pesadas de montar.</td><td>El build WebGL es lento y pesado.</td><td>La instalación y la importación consumen horas del día.</td></tr>
+      <tr><td><strong>KAPLAY (JS)</strong></td><td>API mínima, fácil de generar.</td><td>Buena.</td><td>Básicas: tilemaps y cámaras limitados para un metroidvania.</td><td>Navegador.</td><td>Os quedaréis cortos cuando lleguen el minimapa y las salas.</td></tr>
+      <tr><td><strong>Bevy / LÖVE</strong></td><td>Rust compila lento; Lua tiene menos ecosistema.</td><td>Media.</td><td>Hay que hacerlo casi todo a mano.</td><td>Variable.</td><td>Demasiada infraestructura para un día.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout"><p><strong>Por qué Phaser gana aquí:</strong> la herramienta principal de la hackatón será un agente de IA que lee y escribe texto. Con Phaser no hay estado escondido en un editor y TypeScript valida cada cambio con <code>tsc</code>. El agente puede abrir el juego en un navegador con Playwright, jugarlo y ver capturas. El README de Phaser 4 lo dice explícitamente: «Point your AI coding agent at the skills/ folder».</p></div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="arquitectura">
+  <h2>Arquitectura y patrones de diseño</h2>
+  <p class="sub">Responde a la nota «Clean architecture para no pisarnos»: cada persona es dueña de carpetas concretas y los sistemas solo se comunican a través de contratos.</p>
+
+  <div class="arch" aria-label="Capas de la arquitectura">
+    <div class="layer"><b>scenes/</b><div>Boot → Preload → Title → <strong>Game</strong> + <strong>UI</strong> (escena paralela)<small>Orquestan: crean entidades, conectan sistemas y escuchan eventos. No contienen reglas de juego.</small></div></div>
+    <div class="arrow">↓ usan</div>
+    <div class="layer"><b>entities/</b><div>Player, Enemy, Boss, Chest, Checkpoint, Door<small>Sprites con una máquina de estados. Se componen de piezas de <code>components/</code>.</small></div></div>
+    <div class="layer"><b>components/</b><div>Health, Hitbox, Hurtbox, Knockback, Loot<small>Piezas pequeñas y reutilizables (composición en lugar de herencia).</small></div></div>
+    <div class="layer"><b>systems/</b><div>Combat, Loot, Inventory, Checkpoint, Minimap, Abilities<small>Reglas del juego. Reaccionan a eventos del bus.</small></div></div>
+    <div class="arrow">↓ dependen solo de</div>
+    <div class="layer"><b>core/ + types/</b><div>EventBus, GameState, Input, Juice, Pool · contratos de eventos, items y enemigos<small>Se <strong>congelan</strong> tras la hora 1. Cualquier cambio se avisa al equipo.</small></div></div>
+    <div class="layer"><b>data/*.json</b><div>items, enemies, loot tables, classes, abilities<small>Equilibrio de juego sin tocar código. Un modelo gratuito puede generarlo.</small></div></div>
+  </div>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Patrón</th><th>Dónde se usa</th><th>Por qué en este juego</th></tr></thead>
+    <tbody>
+      <tr><td><strong>State</strong> (máquina de estados finita)</td><td>Player: idle, run, air, dash, attack, parry, hurt, dead. Enemigos: patrol, chase, windup, attack, stagger.</td><td>Combos, parry y esquiva son estados con ventanas de tiempo. Sin una FSM el código se llena de <code>if</code> anidados y los agentes rompen transiciones.</td></tr>
+      <tr><td><strong>Observer</strong> (EventBus tipado)</td><td><code>enemy:killed</code> → Loot · <code>player:hit</code> → UI + Juice</td><td>Desacopla a las cuatro personas: quien hace la UI no importa la clase Player.</td></tr>
+      <tr><td><strong>Data-driven</strong></td><td>Items, rarezas, tablas de loot, stats de enemigos y clases en JSON.</td><td>Se equilibra en caliente y otra persona o un LLM gratuito puede generar el contenido.</td></tr>
+      <tr><td><strong>Component / composición</strong></td><td>Health, Hitbox y Hurtbox compartidos por jugador, enemigos y jefe.</td><td>Un solo sistema de daño para todo. El parry es simplemente una hurtbox que «refleja».</td></tr>
+      <tr><td><strong>Strategy</strong></td><td>Habilidades de clase con la interfaz <code>Ability</code>: TimeStop, Teleport, SoulBolt.</td><td>Añadir la clase Mago no toca el código del Luchador.</td></tr>
+      <tr><td><strong>Command</strong> (abstracción de input)</td><td><code>Input</code> expone acciones (<code>jumpPressed</code>, <code>attackPressed</code>) en lugar de teclas.</td><td>Teclado y mando con el mismo código, buffer de inputs y posibilidad de grabar repeticiones para testear.</td></tr>
+      <tr><td><strong>Object Pool</strong></td><td>Proyectiles, números de daño y partículas de golpe.</td><td>Evita tirones del recolector de basura en combates intensos. En Phaser basta con <code>Group</code> con <code>maxSize</code>.</td></tr>
+      <tr><td><strong>Singleton acotado</strong> (GameState)</td><td>Vida, inventario, checkpoint actual y salas visitadas, guardado en <code>localStorage</code>.</td><td>Un único lugar de verdad para respawn y minimapa. Usadlo solo para estado global.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Estructura de carpetas y responsables</h3>
+  <div class="code"><div class="label"><span>árbol del repo</span><button type="button" data-copy>Copiar</button></div><pre>src/
+  main.ts                 <span class="cm"># config de Phaser (pixelArt, arcade, escenas)</span>
+  scenes/                 <span class="cm"># P3: Boot, Preload, Title, Game · P4: UI</span>
+  entities/player/        <span class="cm"># P1: Player.ts + states/*.ts</span>
+  entities/enemies/       <span class="cm"># P2: Slime.ts, Knight.ts, Boss.ts</span>
+  components/             <span class="cm"># P2: Health, Hitbox, Hurtbox, Knockback</span>
+  systems/                <span class="cm"># P2 Combat · P3 Checkpoint, Minimap · P4 Loot, Inventory</span>
+  abilities/              <span class="cm"># P1: TimeStop.ts, Teleport.ts (Strategy)</span>
+  core/                   <span class="cm"># CONGELADO tras la hora 1: EventBus, GameState, Input, Juice, Pool</span>
+  types/                  <span class="cm"># CONGELADO: events.ts, items.ts, enemies.ts</span>
+  data/                   <span class="cm"># P4: items.json, loot.json, enemies.json, classes.json</span>
+public/assets/
+  sprites/ tilesets/ maps/ audio/ <span class="cm"># P4 arte y audio · P3 maps (Tiled)</span>
+CLAUDE.md                 <span class="cm"># reglas para todos los agentes</span>
+.claude/skills/           <span class="cm"># skills oficiales de Phaser 4</span>
+.claude/agents/           <span class="cm"># subagentes: playtester, reviewer</span></pre></div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="codigo">
+  <h2>Código base</h2>
+  <p class="sub">Esqueletos para la primera hora. Son API de Phaser 4 (tinte con <code>setTintMode</code>, filtros en lugar de preFX/postFX). Revisadlos con <code>tsc</code> antes de construir encima.</p>
+
+  <div class="code"><div class="label"><span>src/main.ts · configuración</span><button type="button" data-copy>Copiar</button></div><pre>import Phaser from 'phaser';
+import { Boot, Preload, Title, Game, UI } from './scenes';
+
+new Phaser.Game({
+  type: Phaser.AUTO,
+  width: 480, height: 270,          <span class="cm">// resolución interna 16:9; se escala ×4 a 1080p</span>
+  pixelArt: true,                   <span class="cm">// sin suavizado: píxeles nítidos</span>
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+  physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 900 }, debug: false } },
+  scene: [Boot, Preload, Title, Game, UI],
+});</pre></div>
+
+  <div class="two">
+  <div class="code"><div class="label"><span>core/StateMachine.ts · patrón State</span><button type="button" data-copy>Copiar</button></div><pre>export interface State&lt;T&gt; {
+  enter?(owner: T, prev: string): void;
+  update?(owner: T, dt: number): void;
+  exit?(owner: T): void;
+}
+
+export class StateMachine&lt;T&gt; {
+  private states = new Map&lt;string, State&lt;T&gt;&gt;();
+  current = '';
+  constructor(private owner: T) {}
+
+  add(name: string, s: State&lt;T&gt;) { this.states.set(name, s); return this; }
+
+  set(name: string, force = false) {
+    if (name === this.current &amp;&amp; !force) return;
+    const prev = this.current;
+    this.states.get(prev)?.exit?.(this.owner);
+    this.current = name;
+    this.states.get(name)?.enter?.(this.owner, prev);
+  }
+
+  update(dt: number) {
+    this.states.get(this.current)?.update?.(this.owner, dt);
+  }
+}</pre></div>
+
+  <div class="code"><div class="label"><span>entities/player/states/Air.ts · coyote time, buffer y doble salto</span><button type="button" data-copy>Copiar</button></div><pre>import type { State } from '../../../core/StateMachine';
+import type { Player } from '../Player';
+
+<span class="cm">// Player.update() resta dt a coyote, jumpBuffer y comboWindow</span>
+export const Air: State&lt;Player&gt; = {
+  update(p) {
+    p.moveX(p.input.axisX * p.stats.speed);
+
+    if (p.input.jumpPressed) {
+      if (p.coyote &gt; 0) p.jump(1);          <span class="cm">// salto justo después de caer de un borde</span>
+      else if (p.airJumps &gt; 0) {           <span class="cm">// doble salto</span>
+        p.airJumps--; p.jump(0.85);
+      } else p.jumpBuffer = 120;            <span class="cm">// recuerda el input 120 ms</span>
+    }
+    <span class="cm">// salto variable: soltar el botón corta la subida</span>
+    if (!p.input.jumpHeld &amp;&amp; p.body.velocity.y &lt; 0) p.body.velocity.y *= 0.5;
+
+    if (p.input.dashPressed &amp;&amp; p.canDash) return p.fsm.set('dash');
+    if (p.input.attackPressed) return p.fsm.set('attack');
+
+    if (p.body.blocked.down) {
+      p.airJumps = p.stats.airJumps;
+      p.fsm.set(p.jumpBuffer &gt; 0 ? 'jump' : 'ground');
+    }
+  },
+};</pre></div>
+  </div>
+
+  <div class="two">
+  <div class="code"><div class="label"><span>entities/player/states/Attack.ts · combo de 3 golpes</span><button type="button" data-copy>Copiar</button></div><pre>export const Attack: State&lt;Player&gt; = {
+  enter(p) {
+    <span class="cm">// si llega dentro de la ventana, encadena el siguiente golpe</span>
+    p.combo = p.comboWindow &gt; 0 ? (p.combo % 3) + 1 : 1;
+    p.play(`attack${p.combo}`);
+    p.hitbox.activate({ dmg: p.combo === 3 ? 2 : 1, frames: [2, 3] });
+  },
+  update(p) {
+    if (p.input.attackPressed) p.queuedAttack = true;   <span class="cm">// buffer</span>
+    if (p.anims.isPlaying) return;
+    p.comboWindow = 250;
+    if (p.queuedAttack &amp;&amp; p.combo &lt; 3) {
+      p.queuedAttack = false;
+      return p.fsm.set('attack', true);   <span class="cm">// force: re-entrar en el mismo estado</span>
+    }
+    p.fsm.set(p.body.blocked.down ? 'ground' : 'air');
+  },
+  exit(p) { p.hitbox.deactivate(); p.queuedAttack = false; },
+};</pre></div>
+
+  <div class="code"><div class="label"><span>core/EventBus.ts · patrón Observer tipado</span><button type="button" data-copy>Copiar</button></div><pre>import Phaser from 'phaser';
+
+export type GameEvents = {
+  'player:hit':         { dmg: number; hp: number };
+  'enemy:killed':       { kind: string; x: number; y: number };
+  'item:picked':        { itemId: string };
+  'checkpoint:reached': { id: string };
+  'room:entered':       { roomId: string };
+};
+type Fn&lt;K extends keyof GameEvents&gt; = (p: GameEvents[K]) =&gt; void;
+
+const em = new Phaser.Events.EventEmitter();
+export const bus = {
+  emit&lt;K extends keyof GameEvents&gt;(k: K, p: GameEvents[K]) { em.emit(k, p); },
+  on&lt;K extends keyof GameEvents&gt;(k: K, fn: Fn&lt;K&gt;, ctx?: unknown) { em.on(k, fn, ctx); },
+  off&lt;K extends keyof GameEvents&gt;(k: K, fn: Fn&lt;K&gt;, ctx?: unknown) { em.off(k, fn, ctx); },
+};
+
+<span class="cm">// UIScene:   bus.on('player:hit', e =&gt; this.hearts.set(e.hp));</span>
+<span class="cm">// LootSys:   bus.on('enemy:killed', e =&gt; this.drop(e.kind, e.x, e.y));</span>
+<span class="cm">// Al reiniciar una escena: this.events.once('shutdown', () =&gt; bus.off(...))</span></pre></div>
+  </div>
+
+  <div class="two">
+  <div class="code"><div class="label"><span>data/items.json · data-driven</span><button type="button" data-copy>Copiar</button></div><pre>[
+  { "id": "pocion_menor", "name": "Poción menor", "rarity": "common",
+    "type": "consumable", "heal": 2 },
+  { "id": "fragmento_corazon", "name": "Fragmento de corazón", "rarity": "rare",
+    "type": "heart", "maxHp": 1 },
+  { "id": "elixir_furia", "name": "Elixir de furia", "rarity": "epic",
+    "type": "buff", "stats": { "atk": 2 }, "durationMs": 10000 },
+  { "id": "hoja_eclipse", "name": "Hoja del eclipse", "rarity": "legendary",
+    "type": "equipment", "slot": "weapon", "stats": { "atk": 4, "speed": 10 } }
+]</pre></div>
+
+  <div class="code"><div class="label"><span>systems/Loot.ts · tabla ponderada</span><button type="button" data-copy>Copiar</button></div><pre>export type LootEntry = { id: string | null; w: number }; <span class="cm">// null = no suelta nada</span>
+
+export function roll(table: LootEntry[], rng = Math.random): string | null {
+  let r = rng() * table.reduce((s, e) =&gt; s + e.w, 0);
+  for (const e of table) if ((r -= e.w) &lt; 0) return e.id;
+  return null;
+}
+
+<span class="cm">// data/loot.json</span>
+<span class="cm">// "enemy_basic":  [{ "id": null, "w": 60 }, { "id": "pocion_menor", "w": 35 }, { "id": "fragmento_corazon", "w": 5 }]</span>
+<span class="cm">// "chest_hidden": [{ "id": "elixir_furia", "w": 70 }, { "id": "hoja_eclipse", "w": 30 }]</span></pre></div>
+  </div>
+
+  <div class="two">
+  <div class="code"><div class="label"><span>core/Juice.ts · game feel</span><button type="button" data-copy>Copiar</button></div><pre>import Phaser from 'phaser';
+
+export const Juice = {
+  <span class="cm">/** congela física y animaciones unos ms: el golpe "pesa" */</span>
+  hitStop(scene: Phaser.Scene, ms = 70) {
+    scene.physics.world.pause();
+    scene.anims.pauseAll();
+    setTimeout(() =&gt; { scene.physics.world.resume(); scene.anims.resumeAll(); }, ms);
+  },
+  shake(scene: Phaser.Scene, ms = 90, k = 0.004) {
+    scene.cameras.main.shake(ms, k);
+  },
+  <span class="cm">/** destello blanco (API de tinte de Phaser 4) */</span>
+  flash(s: Phaser.GameObjects.Sprite) {
+    s.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+    s.scene.time.delayedCall(60, () =&gt;
+      s.setTintMode(Phaser.TintModes.MULTIPLY).clearTint());
+  },
+  damageNumber(scene: Phaser.Scene, x: number, y: number, n: number) {
+    const t = scene.add.text(x, y, `${n}`, { fontFamily: 'monospace', fontSize: '8px' });
+    scene.tweens.add({ targets: t, y: y - 14, alpha: 0, duration: 500,
+      ease: 'Cubic.easeOut', onComplete: () =&gt; t.destroy() });
+  },
+};
+<span class="cm">// onHit(enemy): Juice.hitStop(s, 60); Juice.flash(enemy);</span>
+<span class="cm">//               Juice.shake(s); Juice.damageNumber(s, enemy.x, enemy.y - 8, dmg);</span></pre></div>
+
+  <div class="code"><div class="label"><span>abilities/TimeStop.ts · patrón Strategy</span><button type="button" data-copy>Copiar</button></div><pre>export interface Ability {
+  id: string; cooldownMs: number;
+  activate(scene: GameScene, caster: Player): void;
+}
+
+export const TimeStop: Ability = {
+  id: 'time_stop', cooldownMs: 12000,
+  activate(scene) {
+    const frozen = [...scene.enemies.getChildren(), ...scene.projectiles.getChildren()]
+      as Phaser.Physics.Arcade.Sprite[];
+    frozen.forEach(o =&gt; { (o.body as Phaser.Physics.Arcade.Body).moves = false; o.anims.pause(); });
+    scene.enemyAI.paused = true;                 <span class="cm">// la IA deja de decidir</span>
+
+    const { width: w, height: h } = scene.scale;
+    const veil = scene.add.rectangle(0, 0, w, h, 0x6b2fbf, 0.35)
+      .setOrigin(0).setScrollFactor(0).setDepth(900).setAlpha(0);
+    scene.tweens.add({ targets: veil, alpha: 1, duration: 150 });
+
+    scene.time.delayedCall(3000, () =&gt; {
+      frozen.filter(o =&gt; o.active).forEach(o =&gt; {
+        (o.body as Phaser.Physics.Arcade.Body).moves = true; o.anims.resume();
+      });
+      scene.enemyAI.paused = false;
+      scene.tweens.add({ targets: veil, alpha: 0, duration: 200, onComplete: () =&gt; veil.destroy() });
+    });
+  },
+};</pre></div>
+  </div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="animacion">
+  <h2>Animación y game feel</h2>
+  <p class="sub">En una demo de 3 minutos, el jurado juzga sobre todo la sensación al controlar. Dedicad la hora de pulido a esto antes que a añadir contenido.</p>
+
+  <div class="two">
+    <div>
+      <h3>Animaciones por personaje (mínimo viable)</h3>
+      <div class="tbl"><table style="min-width:0">
+        <thead><tr><th>Tag en Aseprite</th><th>Frames</th><th>FPS</th></tr></thead>
+        <tbody>
+          <tr><td>idle</td><td class="num">4</td><td class="num">8</td></tr>
+          <tr><td>run</td><td class="num">6–8</td><td class="num">12</td></tr>
+          <tr><td>jump / fall</td><td class="num">2 + 2</td><td class="num">10</td></tr>
+          <tr><td>attack1–3</td><td class="num">4 c/u</td><td class="num">16</td></tr>
+          <tr><td>dash</td><td class="num">3</td><td class="num">16</td></tr>
+          <tr><td>hurt / death</td><td class="num">2 / 6</td><td class="num">10</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">Exportad desde Aseprite con <em>Export Sprite Sheet</em> y datos JSON con <em>tags</em>. En Phaser: <code>this.load.aseprite('hero', 'hero.png', 'hero.json')</code> y <code>this.anims.createFromAseprite('hero')</code>, que crea todas las animaciones por tag.</p>
+    </div>
+    <div>
+      <h3>Checklist de juice</h3>
+      <ul class="check">
+        <li><strong>Hitstop</strong> de 50–100 ms en cada golpe que conecta.</li>
+        <li><strong>Destello blanco</strong> del enemigo y <strong>knockback</strong>.</li>
+        <li><strong>Screen shake</strong> corto. Más fuerte en el golpe 3 y en el parry.</li>
+        <li><strong>Coyote time</strong> (~100 ms), <strong>jump buffer</strong> (~120 ms) y <strong>salto variable</strong>.</li>
+        <li><strong>Squash &amp; stretch</strong> al aterrizar (tween de escala de 80 ms).</li>
+        <li>Partículas de polvo al correr o aterrizar y chispas al hacer parry.</li>
+        <li>Cámara con <code>startFollow(player, true, 0.1, 0.1)</code> y <code>setDeadzone</code>.</li>
+        <li>Fotogramas de anticipación (<em>windup</em>) en los ataques enemigos para que el parry sea legible.</li>
+        <li>Números de daño y la barra de vida bajando con un tween.</li>
+        <li>Parar el tiempo: velo morado, sonido grave y desaturación con un filtro de Phaser 4.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout teal"><p>Referencia de oro: Celeste publicó su clase <code>Player.cs</code> (unas 5.400 líneas, licencia MIT) con todos los trucos de control: coyote time, buffer, corner correction y dash. Pedidle a vuestro agente que la lea y adapte <em>ideas</em>, no que copie código. Complementad con el vídeo de Game Maker's Toolkit «Why Does Celeste Feel So Good to Play?» y las charlas «Juice it or lose it» y «The Art of Screenshake».</p></div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="arte">
+  <h2>Personajes y arte</h2>
+  <p class="sub">Lo que más tiempo consume y lo que más delata un juego de hackatón es la inconsistencia visual. Fijad las reglas en la hora 0.</p>
+
+  <h3>Guía de estilo (decidir en la hora 0)</h3>
+  <ul class="check">
+    <li><strong>Resolución interna</strong> 480×270, tiles de <strong>16×16</strong>, personajes de unos <strong>32×32</strong> y jefe de 64×64.</li>
+    <li><strong>Una paleta cerrada</strong> de Lospec (por ejemplo, una de 32 colores). Todo sprite generado o descargado se reduce a esa paleta. Para la ambientación de las referencias (magenta y turquesa nocturno), buscad paletas de unos 32 colores con esos tonos.</li>
+    <li><strong>Perspectiva</strong>: lateral pura. Nada de assets top-down mezclados.</li>
+    <li><strong>Contorno</strong>: oscuro de 1 px en personajes y enemigos para separarlos del fondo.</li>
+  </ul>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Vía</th><th>Herramienta</th><th>Cuándo usarla</th><th>Coste / licencia</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Packs gratuitos</strong></td><td>Kenney (Pixel Platformer, 1-Bit Platformer, New Platformer Pack), «Orius» de JIK-A-4 (personaje, armas, enemigos y tiles para metroidvania), sección CC0 de itch.io</td><td>Base y placeholders desde el minuto 1. Tiles y enemigos genéricos.</td><td>CC0 (Kenney y Orius). Comprobad cada pack: algunos son CC BY-ND.</td></tr>
+      <tr><td><strong>Generación con IA</strong></td><td>PixelLab: <code>create_character</code> (4 u 8 direcciones), <code>animate_character</code> (walk, run, idle…), tilesets. Tiene MCP para Claude Code.</td><td>Protagonista y jefe propios con animaciones coherentes.</td><td>De pago por créditos. Revisad las condiciones de uso.</td></tr>
+      <tr><td><strong>Editores</strong></td><td>Aseprite (estándar de la industria) · LibreSprite (fork gratuito, GPL-2) · Pixelorama (gratuito, MIT, ★11k)</td><td>Retocar lo generado, unificar la paleta y montar las animaciones por tags.</td><td>Aseprite cuesta unos 20 USD o se compila gratis desde el código. Los otros dos son gratuitos.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout"><p><strong>Flujo recomendado para personajes:</strong> genera un frame base del protagonista (PixelLab o a mano). Fíjalo como referencia y genera las animaciones a partir de él. Pásalo por Aseprite para limpiar píxeles sueltos, forzar la paleta y crear los tags. Exporta la hoja y el JSON. Si a mediodía no hay un personaje propio aceptable, usad uno de pack y cambiadle la paleta.</p></div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="mapa">
+  <h2>Mapa, salas y minimapa</h2>
+  <p class="sub">Un metroidvania son salas conectadas por puertas. Montadlo en Tiled para que la persona del mapa no dependa de nadie.</p>
+  <div class="two">
+    <div>
+      <h3>Convención de capas en Tiled</h3>
+      <ul class="check">
+        <li><code>fondo</code>: decoración sin colisión, con parallax mediante <code>setScrollFactor(0.5)</code>.</li>
+        <li><code>colision</code>: tiles con la propiedad <code>collides=true</code>.</li>
+        <li><code>decor</code>: primer plano por encima del jugador.</li>
+        <li><code>entidades</code> (capa de objetos), con tipos <code>player_spawn</code>, <code>enemy{kind}</code>, <code>chest{loot, hidden}</code>, <code>checkpoint{id}</code>, <code>door{to, spawn}</code> y <code>room{id}</code> (rectángulo de cámara).</li>
+      </ul>
+      <p class="muted">Exportad a JSON. LDtk también es excelente (y la mejor opción si vais con Godot), pero en Phaser no tiene un importador oficial.</p>
+    </div>
+    <div class="code"><div class="label"><span>scenes/Game.ts · cargar sala</span><button type="button" data-copy>Copiar</button></div><pre>const map = this.make.tilemap({ key: 'zona1' });
+const tiles = map.addTilesetImage('cueva', 'tiles-cueva')!;
+map.createLayer('fondo', tiles)!.setScrollFactor(0.5);
+const solid = map.createLayer('colision', tiles)!;
+solid.setCollisionByProperty({ collides: true });
+this.physics.add.collider(this.player, solid);
+this.physics.add.collider(this.enemies, solid);
+
+for (const o of map.getObjectLayer('entidades')!.objects) {
+  spawnFromTiled(this, o);   <span class="cm">// switch (o.type) → crea entidad</span>
+}
+
+<span class="cm">// Minimapa: segunda cámara pequeña y alejada</span>
+const mini = this.cameras.add(370, 6, 104, 60)
+  .setZoom(0.08).startFollow(this.player)
+  .setBackgroundColor('rgba(10,8,20,0.75)');
+mini.ignore(this.hudObjects);</pre></div>
+  </div>
+  <p>Para un minimapa con niebla de guerra, dibujad los rectángulos <code>room</code> de Tiled en un <code>Graphics</code> de la escena UI y pintadlos al recibir <code>room:entered</code>. Es más barato y más legible que la segunda cámara. El addon <strong>Metroidvania System</strong> de KoBeWi (Godot, MIT, ★1,6k) es la mejor referencia de cómo modelar salas, puertas y mapa aunque no uséis Godot.</p>
+  <p><strong>Ambientación:</strong> 2–3 capas de parallax, partículas ambientales (polvo, luciérnagas, ceniza) con el emisor de partículas, y la iluminación 2D de Phaser 4 (<code>sprite.setLighting(true)</code>) para cuevas. Para dar el tono de las referencias, un color de fondo de la paleta en cada zona.</p>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="sonido">
+  <h2>Sonido y música</h2>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Necesidad</th><th>Herramienta</th><th>Notas</th></tr></thead>
+    <tbody>
+      <tr><td>SFX retro al instante (salto, golpe, moneda, daño)</td><td><strong>jsfxr</strong>, <strong>ChipTone</strong>, Bfxr</td><td>En el navegador y gratis. Un sonido por minuto. Exportad a WAV y convertid a OGG o MP3.</td></tr>
+      <tr><td>SFX realistas o específicos (espada, rugido del jefe, «parar el tiempo»)</td><td><strong>ElevenLabs Sound Effects</strong> (texto → sonido)</td><td>Es IA. El plan gratuito exige atribuir a elevenlabs.io en los créditos.</td></tr>
+      <tr><td>Packs de efectos</td><td>Kenney Audio (CC0), Freesound</td><td>En Freesound, cada sonido tiene su propia licencia CC. Anotadla.</td></tr>
+      <tr><td>Música chiptune y loops</td><td><strong>BeepBox</strong>, <strong>Bosca Ceoil</strong>, LMMS</td><td>Un tema por zona, un tema de jefe y un jingle de muerte.</td></tr>
+      <tr><td>Música generada por IA</td><td>Generadores tipo Suno o Udio</td><td>Revisad las reglas de la hackatón y las condiciones del plan gratuito, que suelen ser de uso no comercial.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="code"><div class="label"><span>uso en Phaser</span><button type="button" data-copy>Copiar</button></div><pre><span class="cm">// variar el tono evita la fatiga al repetir el mismo golpe</span>
+this.sound.play('hit', { volume: 0.6, detune: Phaser.Math.Between(-150, 150) });
+
+<span class="cm">// fundido entre la música de zona y la del jefe</span>
+this.tweens.add({ targets: this.music, volume: 0, duration: 800,
+  onComplete: () =&gt; { this.music.stop(); this.music = this.sound.add('boss', { loop: true }); this.music.play(); } });</pre></div>
+  <p class="muted">El navegador no reproduce audio hasta la primera interacción. La pantalla de título con «Pulsa una tecla» resuelve esto de paso.</p>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="ia">
+  <h2>Flujo de trabajo con IA</h2>
+  <p class="sub">Responde a la nota «Agents con las skills necesarias». Cada persona trabaja con su propio Claude Code, pero todos comparten las mismas reglas y conocimiento.</p>
+
+  <h3>1. Skills oficiales de Phaser 4 en el repo</h3>
+  <p>El repo <code>phaserjs/phaser</code> trae 28 skills en <code>skills/</code>: animations, physics-arcade, tilemaps, cameras, particles, tweens, filters-and-postfx, v3-to-v4-migration y más. Copiadlas una vez al proyecto. Claude Code las carga solo cuando la tarea lo necesita.</p>
+  <div class="code"><div class="label"><span>terminal</span><button type="button" data-copy>Copiar</button></div><pre>npx degit phaserjs/phaser/skills .claude/skills</pre></div>
+
+  <div class="callout teal"><p><strong>Equipo mixto (2 personas con Claude y 2 con GPT):</strong> las reglas viven en <code>AGENTS.md</code> del repo <a href="https://github.com/sebvitaa/MafiaDev">sebvitaa/MafiaDev</a>, que Codex lee de forma nativa y <code>CLAUDE.md</code> importa con <code>@AGENTS.md</code>. La memoria fuera del chat está en <code>agents/history</code>, <code>agents/pendings</code> y <code>agents/supuestos</code>, y se gestiona con <code>node scripts/agents.mjs new|status</code>. La plantilla de abajo es el resumen original; manda <code>AGENTS.md</code>.</p></div>
+  <h3>2. CLAUDE.md compartido (plantilla)</h3>
+  <div class="code"><div class="label"><span>CLAUDE.md</span><button type="button" data-copy>Copiar</button></div><pre># Metroidvania hackatón
+Stack: Phaser 4.2 + TypeScript strict + Vite. Arcade Physics. Mapas Tiled (JSON).
+Comandos: `npm run dev` · `npm run build` (debe pasar antes de cada merge).
+
+## Reglas
+- API de Phaser 4, NO de Phaser 3: tinte con setTintMode (no setTintFill), filtros
+  (no preFX/postFX), iluminación con setLighting(true). Ante dudas, lee .claude/skills/.
+- Solo edita las carpetas de tu dueño (ver tabla). core/ y types/ están congelados:
+  si necesitas un cambio, dilo en lugar de hacerlo.
+- Los sistemas se comunican por `bus` (core/EventBus.ts), nunca importando escenas ajenas.
+- Números de equilibrio (daño, vida, drops) en data/*.json, nunca hardcodeados.
+- Entidades = sprite + StateMachine + componentes. Una clase por archivo.
+- Cambios pequeños: un commit por mecánica, rama corta, merge cada hora.
+
+## Dueños
+P1 entities/player, abilities · P2 entities/enemies, components, systems/Combat
+P3 scenes (menos UI), maps, systems/Checkpoint+Minimap · P4 UI, data, Loot, Inventory, assets</pre></div>
+
+  <h3>3. MCP y subagentes útiles</h3>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Herramienta</th><th>Para qué</th><th>Cómo</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Playwright MCP</strong></td><td>El agente abre el juego, pulsa teclas, saca capturas y lee la consola: puede comprobar que su cambio funciona.</td><td><code>claude mcp add playwright -- npx @playwright/mcp@latest</code></td></tr>
+      <tr><td><strong>PixelLab MCP</strong></td><td>Crear personajes, animarlos y generar tilesets desde el chat.</td><td>Servidor remoto de PixelLab con token (créditos de pago) o el paquete npm <code>pixellab-mcp</code>.</td></tr>
+      <tr><td><strong>Phaser Game Agent</strong></td><td>MCP oficial de Phaser que genera juegos con código, arte y sonido.</td><td>Necesita cuenta. Probadlo antes de la hackatón, no el mismo día.</td></tr>
+      <tr><td><strong>Subagente <code>playtester</code></strong></td><td>Tras cada merge: ejecuta <code>npm run build</code>, abre el juego con Playwright, recorre la sala 1 y reporta errores de consola.</td><td><code>.claude/agents/playtester.md</code></td></tr>
+      <tr><td><strong>FreeLLMAPI</strong> (ya lo tenéis)</td><td>Generar <code>items.json</code>, stats de enemigos, nombres, descripciones, diálogos del tutorial y el borrador del README.</td><td><code>tools/freellm -m auto:smart -j "..."</code>, revisando la salida antes de usarla.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>4. Cómo pedirle cosas al agente</h3>
+  <ul class="check">
+    <li><strong>Acotad archivos</strong>: «Implementa el estado <code>dash</code> en <code>entities/player/states/Dash.ts</code> siguiendo <code>core/StateMachine.ts</code>. No modifiques otros archivos.»</li>
+    <li><strong>Dad números</strong>: «Dash de 160 px en 150 ms, invulnerable los primeros 100 ms, cooldown de 400 ms.»</li>
+    <li><strong>Pedid verificación</strong>: «Al terminar, ejecuta <code>npm run build</code> y prueba con el subagente playtester.»</li>
+    <li><strong>Una mecánica por petición.</strong> Si el agente lleva más de 10 minutos atascado, revertid y reformulad la petición.</li>
+  </ul>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="plan">
+  <h2>Roles y horario</h2>
+  <p class="sub">Para unas 10 horas efectivas. Ajustad la hora 0 a la hora real de inicio. La rama <code>main</code> siempre tiene que ser jugable.</p>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Hora</th><th>Vicho · Mapa, exploración y ambientación</th><th>Basti · Combate y movimiento</th><th>Alejandro · Personaje y habilidades</th><th>Seba · Música, sonido y pantallas</th></tr></thead>
+    <tbody>
+      <tr><td class="num">0–1</td><td colspan="4"><strong>Todos:</strong> propuesta de valor en dos líneas, recorte MoSCoW, repo con la plantilla de Vite y TS, CLAUDE.md, skills, <code>core/</code> y <code>types/</code>, guía de estilo y despliegue automático a GitHub Pages o itch.io.</td></tr>
+      <tr><td class="num">1–4</td><td>Tileset, sala 1 y sala 2 en Tiled, carga del mapa, cámara y puertas entre salas.</td><td>FSM del jugador: correr, saltar, doble salto, coyote time y dash. Health, Hitbox y Hurtbox.</td><td>Sprites y animaciones del protagonista, <code>CharacterStats</code>, items y rareza en JSON.</td><td>Boot y Preload con barra de carga, título, pausa, AudioDirector escuchando el bus y 10 SFX.</td></tr>
+      <tr><td class="num">4</td><td colspan="4"><strong>Integración 1:</strong> se puede recorrer la sala 1, pegar a un enemigo y morir. Arte gris permitido.</td></tr>
+      <tr><td class="num">4–7</td><td>Salas 3 a 6, checkpoints, respawn de enemigos, cofres (también ocultos) y minimapa.</td><td>Combo de 3 golpes, parry, dos tipos de enemigo y minijefe con anticipación visible.</td><td>«Parar el tiempo», inventario y equipo, drops con rareza, consumibles y buffs.</td><td>HUD (corazones, vida del jefe, cooldowns), música por zona y tema del jefe.</td></tr>
+      <tr><td class="num">7</td><td colspan="4"><strong>Integración 2 y playtest cruzado:</strong> cada persona juega el bucle completo y anota fallos.</td></tr>
+      <tr><td class="num">7–9</td><td>Parallax, partículas, iluminación y sala tutorial.</td><td>Juice (hitstop, shake) y equilibrio de daño y vida en JSON.</td><td>Mago o teletransporte si sobra tiempo. Pulido de animaciones.</td><td>Mezcla de audio, transiciones, game over y créditos.</td></tr>
+      <tr><td class="num">9–10</td><td colspan="4"><strong>Feature freeze.</strong> Solo arreglos de bugs, build final, GIF o vídeo de 30 s, README y ensayo del pitch de 3 minutos.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="opensource">
+  <h2>Código open source del que aprender</h2>
+  <p class="sub">Estrellas y licencias comprobadas el 23-11-2026. Con licencias GPL o sin licencia, leed para aprender pero no copiéis código.</p>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Repositorio</th><th>Stack</th><th>Qué estudiar</th><th>Licencia</th><th>★</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://github.com/phaserjs/phaser/tree/master/skills">phaserjs/phaser · skills/</a></td><td>Phaser 4</td><td>Las 28 skills oficiales: la mejor documentación para vuestro agente.</td><td>MIT</td><td class="num">40,7k</td></tr>
+      <tr><td><a href="https://github.com/chongdashu/phaserjs-oakwoods">chongdashu/phaserjs-oakwoods</a></td><td>Phaser + Claude Code</td><td>Plataformas RPG hecho con <em>vibe coding</em> y agent skills: el flujo más parecido al vuestro.</td><td>MIT</td><td class="num">86</td></tr>
+      <tr><td><a href="https://github.com/NoelFB/Celeste">NoelFB/Celeste</a> (Source/Player.cs)</td><td>C#</td><td>El controlador de plataformas de referencia: coyote time, buffers, dash y corner correction.</td><td>MIT · archivado</td><td class="num">4,0k</td></tr>
+      <tr><td><a href="https://github.com/KoBeWi/Metroidvania-System">KoBeWi/Metroidvania-System</a></td><td>Godot 4</td><td>Modelado de salas, puertas, mapa con niebla y guardado de exploración.</td><td>MIT</td><td class="num">1,6k</td></tr>
+      <tr><td><a href="https://github.com/gdquest-demos/godot-platformer-2d">gdquest-demos/godot-platformer-2d</a></td><td>Godot</td><td>Metroidvania de curso: FSM del jugador muy bien explicada.</td><td>MIT</td><td class="num">820</td></tr>
+      <tr><td><a href="https://github.com/dannygaray60/toziuha-night-oota">dannygaray60/toziuha-night-oota</a></td><td>Godot</td><td>Metroidvania completo estilo Castlevania: items, enemigos y jefes.</td><td>MIT</td><td class="num">138</td></tr>
+      <tr><td><a href="https://github.com/uheartbeast/metroidvania">uheartbeast/metroidvania</a></td><td>Godot</td><td>De HeartBeast, autor de tutoriales clásicos de acción 2D.</td><td>MIT</td><td class="num">88</td></tr>
+      <tr><td><a href="https://github.com/kennedyvnak/unity-metroidvania">kennedyvnak/unity-metroidvania</a></td><td>Unity C#</td><td>Metroidvania open source en Unity: cómo organizar un proyecto C# del género.</td><td>ver repo</td><td class="num">152</td></tr>
+      <tr><td><a href="https://github.com/pulppixel/2d-combat-prototype">pulppixel/2d-combat-prototype</a></td><td>Unity</td><td>Prototipo de combate soulslike en pixel art con combos y esquiva.</td><td>MIT</td><td class="num">1</td></tr>
+      <tr><td><a href="https://github.com/00-Evan/shattered-pixel-dungeon">00-Evan/shattered-pixel-dungeon</a></td><td>Java</td><td>Sistema de items, rarezas, loot y equipamiento muy pulido.</td><td>GPL-3.0</td><td class="num">6,9k</td></tr>
+      <tr><td><a href="https://github.com/friendlyfiregame/friendlyfiregame">friendlyfiregame/friendlyfiregame</a></td><td>TypeScript</td><td>Juego web de exploración 2D en TS puro: organización de un juego de navegador.</td><td>sin declarar</td><td class="num">90</td></tr>
+      <tr><td><a href="https://github.com/phopps/nightfall">phopps/nightfall</a></td><td>Phaser + TS</td><td>Metroidvania web hecho en una game jam: la escala que vais a tener.</td><td>MIT</td><td class="num">0</td></tr>
+      <tr><td><a href="https://github.com/remarkablegames/phaser-platformer">remarkablegames/phaser-platformer</a></td><td>Phaser + TS</td><td>Plantilla de plataformas con Tiled ya conectado.</td><td>MIT</td><td class="num">6</td></tr>
+      <tr><td><a href="https://github.com/hi-godot/godot-ai">hi-godot/godot-ai</a></td><td>Godot MCP</td><td>Solo si elegís el plan B: conecta Claude Code con el editor de Godot.</td><td>MIT</td><td class="num">3,7k</td></tr>
+      <tr><td><a href="https://github.com/godotengine/godot-demo-projects">godotengine/godot-demo-projects</a></td><td>Godot</td><td>Demos oficiales: platformer 2D, partículas y tilemaps.</td><td>MIT</td><td class="num">9,8k</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">Referencias de diseño (no de código): Hollow Knight y Dead Cells para el movimiento y el combate, Minecraft Dungeons para la lectura de rarezas por color, y Hyper Light Drifter y Eastward para la ambientación pixel art de vuestro tablero.</p>
+</section>
+
+<!-- ============ 13 ============ -->
+<section id="riesgos">
+  <h2>Riesgos y cómo evitarlos</h2>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Riesgo</th><th>Señal</th><th>Mitigación</th></tr></thead>
+    <tbody>
+      <tr><td>El agente escribe API de Phaser 3</td><td><code>setTintFill is not a function</code>, <code>preFX</code> undefined, pipelines</td><td>Skills en <code>.claude/skills/</code>, la regla en CLAUDE.md y la skill <code>v3-to-v4-migration</code>. Como último recurso, fijad <code>phaser@3</code> (3.90), que los modelos conocen mejor.</td></tr>
+      <tr><td>Conflictos de merge</td><td>Dos personas tocan <code>Game.ts</code></td><td>Dueños por carpeta, <code>Game.ts</code> solo orquesta, comunicación por eventos y merges cada hora.</td></tr>
+      <tr><td>Scope creep</td><td>En la hora 5 se habla del árbol de habilidades</td><td>La lista MoSCoW es ley. Lo que no está en MUST espera hasta la integración 1.</td></tr>
+      <tr><td>Arte inconsistente</td><td>Mezcla de resoluciones o paletas</td><td>Guía de estilo en la hora 0 y una sola persona aprueba los assets.</td></tr>
+      <tr><td>La física «se siente mal»</td><td>Salto flotante o golpes sin peso</td><td>Gravedad alta (800–1000), coyote time, buffer, hitstop y shake. Constantes en <code>data/tuning.json</code> para ajustarlas en vivo.</td></tr>
+      <tr><td>Demo rota en el pitch</td><td>Build de última hora</td><td>Despliegue continuo desde la hora 1, feature freeze en la hora 9 y vídeo de respaldo.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ 14 ============ -->
+<section id="arranque">
+  <h2>Arranque en 15 minutos</h2>
+  <div class="code"><div class="label"><span>terminal · una sola persona en la hora 0</span><button type="button" data-copy>Copiar</button></div><pre>npm create @phaserjs/game@latest metroidvania   <span class="cm"># elegir plantilla Vite + TypeScript</span>
+cd metroidvania &amp;&amp; npm i &amp;&amp; npm i phaser@^4.2
+npx degit phaserjs/phaser/skills .claude/skills
+claude mcp add playwright -- npx @playwright/mcp@latest
+mkdir -p src/{core,types,entities/player/states,entities/enemies,components,systems,abilities,data}
+git init &amp;&amp; git add -A &amp;&amp; git commit -m "chore: esqueleto Phaser 4 + TS"
+<span class="cm"># después: CLAUDE.md, core/ y types/ de la sección «Código base», y GitHub Action de despliegue</span></pre></div>
+  <p class="muted">Instalad antes del día: Node 22, Tiled, Aseprite o LibreSprite, Claude Code y una cuenta de itch.io. Comprobad qué versión de Phaser instala la plantilla: si es la 3, la línea <code>npm i phaser@^4.2</code> la actualiza.</p>
+</section>
+
+<!-- ============ 15 ============ -->
+<section id="fuentes">
+  <h2>Fuentes</h2>
+  <ul class="src">
+    <li><a href="https://phaser.io/download/stable">Phaser v4.0.0 «Caladan»: descarga estable</a></li>
+    <li><a href="https://phaser.io/news/2026/04/phaser-4-1-0-salusa-release">Phaser 4.1.0 «Salusa»</a></li>
+    <li><a href="https://gamedev.net/news/4825-phaser-v421-released/">Phaser v4.2.1 (gamedev.net)</a></li>
+    <li><a href="https://phaser.io/news/2026/05/phaser-3-vs-phaser-4">Phaser 3 vs Phaser 4</a></li>
+    <li><a href="https://github.com/phaserjs/phaser/tree/master/skills">Skills oficiales de Phaser 4</a></li>
+    <li><a href="https://phaser.io/news/2026/06/phaser-game-agent">Phaser Game Agent</a> · <a href="https://phaser.io/news/2026/07/phaser-game-agent-mcp-setup">configuración MCP</a></li>
+    <li><a href="https://phaser.io/news/2026/06/vibe-code-a-complete-2d-beat-em-up-game-with-phaser-and-codex">Vibe coding de un beat 'em up con Phaser</a></li>
+    <li><a href="https://godotengine.org/releases/4.6/">Godot 4.6</a></li>
+    <li><a href="https://github.com/hi-godot/godot-ai">godot-ai (MCP)</a> · <a href="https://github.com/tomyud1/godot-mcp">godot-mcp</a></li>
+    <li><a href="https://dev.to/abagames/godot-is-well-suited-for-game-development-with-ai-coding-agents-2lcm">Godot y agentes de IA (DEV)</a></li>
+    <li><a href="https://www.npmjs.com/package/pixellab-mcp">pixellab-mcp (npm)</a></li>
+    <li><a href="https://80.lv/articles/celestes-movement-code-available-on-github">Código de movimiento de Celeste (80.lv)</a></li>
+    <li><a href="https://github.com/heygleeson/godot-ldtk-importer">Importador LDtk para Godot 4</a></li>
+    <li><a href="https://phaser.discourse.group/t/best-tile-editor-to-use-for-old-mac-os/14513">LDtk y Tiled en Phaser (foro)</a></li>
+    <li><a href="https://kenney.nl/assets/1-bit-platformer-pack">Kenney 1-Bit Platformer</a> · <a href="https://kenney-assets.itch.io/pixel-platformer">Pixel Platformer</a></li>
+    <li><a href="https://jik-a-4.itch.io/orius-asset-pack">Orius: asset pack metroidvania (CC0)</a></li>
+    <li><a href="https://itch.io/game-assets/assets-cc0/free/genre-platformer">itch.io: assets CC0 de plataformas</a></li>
+    <li><a href="https://elevenlabs.io/blog/best-game-sound-effects">Herramientas de SFX para indies (ElevenLabs)</a></li>
+    <li><a href="https://itch.io/c/2792664/audio-tools">Colección de herramientas de audio (itch.io)</a></li>
+    <li><a href="https://github.com/Orama-Interactive/Pixelorama">Pixelorama</a> · <a href="https://github.com/LibreSprite/LibreSprite">LibreSprite</a></li>
+  </ul>
+</section>
+
+<footer>Investigación preparada con Claude Code para la hackatón. Versiones, estrellas y licencias comprobadas el 23-11-2026: revisadlas de nuevo si pasa tiempo.</footer>
+</main>
+</div>
+
+<script>
+document.querySelectorAll('[data-copy]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var pre = btn.closest('.code').querySelector('pre');
+    var text = pre.innerText;
+    var done = function () { btn.textContent = 'Copiado'; setTimeout(function () { btn.textContent = 'Copiar'; }, 1400); };
+    var fallback = function () {
+      var r = document.createRange(); r.selectNodeContents(pre);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      btn.textContent = 'Selecciona y copia';
+    };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
+});
+</script>
