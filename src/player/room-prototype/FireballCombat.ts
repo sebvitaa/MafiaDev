@@ -4,6 +4,9 @@ export interface FireballDamageTarget {
   readonly y: number;
   readonly radius: number;
   takeFireDamage(damage: number, direction: { x: number; y: number }): void;
+  /** Optional local adapter for the modular debt-mark effect. */
+  consumeDebtMarks?(): number;
+  onDebtDetonated?(stacks: number): void;
 }
 
 export interface FireballTiming {
@@ -79,6 +82,7 @@ export class FireballBlast {
     targets: readonly FireballDamageTarget[],
     radius: number,
     damage: number,
+    debtBonusPerMark = 0,
   ): string[] {
     const hit: string[] = [];
     for (const target of targets) {
@@ -89,7 +93,9 @@ export class FireballBlast {
       const distance = Math.hypot(dx, dy);
       const direction = distance === 0 ? { x: 0, y: -1 } : { x: dx / distance, y: dy / distance };
       this.hitIds.add(target.id);
-      target.takeFireDamage(damage, direction);
+      const debtMarks = Math.max(0, target.consumeDebtMarks?.() ?? 0);
+      target.takeFireDamage(damage + debtMarks * debtBonusPerMark, direction);
+      if (debtMarks > 0) target.onDebtDetonated?.(debtMarks);
       hit.push(target.id);
     }
     return hit;

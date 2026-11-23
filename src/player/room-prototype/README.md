@@ -29,8 +29,9 @@ Abrir http://localhost:8080/src/player/room-prototype/. El juego lateral contin�
 | Pasar sobre la espada flotante al lado derecho | Recogerla y equiparla visiblemente |
 | Click izquierdo corto | Combo de espada de hasta tres golpes (solo con espada) |
 | Mantener click izquierdo | Carga desde 350 ms; soltar para cortar (máximo a 1,2 s) |
-| Mantener E y mover el mouse | Apuntar la bola de fuego |
-| Soltar E | Invocar la bola desde arriba (600 ms; explosión de radio 55; daño 2×; cooldown 7 s) |
+| Mantener clic derecho y mover el mouse | Apuntar la lluvia italiana con área violeta |
+| Soltar clic derecho | Lanzar 7–10 completos (caída final a 600 ms; radio 55; daño total 2×; cooldown 7 s) |
+| Ataque de espada antes de 800 ms tras un dash | Eco morado que repite una vez el golpe con 120 ms de retraso y 35 % de daño |
 | R | Reiniciar sala |
 
 Caminar: **150 px/s**; correr: **247,5 px/s**, un 25 % más que antes. Aceleración 2400 px/s² (unos 63 ms hasta caminar), frenada y giro rápido a 3000 px/s². Las velocidades diagonales se normalizan. No se cambian valores del jugador lateral.
@@ -47,9 +48,11 @@ Recoge la espada del lado derecho y acércate al muñeco, ubicado delante de ell
 
 Los valores del combo, carga, daño y recuperación del muñeco se configuran en `src/data/tuning.json` bajo `roomPrototype`.
 
-La bola de fuego es local al prototipo: E muestra una mira rúnica morada pulsante bajo el cursor; al soltar, un proyectil violeta con estela cae en 600 ms y produce una explosión radial. Deja una runa quemada decorativa durante 2,8 s; esa marca no causa daño. La explosión aplica 2× del daño base de espada y el HUD muestra el cooldown de 7 segundos.
+La habilidad local **Lluvia Italiana** conserva el área y las reglas de bola de fuego: el clic derecho muestra una mira rúnica morada con acentos verde, blanco y rojo; al soltar, completos dibujados con pan, vienesa, palta, tomate y mayo caen en oleadas desde alturas y ángulos variables. Cada uno deja una salpicadura visual, pero el área aplica un único daño total de 2× al final de los 600 ms. Las migas y runas decorativas desaparecen en 2,8 s y no causan daño. El HUD conserva el cooldown de 7 segundos.
 
-`SwordDamageTarget` en `SwordCombat.ts` es la interfaz local para conectar enemigos futuros: ID, posición del plano X/Y, radio y método `takeSwordDamage`. Un enemigo puede adaptarla sin cambiar contratos/eventos compartidos. El muñeco es exclusivo del prototipo; el resto del juego no participa.
+El **Eco del Reverso** aparece en el inicio del dash por 800 ms. El siguiente golpe de espada iniciado durante esa ventana se repite una vez tras 120 ms con el mismo tipo, dirección y geometría del hitbox, pero con 35 % de daño. Las **marcas de deuda** se muestran sobre el muñeco: cada impacto de espada añade una hasta tres; cada una dura 4 s. La siguiente bola de fuego que alcance al objetivo las consume y suma 10 de daño por marca, con una detonación morada visual. Las mecánicas usan adaptadores locales (`addDebtMark`, `consumeDebtMarks`, `onDebtDetonated`) y no alteran contratos compartidos.
+
+`SwordDamageTarget` en `SwordCombat.ts` es la interfaz local para conectar enemigos futuros: ID, posición del plano X/Y, radio y método `takeSwordDamage`, con `addDebtMark` opcional. `FireballDamageTarget` ofrece `consumeDebtMarks` y `onDebtDetonated` opcionales. Un enemigo puede adaptar estas interfaces sin cambiar contratos/eventos compartidos. El muñeco es exclusivo del prototipo; el resto del juego no participa.
 
 ## Aislamiento
 
@@ -72,3 +75,5 @@ El build normal conserva la entrada original. El último comando añade el proto
 Pruebas propias: `tests/unit/player-room-motion.test.ts`, `tests/unit/player-double-tap.test.ts`, `tests/unit/sword-combat.test.ts` y `tests/e2e/player-room-prototype.spec.ts`. Capturas en `test-results/room-prototype.png` y `test-results/room-prototype-dash.png` (ignoradas por Git).
 
 El análisis de combos, bloqueo y parry futuros está en [COMBAT-NOTES.md](COMBAT-NOTES.md). El combo y el corte cargado dañan solamente objetivos conectados a la interfaz local.
+
+Pulsa **B** para activar el jefe de prueba Juan Carlos Bodoque sin reemplazar el muñeco. Fase 1: «La Nota», con micrófono-mazo (parryable), flash de cámara y embestida «Última hora». El laboratorio todavía no implementa bloqueo/parry; las zonas anunciadas se esquivan con movimiento y dash.

@@ -7,7 +7,7 @@ const NAMES: Record<Biome, string> = {
   ruins: 'LA TIERRA MUERTA',
   forest: 'EL BOSQUE FRONDOSO',
   bright: 'LA CUEVA DE CRISTAL',
-  arena: 'EL CORAZÓN VOLCÁNICO',
+  arena: 'EL SET · CANAL 23',
   redforest: 'EL BOSQUE CARMESÍ',
 };
 
@@ -27,13 +27,14 @@ export function installAreaTitles(scene: Phaser.Scene, map: Phaser.Tilemaps.Tile
       title.setText(NAMES[b]);
       scene.tweens.killTweensOf([title, rule]);
       // 4 s en total (600 entrada + 2800 + 600 salida). from:0 explícito: si se corta a medio fade, el yoyo vuelve a 0 y no queda pegado.
-      scene.tweens.add({ targets: [title, rule], alpha: { from: 0, to: 1 }, duration: 600, hold: 2800, yoyo: true });
+      scene.tweens.add({ targets: [title, rule], alpha: { from: 0, to: 1 }, duration: 600, hold: b === 'arena' ? 500 : 2800, yoyo: true });
     }
     // Fijo a la pantalla aunque la cámara tenga zoom: se coloca en el centro de lo que ve y se escala con 1/zoom.
     const { centerX, centerY } = cam.worldView;
     const s = 1 / cam.zoom;
-    title.setPosition(centerX, centerY - 40 * s).setScale(s);
-    rule.setPosition(centerX, centerY - 28 * s).setScale(s);
+    const offset = b === 'arena' ? 92 : 40;
+    title.setPosition(centerX, centerY - offset * s).setScale(s);
+    rule.setPosition(centerX, centerY - (offset - 12) * s).setScale(s);
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate));

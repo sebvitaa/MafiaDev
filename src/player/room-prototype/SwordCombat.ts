@@ -10,6 +10,8 @@ export interface SwordDamageTarget {
   readonly y: number;
   readonly radius: number;
   takeSwordDamage(damage: number, direction: SwordDirection, knockback?: number): void;
+  /** Optional prototype-local status adapter; real enemies may implement it later. */
+  addDebtMark?(): void;
 }
 
 export type ComboAttack = 1 | 2 | 3;
@@ -215,6 +217,7 @@ export class SwordHitTracker {
         || !intersectsSector(origin, facing, target, range, halfAngleDeg)) continue;
       this.hitIds.add(target.id);
       target.takeSwordDamage(damage, facing, knockback);
+      target.addDebtMark?.();
       hit.push(target.id);
     }
     return hit;

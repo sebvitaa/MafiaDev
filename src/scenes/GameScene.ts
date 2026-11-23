@@ -1,6 +1,7 @@
 // Dominio: vicho — composition root (SUP-seba-20261123-084249). SIN lógica de juego aquí:
 // cada dominio se engancha con su install*() exportado desde su index.ts.
 import Phaser from 'phaser';
+import { bus } from '../core/EventBus';
 import { installAmbience, installAreaTitles, installCamera, installEncounters, installMapViews, installWorld, preloadWorld } from '../world';
 import { installExploration, stageStart } from '../exploration';
 import { installCharacter } from '../character';
@@ -15,6 +16,7 @@ import { installBoss, type Boss } from '../world/boss';
 export class GameScene extends Phaser.Scene {
   /** Público para tests e2e (tests/e2e/smoke.spec.ts). */
   player!: Player;
+  boss?: Boss;
 
   constructor() {
     super('GameScene');
@@ -23,7 +25,10 @@ export class GameScene extends Phaser.Scene {
   /** Escenario elegido en JUGAR (seba). CONTINUAR no lo pasa: se usa la hoguera guardada. */
   private stage: number | null = null;
 
-  init(data?: { stage?: number }): void {
+  private carrySword = false;
+
+  init(data?: { stage?: number; carrySword?: boolean }): void {
+    this.carrySword = data?.carrySword === true;
     this.stage = data?.stage ?? null;
   }
 
@@ -37,16 +42,18 @@ export class GameScene extends Phaser.Scene {
     // PROVISIONAL (vicho, rama vicho/mundo-abierto): jugador cenital del lab de basti hasta que exponga
     // su install*() (PEN-basti pendiente). Volver a installPlayer cuando exista.
     let enemies: ReturnType<typeof installEncounters>;
-    let boss: Boss | undefined;
+    this.boss = undefined;
     const hero = new RoomPlayer(this, world.spawn.x, world.spawn.y, character.stats,
-      () => [...(enemies?.targets ?? []), ...(boss?.targets ?? [])], character.abilities);
+      () => [...(enemies?.targets ?? []), ...(this.boss?.targets ?? [])], character.abilities);
+    if (this.stage === 3 || this.carrySword) hero.equipSword();
     this.physics.add.collider(hero.anchor, world.solids);
     this.physics.add.collider(hero.anchor, world.obstacles);
     enemies = installEncounters(this, hero, world);
-    boss = installBoss(this, hero, world);
+    this.boss = installBoss(this, hero, world);
     // Espadas de prueba del lab en los objetos type "sword" del mapa.
     const swords = world.map.filterObjects('objects', (o) => o.type === 'sword')!.map((o) => new SwordPickup(this, o.x!, o.y!));
     const tick = (t: number, dt: number) => {
+      if (this.boss?.ending) { hero.body.setVelocity(0); return; }
       hero.update(dt);
       enemies?.update(dt);
       if (swords.some((s) => s.update(t, hero.anchor.x, hero.anchor.y))) hero.equipSword();
@@ -74,5 +81,11 @@ export class GameScene extends Phaser.Scene {
     installAudio(this);
     installUi(this);
     installGameStatus(this, hero.fireball);
+    const retry = () => {
+      this.registry.set('newGame', false);
+      this.scene.restart({ stage: this.stage === 3 ? 3 : undefined, carrySword: hero.hasSword });
+    };
+    bus.once('player:respawned', retry, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => bus.off('player:respawned', retry, this));
   }
 }

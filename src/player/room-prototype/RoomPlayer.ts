@@ -8,6 +8,7 @@ import { SwordAttack } from './SwordAttack';
 import type { SwordDamageTarget } from './SwordCombat';
 import { RoomFireball } from './RoomFireball';
 import type { FireballDamageTarget } from './FireballCombat';
+import { RoomEcho } from './RoomEcho';
 import tuning from '../../data/tuning.json';
 import { createAbilitySlots } from '../../abilities';
 import { Health, balance, playerMaxHp, playerSwordDamage } from '../../combat';
@@ -31,6 +32,7 @@ export class RoomPlayer {
   private hurtMs = 0;
   private hurtDirection = { x: 0, y: 0 };
   private suppressAttackRelease = false;
+  readonly echo: RoomEcho;
   hasSword = false;
   private readonly input: Input;
   private readonly shift: Phaser.Input.Keyboard.Key;
@@ -53,7 +55,8 @@ export class RoomPlayer {
   ) {
     this.motion = new RoomMotion(stats);
     this.health = new Health(playerMaxHp(stats), balance.hurtInvulnerabilityMs);
-    this.attack = new SwordAttack(scene, targets, playerSwordDamage(stats));
+    this.echo = new RoomEcho(scene, targets);
+    this.attack = new SwordAttack(scene, targets, playerSwordDamage(stats), (swing) => this.echo.recordSwing(swing));
     this.fireball = new RoomFireball(scene, targets);
     this.input = new Input(scene);
     const keyboard = scene.input.keyboard!;
@@ -179,6 +182,7 @@ export class RoomPlayer {
     this.attack.update(dtMs);
     if (this.fireball.aiming) { const p = this.cursor(); this.fireball.aimAt(p.x, p.y); } // la cámara se mueve aunque el ratón no
     this.fireball.update(dtMs);
+    this.echo.update(dtMs);
     if (this.hurtMs > 0) {
       this.motion.update({ x: 0, y: 0, run: false, jumpHeld: false,
         jumpPressed: false, dashPressed: false }, dtMs);
@@ -196,7 +200,10 @@ export class RoomPlayer {
       dashPressed: this.dashQueued && (!this.attack.active || this.attack.canCancelWithDash),
       dashDirection: this.dashDirection,
     }, dtMs);
-    if (events.dashed) this.attack.cancelByDash();
+    if (events.dashed) {
+      this.attack.cancelByDash();
+      this.echo.startDash({ x: this.anchor.x, y: this.anchor.y, height: this.motion.height });
+    }
     this.jumpQueued = false;
     this.dashQueued = false;
     this.dashDirection = undefined;

@@ -1,6 +1,7 @@
 // Dominio: seba — AudioDirector. Nadie llama a this.sound fuera de src/audio (AGENTS.md §2.1).
 // Los demás dominios solo emiten eventos del bus; aquí se traducen a SFX, música y ambiente.
 import Phaser from 'phaser';
+import enemies from '../data/enemies.json';
 import { bus } from '../core/EventBus';
 import type { GameEventName } from '../types/events';
 import type { SfxKey } from '../types/assets';
@@ -37,6 +38,7 @@ export function installAudio(scene: Phaser.Scene): void {
   const ctx = {};
   let zone = 'zone1';
   let inBoss = false;
+  let finalHp = 0;
   let dead = false;
   let slowTimer: Phaser.Time.TimerEvent | null = null;
   let heartbeat: Phaser.Time.TimerEvent | null = null;
@@ -92,26 +94,34 @@ export function installAudio(scene: Phaser.Scene): void {
     } else if (hp > 1 || hp <= 0) stopHeartbeat();
   }, ctx);
 
-  bus.on('zone:changed', ({ zone: z }) => { zone = z; if (!dead) zoneMusic(); }, ctx);
+  bus.on('zone:changed', ({ zone: z }) => { zone = z; if (!dead && !inBoss && z !== 'boss') zoneMusic(); }, ctx);
   bus.on('room:entered', ({ zone: z }) => {
-    if (z && z !== zone) { zone = z; if (!dead && !inBoss) zoneMusic(); }
+    if (z && z !== zone) { zone = z; if (!dead && !inBoss && z !== 'boss') zoneMusic(); }
   }, ctx);
 
   bus.on('boss:phase', ({ phase }) => {
     if (phase !== 1 || inBoss) return;
     inBoss = true;
-    preloadLazyAudio(scene);
-    AudioDirector.duckFor(0.2, 1800, 80, 400);
-    AudioDirector.stopMusic(500);
-    AudioDirector.playAmbient(null, 500);
-    scene.time.delayedCall(550, () => AudioDirector.sfx('sfx-boss-roar', { detune: 0 }));
-    scene.time.delayedCall(1700, () => { if (inBoss && !dead) AudioDirector.playMusic('music-boss', 300); });
+    finalHp = enemies.bodoque.hp;
+    AudioDirector.playAmbient(null, 120);
+    AudioDirector.playMusic('music-boss', 160, { seek: Number(scene.registry.get('bossMusicOffset') ?? 0) });
   }, ctx);
 
-  bus.on('enemy:killed', ({ kind }) => {
+  bus.on('enemy:hit', ({ id, dmg }) => {
+    if (id !== 'bodoque' || !inBoss) return;
+    const previous = finalHp;
+    finalHp = Math.max(0, previous - dmg);
+    if (previous > enemies.bodoque.heart.criticalHp && finalHp <= enemies.bodoque.heart.criticalHp) {
+      AudioDirector.slowmo(true);
+    }
+    if (finalHp === 0) AudioDirector.stopMusic(200);
+  }, ctx);
+
+  bus.on('enemy:killed', ({ id, kind }) => {
     if (!/boss/i.test(kind)) return; // 'boss' o 'miniboss' (enemies.json)
     inBoss = false;
     AudioDirector.stopMusic(200);
+    if (id === 'bodoque') { endSlow(); stopHeartbeat(); AudioDirector.playAmbient(null, 0); return; }
     AudioDirector.sfx('sfx-fanfare', { detune: 0, volume: 1.1 });
     scene.time.delayedCall(3600, () => { if (!dead) zoneMusic(1500); });
   }, ctx);

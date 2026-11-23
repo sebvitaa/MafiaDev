@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
+import { HEART_FILM_CUT_SECONDS } from '../../enemies/codexHeart';
 import { AudioDirector, settings } from '../../audio';
 import { hdLayer } from '../hd/HdLayer';
 import { installGlobalKeys } from '../globalKeys';
 
 // SUP-alejandro-20261123-133427: el selector FINAL da acceso al clip mientras se implementa El Set.
-type Entry = { stage: 1 | 3; fromRoom?: boolean; resumeHud?: boolean };
+type Entry = { stage: 1 | 3 | 'ending'; fromRoom?: boolean; resumeHud?: boolean };
 
 export class CinematicScene extends Phaser.Scene {
   constructor() { super('CinematicScene'); }
@@ -12,16 +13,17 @@ export class CinematicScene extends Phaser.Scene {
   create(entry: Entry): void {
     this.scene.bringToTop();
     installGlobalKeys(this);
-    const id = entry.stage === 1 ? 'cine1' : 'cine2';
+    const id = entry.stage === 'ending' ? 'cine3' : entry.stage === 1 ? 'cine1' : 'cine2';
     const layer = hdLayer(this);
     const video = layer.el('video', { width: 480, height: 270, style: { backgroundColor: '#090b15' } });
-    video.setAttribute('aria-label', entry.stage === 1 ? 'La Nota' : 'La Última Apuesta');
+    video.setAttribute('aria-label', entry.stage === 'ending' ? 'Fin de transmisión' : entry.stage === 1 ? 'La Nota' : 'La Última Apuesta');
     video.playsInline = true;
     video.preload = 'auto';
-    video.src = `${import.meta.env.BASE_URL}assets/ui/cinematics/${id}/${id}.webm`;
+    const cue = entry.stage === 'ending' ? '#t=' + HEART_FILM_CUT_SECONDS : '';
+    video.src = `${import.meta.env.BASE_URL}assets/ui/cinematics/${id}/${id}.webm${cue}`;
     const setVolume = () => {
       video.muted = settings.get().muted;
-      video.volume = settings.get().master;
+      video.volume = settings.get().master * settings.get().music;
     };
     setVolume();
     const unsubscribe = settings.subscribe(setVolume);
@@ -31,7 +33,16 @@ export class CinematicScene extends Phaser.Scene {
     const finish = () => {
       if (done) return;
       done = true;
-      if (entry.stage === 3) this.registry.set('setCinematicSeen', true);
+      if (entry.stage === 'ending') {
+        this.scene.stop('GameScene');
+        this.scene.start('CreditsScene', { from: 'GameScene' });
+        return;
+      }
+      if (entry.stage === 3) {
+        this.registry.set('setCinematicSeen', true);
+        // La mezcla de La Última Apuesta contiene este mismo tema desde 7.6 s, con offset de 3 s.
+        this.registry.set('bossMusicOffset', video.currentTime >= 7.6 ? 3 + video.currentTime - 7.6 : 0);
+      }
       if (entry.fromRoom) {
         this.scene.resume('GameScene');
         if (entry.resumeHud) this.scene.resume('HudScene');

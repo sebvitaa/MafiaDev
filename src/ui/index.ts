@@ -17,7 +17,6 @@ export function installUi(scene: Phaser.Scene): void {
   const ctx = {};
   bus.on('room:entered', ({ roomId }) => {
     if (roomId !== 'set' || scene.registry.get('setCinematicSeen') || !scene.scene.isActive()) return;
-    scene.registry.set('setCinematicSeen', true);
     const resumeHud = scene.scene.isActive('HudScene');
     if (resumeHud) scene.scene.pause('HudScene');
     scene.scene.pause();
@@ -37,14 +36,21 @@ export function installUi(scene: Phaser.Scene): void {
   scene.game.events.on(Phaser.Core.Events.BLUR, onBlur);
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
   bus.on('player:died', () => scene.scene.launch('GameOverScene', { from: scene.scene.key }), ctx);
-  // 6.28 — fin de la demo: al caer el jefe, tras la fanfarria, «gracias por jugar» + créditos
-  bus.on('enemy:killed', ({ kind }) => {
-    if (!/boss/i.test(kind)) return;
-    scene.time.delayedCall(4500, () => {
-      if (!scene.scene.isActive()) return;
-      scene.scene.pause();
-      scene.scene.launch('CreditsScene', { from: scene.scene.key });
-    });
+  let ending = false;
+  bus.on('enemy:killed', ({ id, kind }) => {
+    if (ending || !/boss/i.test(kind)) return;
+    if (id !== 'bodoque') {
+      scene.time.delayedCall(4500, () => {
+        if (!scene.scene.isActive() || ending) return;
+        scene.scene.pause();
+        scene.scene.launch('CreditsScene', { from: scene.scene.key });
+      });
+      return;
+    }
+    ending = true;
+    scene.scene.stop('HudScene');
+    scene.scene.pause();
+    scene.scene.launch('CinematicScene', { stage: 'ending' });
   }, ctx);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     keyboard?.off('keydown-ESC', pause);

@@ -44,6 +44,12 @@
     "swordAttackHalfAnglesDeg": [32, 54, 40],
     "swordAttackDamageMultipliers": [1, 1.2, 1.6],
     "swordFinisherKnockback": 20,
+    "echoLifetimeMs": 800,
+    "echoDelayMs": 120,
+    "echoDamageMultiplier": 0.35,
+    "debtMarkMax": 3,
+    "debtMarkDurationMs": 4000,
+    "debtBonusDamagePerMark": 10,
     "trainingDummyHp": 100,
     "trainingDummyRadius": 18,
     "trainingDummyRespawnMs": 2000,
@@ -53,7 +59,12 @@
     "fireballExplosionDurationMs": 300,
     "fireballDamageMultiplier": 2,
     "fireballCooldownMs": 7000,
-    "fireballResidueDurationMs": 2800
+    "fireballResidueDurationMs": 2800,
+    "italianRainMinCount": 7,
+    "italianRainMaxCount": 10,
+    "italianRainFallHeight": 240,
+    "italianRainImpactFlashMs": 300,
+    "bodoquePlayerHp": 100
   },
   "combat": {
     "balance": {
