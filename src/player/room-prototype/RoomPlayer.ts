@@ -5,6 +5,9 @@ import { RoomMotion } from './RoomMotion';
 import { DoubleTapDash, type TapKey } from './DoubleTapDash';
 import { DashTrail } from './DashTrail';
 import { SwordAttack } from './SwordAttack';
+import type { SwordDamageTarget } from './SwordCombat';
+import { RoomFireball } from './RoomFireball';
+import type { FireballDamageTarget } from './FireballCombat';
 import tuning from '../../data/tuning.json';
 
 /** Prototype-local adapter; does not replace the lateral Player or publish gameplay events. */
@@ -16,6 +19,7 @@ export class RoomPlayer {
   readonly equippedSword: Phaser.GameObjects.Graphics;
   readonly motion: RoomMotion;
   readonly attack: SwordAttack;
+  readonly fireball: RoomFireball;
   hasSword = false;
   private readonly input: Input;
   private readonly shift: Phaser.Input.Keyboard.Key;
@@ -26,9 +30,16 @@ export class RoomPlayer {
   private dashDirection?: { x: number; y: number };
   private readonly trail: DashTrail;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, stats: CharacterStats) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    stats: CharacterStats,
+    targets: () => readonly (SwordDamageTarget & FireballDamageTarget)[] = () => [],
+  ) {
     this.motion = new RoomMotion(stats);
-    this.attack = new SwordAttack(scene);
+    this.attack = new SwordAttack(scene, targets);
+    this.fireball = new RoomFireball(scene, targets);
     this.input = new Input(scene);
     const keyboard = scene.input.keyboard!;
     this.shift = keyboard.addKey('SHIFT');
@@ -37,12 +48,27 @@ export class RoomPlayer {
     const jump = (event: KeyboardEvent) => { if (!event.repeat) this.jumpQueued = true; };
     const dash = (event: KeyboardEvent) => { if (!event.repeat) this.dashQueued = true; };
     const attack = (pointer: Phaser.Input.Pointer) => {
-      if (pointer.button === 0 && this.hasSword) {
-        // SUP-basti-20261123-112929: animate the equipped weapon together with its slash.
-        this.attack.start(this.anchor.x, this.anchor.y, this.motion.height, this.motion.facing, this.equippedSword);
+      if (pointer.button === 0 && this.hasSword && !this.motion.dash.active) {
+        this.attack.beginInput(this.anchor.x, this.anchor.y, this.motion.height, this.motion.facing, this.equippedSword);
       }
     };
+    const attackRelease = (pointer: Phaser.Input.Pointer) => {
+      if (pointer.button === 0) {
+        this.attack.releaseInput(this.anchor.x, this.anchor.y, this.motion.height, this.motion.facing, this.equippedSword);
+      }
+    };
+    const aimDown = (event: KeyboardEvent) => {
+      if (event.repeat) return;
+      const pointer = scene.input.activePointer;
+      this.fireball.beginAim(pointer.worldX, pointer.worldY);
+    };
+    const aimUp = () => { this.fireball.releaseAim(); };
+    const aimMove = (pointer: Phaser.Input.Pointer) => this.fireball.aimAt(pointer.worldX, pointer.worldY);
     scene.input.on(Phaser.Input.Events.POINTER_DOWN, attack);
+    scene.input.on(Phaser.Input.Events.POINTER_UP, attackRelease);
+    scene.input.on(Phaser.Input.Events.POINTER_MOVE, aimMove);
+    keyboard.on('keydown-E', aimDown);
+    keyboard.on('keyup-E', aimUp);
     // SUP-basti-20261123-110158: give physical double taps a forgiving 350 ms window.
     const taps = new DoubleTapDash(tuning.roomPrototype.doubleTapWindowMs);
     const tapListeners = (['W', 'A', 'S', 'D', 'UP', 'LEFT', 'DOWN', 'RIGHT'] as TapKey[]).map((key) => {
@@ -58,6 +84,8 @@ export class RoomPlayer {
     });
     const clear = () => {
       this.jumpQueued = false; this.dashQueued = false; this.dashDirection = undefined; taps.clear();
+      this.attack.cancelInput();
+      this.fireball.cancelAim();
     };
     for (const key of jumpKeys) keyboard.on(`keydown-${key}`, jump);
     for (const key of dashKeys) keyboard.on(`keydown-${key}`, dash);
@@ -71,6 +99,10 @@ export class RoomPlayer {
       }
       scene.game.events.off(Phaser.Core.Events.BLUR, clear);
       scene.input.off(Phaser.Input.Events.POINTER_DOWN, attack);
+      scene.input.off(Phaser.Input.Events.POINTER_UP, attackRelease);
+      scene.input.off(Phaser.Input.Events.POINTER_MOVE, aimMove);
+      keyboard.off('keydown-E', aimDown);
+      keyboard.off('keyup-E', aimUp);
     });
 
     this.anchor = scene.add.rectangle(x, y, 14, 8, 0xffffff, 0);
@@ -109,16 +141,18 @@ export class RoomPlayer {
 
   update(dtMs: number): void {
     this.attack.update(dtMs);
+    this.fireball.update(dtMs);
     this.input.update();
-    this.motion.update({
+    const events = this.motion.update({
       x: this.input.axisX,
       y: Number(this.input.held('down')) - Number(this.input.held('up')),
       run: this.shift.isDown,
       jumpHeld: this.input.held('jump'),
       jumpPressed: this.jumpQueued,
-      dashPressed: this.dashQueued,
+      dashPressed: this.dashQueued && (!this.attack.active || this.attack.canCancelWithDash),
       dashDirection: this.dashDirection,
     }, dtMs);
+    if (events.dashed) this.attack.cancelByDash();
     this.jumpQueued = false;
     this.dashQueued = false;
     this.dashDirection = undefined;
@@ -141,7 +175,11 @@ export class RoomPlayer {
     this.visual.setPosition(x, y - height).setDepth(y);
     this.visual.setAlpha(this.motion.dash.active ? 0.8 : 1);
     this.equippedSword.setVisible(this.hasSword);
-    if (!this.attack.active) {
+    if (this.attack.holdingInput) {
+      this.attack.followChargePose(x, y, height, facing, this.equippedSword);
+      this.equippedSword.setPosition(facing.x * 11 + 7, -19 + facing.y * 5)
+        .setRotation(Math.atan2(facing.y, facing.x));
+    } else if (!this.attack.active) {
       this.equippedSword.setPosition(facing.x * 11 + 7, -19 + facing.y * 5)
         .setRotation(Math.atan2(facing.y, facing.x));
     }
