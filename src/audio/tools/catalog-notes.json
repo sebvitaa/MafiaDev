@@ -1,0 +1,142 @@
+{
+  "amb-zone1": {
+    "note": "Ambiente atmosférico de la primera zona, con lluvia y textura oscura.",
+    "trigger": "Suena en bucle al entrar o cambiar a zone1; se atenúa en zonas sin ambiente y durante la muerte."
+  },
+  "amb-zone2": {
+    "note": "Ambiente profundo y cavernoso de la segunda zona.",
+    "trigger": "Suena en bucle al entrar o cambiar a zone2; se atenúa al iniciar un combate de jefe o durante la muerte."
+  },
+  "music-boss": {
+    "note": "Combate épico: ostinato de cuerdas, metales con el leitmotiv, coro y percusión orquestal.",
+    "trigger": "Empieza en bucle unos 1,7 s después de la primera fase del jefe; se detiene cuando el jefe cae."
+  },
+  "music-gameover": {
+    "note": "Muerte estilo souls: gran impacto grave orquestal, coro oscuro y cuerdas que se apagan.",
+    "trigger": "Suena unos 700 ms después del evento player:died."
+  },
+  "music-title": {
+    "note": "Balada noir orquestal: trompeta solista, corno inglés, piano Steinway, contrabajos en pizzicato y cuerdas, con escobillas.",
+    "trigger": "Suena en bucle en el título tras la primera interacción; también acompaña los créditos."
+  },
+  "music-zone1": {
+    "note": "Exploración de la zona 1: fantasía misteriosa con arpa, flauta, oboe, trompas y cuerdas.",
+    "trigger": "Suena en bucle al entrar o cambiar a zone1; también es la música de reserva para zonas desconocidas."
+  },
+  "music-zone2": {
+    "note": "Catacumbas: tensión oscura con ostinato de cuerdas graves, clarinete bajo, trompas tapadas, coro y timbales.",
+    "trigger": "Suena en bucle al entrar o cambiar a zone2, si el audio diferido ya está cargado."
+  },
+  "sfx-ability-ready": {
+    "note": "Campanilla breve que indica que una habilidad está lista.",
+    "trigger": "Al recibirse el evento ability:ready."
+  },
+  "sfx-boss-roar": {
+    "note": "Rugido grave y prolongado del jefe.",
+    "trigger": "Suena 550 ms después de la primera fase del jefe (boss:phase con phase 1)."
+  },
+  "sfx-checkpoint": {
+    "note": "Acorde cálido que confirma la activación de un checkpoint.",
+    "trigger": "Al recibirse el evento checkpoint:reached."
+  },
+  "sfx-chest": {
+    "note": "Cofre de madera que cruje y termina con un destello musical.",
+    "trigger": "Al recibirse el evento chest:opened, para cofres normales u ocultos."
+  },
+  "sfx-dash": {
+    "note": "Silbido corto de movimiento rápido.",
+    "trigger": "Al recibirse el evento player:dash."
+  },
+  "sfx-death": {
+    "note": "Impacto grave con caída tonal para la muerte del jugador.",
+    "trigger": "Al recibirse el evento player:died."
+  },
+  "sfx-enemy-death": {
+    "note": "Estallido áspero de partículas y golpe grave al desaparecer un enemigo.",
+    "trigger": "Al recibirse enemy:killed para un enemigo que no sea jefe y esté dentro de cámara."
+  },
+  "sfx-fanfare": {
+    "note": "Fanfarria triunfal en re mayor: metales, timbales, cuerdas y coro.",
+    "trigger": "Al recibirse enemy:killed para un tipo de enemigo que contiene boss en su nombre."
+  },
+  "sfx-hit-1": {
+    "note": "Variación 1 de impacto contundente sobre un enemigo.",
+    "trigger": "Variante aleatoria de sfx-hit al recibirse enemy:hit dentro de cámara; también se usa como vista previa de efectos en Opciones."
+  },
+  "sfx-hit-2": {
+    "note": "Variación 2 de impacto contundente sobre un enemigo.",
+    "trigger": "Variante aleatoria de sfx-hit al recibirse enemy:hit dentro de cámara; también se usa como vista previa de efectos en Opciones."
+  },
+  "sfx-hit-3": {
+    "note": "Variación 3 de impacto contundente sobre un enemigo.",
+    "trigger": "Variante aleatoria de sfx-hit al recibirse enemy:hit dentro de cámara; también se usa como vista previa de efectos en Opciones."
+  },
+  "sfx-hurt": {
+    "note": "Golpe áspero que representa daño recibido por el jugador.",
+    "trigger": "Al recibirse player:hit; se acompaña de un pulso repetido si queda 1 punto de vida."
+  },
+  "sfx-jump": {
+    "note": "Soplido ligero de salto; el doble salto suena más agudo.",
+    "trigger": "Al recibirse player:jump, con un cambio de tono cuando air es true."
+  },
+  "sfx-land": {
+    "note": "Golpe suave de botas al tocar el suelo.",
+    "trigger": "Al recibirse player:land."
+  },
+  "sfx-low-hp": {
+    "note": "Latido grave que advierte que queda muy poca vida.",
+    "trigger": "Cuando player:hit deja 1 punto de vida; se repite cada 900 ms hasta sanar o morir."
+  },
+  "sfx-parry": {
+    "note": "Campanazo metálico brillante para un parry acertado.",
+    "trigger": "Al recibirse player:parry con success true; la música baja brevemente."
+  },
+  "sfx-pickup": {
+    "note": "Campanilla cristalina al recoger un objeto, afinada según su rareza.",
+    "trigger": "Al recibirse item:picked; también suena como vista previa del volumen general en Opciones."
+  },
+  "sfx-swing-1": {
+    "note": "Variación 1 del silbido de ataque cuerpo a cuerpo.",
+    "trigger": "Al recibirse player:attack con combo 1; también en un parry fallido."
+  },
+  "sfx-swing-2": {
+    "note": "Variación 2 del silbido de ataque cuerpo a cuerpo.",
+    "trigger": "Al recibirse player:attack con combo 2."
+  },
+  "sfx-swing-3": {
+    "note": "Variación 3, más marcada, del silbido de ataque cuerpo a cuerpo.",
+    "trigger": "Al recibirse player:attack con combo 3."
+  },
+  "sfx-title-sting": {
+    "note": "Golpe orquestal noir (tutti + timbal) y motivo de trompeta solista.",
+    "trigger": "Al pulsar la primera tecla o hacer clic en el título durante la intro."
+  },
+  "sfx-timestop": {
+    "note": "Tic-tacs de reloj que se ralentizan y se detienen.",
+    "trigger": "Al usarse una habilidad cuyo id identifica parar el tiempo."
+  },
+  "sfx-tutorial-ok": {
+    "note": "Dos notas breves y positivas para confirmar un paso del tutorial.",
+    "trigger": "Al completar cada paso del tutorial contextual."
+  },
+  "sfx-ui-back": {
+    "note": "Clic suave de retroceso de máquina de escribir.",
+    "trigger": "Al volver o cerrar un menú, diálogo o tutorial con la acción de retroceso."
+  },
+  "sfx-ui-move": {
+    "note": "Clic corto de tecla de máquina de escribir.",
+    "trigger": "Al mover la selección en menús, ajustar el escenario en el título o animar el texto de un diálogo."
+  },
+  "sfx-ui-select": {
+    "note": "Campanilla de retorno de carro con un golpe de tecla.",
+    "trigger": "Al confirmar una opción de menú o una respuesta de diálogo."
+  },
+  "vo-gameover": {
+    "note": "Voz narrada para la pantalla de derrota.",
+    "trigger": "sin uso actual; está declarado en el manifiesto, pero no hay ninguna llamada que lo reproduzca."
+  },
+  "vo-title": {
+    "note": "Voz del narrador que presenta el título.",
+    "trigger": "Se reproduce 350 ms después de pulsar una tecla o hacer clic para entrar al menú del título."
+  }
+}

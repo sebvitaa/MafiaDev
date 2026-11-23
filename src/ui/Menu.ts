@@ -1,8 +1,10 @@
-// Dominio: seba. Menú de teclado y ratón basado en las acciones comunes del juego.
+// Dominio: seba. Menú de teclado y ratón con texto nítido en el overlay DOM.
 import Phaser from 'phaser';
 import { BINDINGS } from '../core/Input';
 import { AudioDirector, settings } from '../audio';
-import { C, pixelTexture, reducedMotion, text } from './theme';
+import { hdLayer } from './hd/HdLayer';
+import { pixelBar, updatePixelBar } from './pixelBar';
+import { pixelTexture, reducedMotion } from './theme';
 
 export interface MenuItem {
   label: () => string;
@@ -12,22 +14,33 @@ export interface MenuItem {
   enabled?: () => boolean;
   /** Un elemento oculto no ocupa espacio ni puede seleccionarse. */
   hidden?: () => boolean;
+  /** Valor normalizado opcional que se representa como barra CSS segmentada. */
+  bar?: () => number;
 }
 
 const CONFIRM = ['ENTER', 'SPACE', ...BINDINGS.jump, ...BINDINGS.attack];
 const BACK = ['ESC', 'BACKSPACE'];
 const CURSOR_KEY = 'ui-cursor-fedora';
 
+interface MenuRow {
+  element: HTMLDivElement;
+  caption: HTMLSpanElement;
+  value: HTMLDivElement;
+  bar?: HTMLDivElement;
+}
+
 export class Menu {
+  /** Empty Phaser proxy retained for existing depth/alpha/y tweens and callers. */
   readonly container: Phaser.GameObjects.Container;
-  private readonly labels: Phaser.GameObjects.Text[] = [];
-  private readonly values: Phaser.GameObjects.Text[] = [];
-  private readonly zones: Phaser.GameObjects.Zone[] = [];
-  private readonly cursor: Phaser.GameObjects.Image;
+  private readonly rows: MenuRow[] = [];
+  private readonly rowRoot: HTMLDivElement;
+  private readonly cursor: HTMLImageElement;
   private index = -1;
   private active = true;
-  private bob: Phaser.Tweens.Tween | null = null;
+  private destroyed = false;
   private readonly handler: (e: KeyboardEvent) => void;
+  private readonly onPostUpdate: () => void;
+  private readonly onShutdown: () => void;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -36,32 +49,61 @@ export class Menu {
     private readonly opts: { onBack?: () => void; lineHeight?: number; align?: 'left' | 'center'; valueX?: number; rowWidth?: number } = {},
   ) {
     this.container = scene.add.container(x, y);
-    const lh = opts.lineHeight ?? 14;
+    const layer = hdLayer(scene);
     const rowWidth = opts.rowWidth ?? 220;
-    items.forEach((_, i) => {
-      const zone = scene.add.zone(opts.align === 'center' ? -rowWidth / 2 : -4, 0, rowWidth, lh).setOrigin(0, 0);
-      zone.setInteractive();
-      zone.on('pointerover', () => { if (this.active) this.focus(i); });
-      zone.on('pointerdown', () => { if (this.active) { this.focus(i); this.select(); } });
-      this.zones.push(zone);
-      this.container.add(zone);
+    this.rowRoot = layer.el('div', { x: 0, y: 0, width: 480, height: 270, className: 'hd-menu-root', depth: this.container.depth });
+    this.rowRoot.style.pointerEvents = 'none';
+    this.rowRoot.setAttribute('role', 'menu');
+    this.rowRoot.setAttribute('aria-label', 'Menú');
 
-      const label = text(scene, 0, 0, '', { align: opts.align ?? 'left' });
-      if (opts.align === 'center') label.setOrigin(0.5, 0);
-      this.labels.push(label);
-      this.container.add(label);
-      const value = text(scene, opts.valueX ?? 96, 0, '');
-      this.values.push(value);
-      this.container.add(value);
+    items.forEach((item, i) => {
+      const row = layer.el('div', {
+        x: opts.align === 'center' ? -rowWidth / 2 : -4,
+        y: 0,
+        width: rowWidth,
+        height: opts.lineHeight ?? 14,
+        className: 'hd-menu-row',
+        parent: this.rowRoot,
+      });
+      row.style.justifyContent = opts.align === 'center' ? 'center' : 'flex-start';
+      const caption = layer.el('span', { className: 'hd-menu-caption', parent: row });
+      // el() posiciona en absoluto; el texto de la fila debe fluir con el flex para centrarse
+      Object.assign(caption.style, { position: 'relative', left: '', top: '' });
+      const value = layer.el('div', { className: 'hd-menu-value', x: opts.valueX ?? 96, width: 64, parent: row });
+      const menuRow: MenuRow = { element: row, caption, value };
+      if (item.bar) {
+        menuRow.bar = pixelBar(row, item.bar());
+        menuRow.bar.style.left = `${(opts.valueX ?? 96) - 90}px`;
+        value.style.width = '64px';
+      }
+      row.addEventListener('pointerenter', () => { if (this.active) this.focus(i); });
+      row.addEventListener('pointerdown', (event) => {
+        if (!this.active || !this.selectable(i)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        this.focus(i);
+        this.select();
+      });
+      this.rows.push(menuRow);
     });
 
     pixelTexture(scene, CURSOR_KEY, ['..l.....', '..dddd..', '.dddddd.', 'pppppppp', '.dddddd.'], {
       d: 0x221d33, p: 0xff5fa2, l: 0xebe7f4,
     });
-    this.cursor = scene.add.image(0, 0, CURSOR_KEY).setOrigin(1, 0.5);
-    this.container.add(this.cursor);
+    const texture = scene.textures.exists(CURSOR_KEY)
+      ? scene.textures.get(CURSOR_KEY).getSourceImage() as HTMLCanvasElement
+      : null;
+    this.cursor = layer.el('img', { x: 0, y: 0, width: 12, height: 7.5, className: 'hd-menu-cursor', parent: this.rowRoot });
+    this.cursor.alt = '';
+    this.cursor.setAttribute('aria-hidden', 'true');
+    this.cursor.draggable = false;
+    this.cursor.style.visibility = 'hidden';
+    if (texture && 'toDataURL' in texture) this.cursor.src = texture.toDataURL();
+
     this.index = this.firstEnabled(0, 1);
     this.refresh(false);
+    this.onPostUpdate = () => this.syncContainer();
+    scene.events.on(Phaser.Scenes.Events.POST_UPDATE, this.onPostUpdate);
 
     const keyOf = (e: KeyboardEvent) =>
       e.key === ' ' ? 'SPACE' : e.key === 'Escape' ? 'ESC' : e.key.length === 1 ? e.key.toUpperCase() : e.key.replace('Arrow', '').toUpperCase();
@@ -76,17 +118,15 @@ export class Menu {
       else if (BACK.includes(k) && opts.onBack) { AudioDirector.ui('sfx-ui-back'); opts.onBack(); }
     };
     scene.input.keyboard?.on('keydown', this.handler);
-    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.destroy());
+    this.onShutdown = () => this.destroy();
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown);
+    this.syncContainer();
   }
 
   setActive(on: boolean): this {
     this.active = on;
-    for (const zone of this.zones) {
-      if (on) zone.setInteractive();
-      else zone.disableInteractive();
-    }
-    if (!on) this.stopCursorMotion();
-    else this.refresh(false);
+    if (on) this.refresh(false);
+    this.refresh();
     return this;
   }
 
@@ -95,62 +135,65 @@ export class Menu {
     if (!this.selectable(this.index)) this.index = this.firstEnabled(0, 1);
     const lh = this.opts.lineHeight ?? 14;
     const rowWidth = this.opts.rowWidth ?? 220;
-    let row = 0;
+    let rowIndex = 0;
     this.items.forEach((item, i) => {
+      const row = this.rows[i];
       const visible = !item.hidden?.();
-      const label = this.labels[i];
-      const value = this.values[i];
-      const zone = this.zones[i];
-      label.setVisible(visible);
-      value.setVisible(visible);
-      zone.setVisible(visible);
-      if (visible && this.active) zone.setInteractive();
-      else zone.disableInteractive();
+      row.element.style.display = visible ? 'flex' : 'none';
       if (!visible) return;
 
-      const y = row++ * lh;
-      zone.setPosition(this.opts.align === 'center' ? -rowWidth / 2 : -4, y).setSize(rowWidth, lh);
-      label.setPosition(0, y);
-      value.setPosition(this.opts.valueX ?? 96, y);
+      const y = rowIndex++ * lh;
+      row.element.style.top = `${y}px`;
+      row.element.style.left = `${this.opts.align === 'center' ? -rowWidth / 2 : -4}px`;
+      row.element.style.width = `${rowWidth}px`;
+      row.element.style.height = `${lh}px`;
+      row.element.style.textAlign = this.opts.align ?? 'left';
       const [caption, valueText] = item.label().split('\t');
       const enabled = item.enabled?.() ?? true;
       const selected = i === this.index;
-      label.setText(caption).setColor(selected ? '#ff5fa2' : enabled ? '#ebe7f4' : '#5a5370');
-      value.setText(valueText ?? '').setColor(selected ? '#ff5fa2' : enabled ? '#ebe7f4' : '#5a5370');
-      const targetX = selected ? 2 : 0;
-      if (animate && !reducedMotion(settings.get().reducedMotion)) {
-        this.scene.tweens.killTweensOf(label);
-        this.scene.tweens.add({ targets: label, x: targetX, duration: 90, ease: 'Cubic.Out' });
-      } else label.setX(targetX);
+      row.caption.textContent = caption;
+      row.value.textContent = valueText ?? '';
+      row.element.classList.toggle('is-selected', selected);
+      row.element.classList.toggle('is-disabled', !enabled);
+      row.element.classList.toggle('is-interactive', this.active && enabled && visible);
+      row.element.setAttribute('aria-disabled', String(!enabled));
+      row.element.setAttribute('role', 'menuitem');
+      row.element.style.transform = selected ? 'translateX(2px)' : 'translateX(0)';
+      row.element.style.transition = reducedMotion(settings.get().reducedMotion) || !animate ? 'none' : '';
+      row.value.style.left = `${this.opts.valueX ?? 96}px`;
+      if (row.bar) updatePixelBar(row.bar, item.bar?.() ?? 0);
     });
 
-    if (this.index < 0) {
-      this.cursor.setVisible(false);
-      this.stopCursorMotion();
-      return;
+    this.cursor.style.visibility = this.index >= 0 ? 'visible' : 'hidden';
+    if (this.index >= 0) {
+      const selected = this.rows[this.index];
+      const rowRect = selected.element.offsetTop;
+      const captionLeft = selected.caption.offsetLeft;
+      const rowLeft = this.opts.align === 'center' ? -rowWidth / 2 : -4;
+      this.cursor.style.left = `${rowLeft + captionLeft - 15}px`;
+      this.cursor.style.top = `${rowRect + lh / 2 - 4.5}px`;
+      this.cursor.style.animation = reducedMotion(settings.get().reducedMotion) || !this.active
+        ? 'none'
+        : 'hd-fedora-bob 600ms ease-in-out infinite alternate';
     }
-    const selected = this.labels[this.index];
-    this.cursor.setVisible(true);
-    const x = (this.opts.align === 'center' ? 2 - selected.width / 2 : 2) - 4;
-    const y = selected.y + selected.height / 2;
-    if (animate && !reducedMotion(settings.get().reducedMotion)) {
-      this.stopCursorMotion();
-      this.scene.tweens.add({
-        targets: this.cursor, x, y, duration: 90, ease: 'Cubic.Out',
-        onComplete: () => this.startBob(),
-      });
-    } else {
-      this.stopCursorMotion();
-      this.cursor.setPosition(x, y);
-      if (!reducedMotion(settings.get().reducedMotion)) this.startBob();
-    }
+    this.syncContainer();
   }
 
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
     this.scene.input.keyboard?.off('keydown', this.handler);
-    this.stopCursorMotion();
-    for (const child of [...this.container.list]) child.destroy();
+    this.scene.events.off(Phaser.Scenes.Events.POST_UPDATE, this.onPostUpdate);
+    this.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown);
+    this.rowRoot.remove();
     this.container.destroy();
+  }
+
+  private syncContainer(): void {
+    this.rowRoot.style.transform = `translate(${this.container.x}px, ${this.container.y}px)`;
+    this.rowRoot.style.opacity = String(this.container.alpha);
+    this.rowRoot.style.visibility = this.container.visible ? 'visible' : 'hidden';
+    this.rowRoot.style.zIndex = String(this.container.depth);
   }
 
   private selectable(i: number): boolean {
@@ -193,38 +236,11 @@ export class Menu {
     const item = this.items[this.index];
     if (!item.onSelect) return;
     AudioDirector.ui('sfx-ui-select');
-    const label = this.labels[this.index];
+    const row = this.rows[this.index].element;
     if (!reducedMotion(settings.get().reducedMotion)) {
-      this.scene.tweens.add({ targets: label, scaleX: 1.1, scaleY: 1.1, duration: 65, yoyo: true });
-      this.spark(label);
+      row.animate([{ scale: '1' }, { scale: '1.025' }, { scale: '1' }], { duration: 130, easing: 'ease-out' });
     }
     item.onSelect();
     if (this.active && this.container.active) this.refresh();
-  }
-
-  private spark(label: Phaser.GameObjects.Text): void {
-    const count = 6 + Math.floor(Math.random() * 3);
-    const centerX = this.container.x + label.x + (this.opts.align === 'center' ? 0 : label.width / 2);
-    const centerY = this.container.y + label.y + label.height / 2;
-    for (let i = 0; i < count; i++) {
-      const angle = Math.PI * 2 * i / count;
-      const size = 2 + Math.floor(Math.random() * 3);
-      const spark = this.scene.add.rectangle(centerX, centerY, size, size, C.accent).setDepth(1000);
-      this.scene.tweens.add({
-        targets: spark, x: centerX + Math.cos(angle) * (7 + size), y: centerY + Math.sin(angle) * (5 + size),
-        alpha: 0, duration: 250, ease: 'Cubic.Out', onComplete: () => spark.destroy(),
-      });
-    }
-  }
-
-  private startBob(): void {
-    if (!this.active || reducedMotion(settings.get().reducedMotion) || !this.cursor.active) return;
-    this.bob = this.scene.tweens.add({ targets: this.cursor, y: '-=1', duration: 300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-  }
-
-  private stopCursorMotion(): void {
-    this.bob?.stop();
-    this.bob = null;
-    this.scene.tweens.killTweensOf(this.cursor);
   }
 }

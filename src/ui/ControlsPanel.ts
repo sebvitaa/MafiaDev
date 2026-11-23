@@ -1,25 +1,29 @@
 import Phaser from 'phaser';
 import { BINDINGS } from '../core/Input';
-import { C, panel, text } from './theme';
+import { hdLayer } from './hd/HdLayer';
 
 const KEY_LABEL: Record<string, string> = {
   LEFT: '←', RIGHT: '→', UP: '↑', DOWN: '↓', SPACE: 'SPACE', SHIFT: 'SHIFT',
 };
 
-/** Panel visual con todas las teclas declaradas por Input y las teclas globales. */
+/** Crisp DOM panel with the declared game and global controls. */
 export function showControls(scene: Phaser.Scene): Promise<void> {
   return new Promise((resolve) => {
     const w = scene.scale.width, h = scene.scale.height;
     const pw = Math.min(420, w - 16), ph = Math.min(222, h - 16);
     const px = (w - pw) / 2, py = (h - ph) / 2;
-    const objects: Phaser.GameObjects.GameObject[] = [];
-    const add = <T extends Phaser.GameObjects.GameObject>(object: T): T => { objects.push(object); return object; };
+    const layer = hdLayer(scene);
+    const elements: HTMLElement[] = [];
+    const add = <T extends HTMLElement>(element: T): T => { elements.push(element); return element; };
     let closed = false;
 
-    const clickZone = add(scene.add.zone(0, 0, w, h).setOrigin(0, 0).setInteractive());
-    clickZone.on('pointerdown', () => close());
-    add(panel(scene, px, py, pw, ph, 0.98));
-    add(text(scene, w / 2, py + 8, 'CONTROLES', { size: 16, color: C.accent, align: 'center' }).setOrigin(0.5, 0));
+    const shade = add(layer.el('div', { x: 0, y: 0, width: w, height: h, depth: 100, interactive: true }));
+    shade.addEventListener('pointerdown', () => close());
+    const frame = add(layer.panel(px, py, pw, ph, { depth: 101, alpha: 0.98, interactive: true }));
+    frame.addEventListener('pointerdown', (event) => event.stopPropagation());
+    add(layer.text(w / 2, py + 8, 'CONTROLES', {
+      depth: 102, width: 150, fontSize: 16, weight: 600, color: '#ff5fa2', align: 'center',
+    }));
 
     const keyLabel = (key: string) => KEY_LABEL[key] ?? key;
     const caps = (keys: string[], x: number, y: number, maxX: number): number => {
@@ -28,21 +32,15 @@ export function showControls(scene: Phaser.Scene): Promise<void> {
         const label = keyLabel(key);
         const kw = Math.max(14, label.length * 6 + 8);
         if (cx + kw > maxX) break;
-        const g = add(scene.add.graphics());
-        g.fillStyle(0x090811, 0.9).fillRect(cx + 2, y + 3, kw, 14);
-        g.fillStyle(0x221d33, 1).fillRect(cx + 1, y, kw - 2, 14).fillRect(cx, y + 1, kw, 12);
-        g.fillStyle(0x8a83a3, 1)
-          .fillRect(cx + 2, y, kw - 4, 1)
-          .fillRect(cx + 1, y + 1, 1, 12)
-          .fillRect(cx + kw - 2, y + 1, 1, 12)
-          .fillRect(cx + 2, y + 13, kw - 4, 1);
-        add(text(scene, cx + kw / 2, y + 3, label, { size: 8, align: 'center' }).setOrigin(0.5, 0));
+        add(layer.el('span', {
+          x: cx, y, width: kw, height: 14, depth: 103, text: label, className: 'hd-keycap',
+        }));
         cx += kw + 3;
       }
       return cx;
     };
     const row = (name: string, keys: string[], x: number, y: number, right: number): void => {
-      add(text(scene, x, y + 3, name, { color: C.text }));
+      add(layer.text(x, y + 3, name, { depth: 102, fontSize: 12, color: '#ebe7f4' }));
       const nameW = Math.max(64, name.length * 6 + 8);
       caps(keys, x + nameW, y, right);
     };
@@ -60,7 +58,9 @@ export function showControls(scene: Phaser.Scene): Promise<void> {
     row('PAUSA', BINDINGS.pause, rightX, rowY + step * 2, px + pw - 16);
     row('SILENCIO', ['M'], rightX, rowY + step * 3, px + pw - 16);
     row('PANTALLA COMPLETA', ['F'], leftX, rowY + step * 3, px + pw - 16);
-    add(text(scene, w / 2, py + ph - 13, 'ESC / ENTER PARA VOLVER', { color: C.dim, align: 'center' }).setOrigin(0.5));
+    add(layer.text(w / 2, py + ph - 19, 'ESC / ENTER PARA VOLVER', {
+      depth: 102, width: 220, color: '#8a83a3', align: 'center', fontSize: 11,
+    }));
 
     const keyHandler = (event: KeyboardEvent) => {
       if (event.repeat) return;
@@ -72,7 +72,7 @@ export function showControls(scene: Phaser.Scene): Promise<void> {
       closed = true;
       scene.input.keyboard?.off('keydown', keyHandler);
       scene.events.off(Phaser.Scenes.Events.SHUTDOWN, shutdown);
-      objects.forEach((object) => object.destroy());
+      elements.forEach((element) => element.remove());
       resolve();
     };
     scene.input.keyboard?.on('keydown', keyHandler);
