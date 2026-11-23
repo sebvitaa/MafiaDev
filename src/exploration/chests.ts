@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import { bus } from '../core/EventBus';
 import { RARITY_COLOR, rollTable } from '../items';
+import { prop } from './tiled';
 
 const CLOSED = 'chest-closed';
 const OPEN = 'chest-open';
@@ -37,7 +38,7 @@ export function installChests(scene: Phaser.Scene, map: Phaser.Tilemaps.Tilemap,
   scene.input.keyboard!.on('keydown-E', onE);
   const chests = map.filterObjects('objects', (o) => o.type === 'chest')!.map((o) => ({
     id: o.name,
-    hidden: false,
+    hidden: prop<boolean>(o, 'hidden') === true,
     sprite: scene.add.image(o.x!, o.y!, CLOSED).setOrigin(0.5, 1).setDepth(o.y!),
     open: false,
   }));
