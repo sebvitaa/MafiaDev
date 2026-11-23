@@ -1,9 +1,9 @@
 ---
-id: HIS-vicho-20261123-145500
+id: HIS-vicho-20261123-145445
 type: history
 owner: vicho
 agent: claude
-created: 2026-11-23T17:55:00.000Z
+created: 2026-11-23T17:54:45.000Z
 title: integracion enemigos cinematica jefe tp ulti hud
 status: pass
 commit: af4ed14, eec9add, 8d18319, de99394, a7ca41a, b5155c9
