@@ -6,7 +6,8 @@ import { confirmDialog } from '../ui/ConfirmDialog';
 import { showControls } from '../ui/ControlsPanel';
 import { Menu } from '../ui/Menu';
 import { installGlobalKeys } from '../ui/globalKeys';
-import { C, panel, text } from '../ui/theme';
+import { hdLayer } from '../ui/hd/HdLayer';
+import { C } from '../ui/theme';
 
 export class PauseScene extends Phaser.Scene {
   private from = 'GameScene';
@@ -30,9 +31,20 @@ export class PauseScene extends Phaser.Scene {
     const dim = this.add.rectangle(0, 0, w, h, C.bg, 0).setOrigin(0);
     this.tweens.add({ targets: dim, fillAlpha: 0.76, duration: 200, ease: 'Cubic.Out' });
     const pw = 224, ph = 124, px = (w - pw) / 2, py = (h - ph) / 2;
+    const layer = hdLayer(this);
+    const frame = layer.panel(px, py, pw, ph, { depth: 10 });
+    const title = layer.text(w / 2, py + 8, 'PAUSA', {
+      depth: 11, width: 140, fontSize: 16, weight: 600, color: '#ff5fa2', align: 'center',
+    });
     const box = this.add.container(0, -8).setAlpha(0);
-    box.add(panel(this, px, py, pw, ph));
-    box.add(text(this, w / 2, py + 8, 'PAUSA', { size: 16, color: C.accent, align: 'center' }).setOrigin(0.5, 0));
+    const syncBox = () => {
+      const transform = `translateY(${box.y}px)`;
+      frame.style.transform = transform;
+      title.style.transform = transform;
+      frame.style.opacity = String(box.alpha);
+      title.style.opacity = String(box.alpha);
+    };
+    this.events.on(Phaser.Scenes.Events.POST_UPDATE, syncBox);
     this.tweens.add({ targets: box, y: 0, alpha: 1, duration: 200, ease: 'Cubic.Out' });
 
     const resume = () => this.resumeGame();
@@ -58,10 +70,14 @@ export class PauseScene extends Phaser.Scene {
       { label: () => 'CONTROLES', onSelect: () => { void controls(); } },
       { label: () => 'SALIR AL TÍTULO', onSelect: () => { void quitPrompt(); } },
     ], { align: 'center', onBack: resume, lineHeight: 16, rowWidth: 210 });
+    this.menu.container.setDepth(12);
+    this.menu.refresh(false);
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.menu.setActive(true));
     this.time.delayedCall(80, () => this.input.keyboard?.on('keydown-P', this.resumeKey));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off('keydown-P', this.resumeKey);
+      this.events.off(Phaser.Scenes.Events.POST_UPDATE, syncBox);
+      box.destroy();
       this.desaturate(false);
       try {
         const game = this.scene.get(this.from);

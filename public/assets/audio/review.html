@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#13111c">
+    <meta name="description" content="Reproductor independiente para revisar la música y los efectos de MafiaDev.">
+    <title>MafiaDev · Revisión de audio</title>
+    <link rel="stylesheet" href="./review.css">
+    <script src="./catalog.js" defer></script>
+    <script src="./review.js" defer></script>
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">MAFIADEV · AUDIO</p>
+          <h1>MafiaDev <span>·</span> Revisión de audio</h1>
+          <p class="intro">Escucha las pistas y consulta cuándo aparecen durante el juego.</p>
+        </div>
+        <div class="master-controls" aria-label="Controles generales de reproducción">
+          <label class="volume-control" for="master-volume">
+            <span>Volumen general</span>
+            <input id="master-volume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volumen general">
+            <output id="volume-value" for="master-volume">80%</output>
+          </label>
+          <button class="button button-stop-all" id="stop-all" type="button">Detener todo</button>
+        </div>
+      </header>
+
+      <section class="toolbar" aria-label="Búsqueda y filtros">
+        <label class="search-label" for="search">Buscar por nombre, descripción o uso</label>
+        <input id="search" class="search-input" type="search" placeholder="Ej. salto, jefe, título…" autocomplete="off">
+        <nav id="category-tabs" class="category-tabs" aria-label="Filtrar por categoría" role="tablist"></nav>
+      </section>
+
+      <section class="sequence-panel" aria-label="Reproducción de efectos">
+        <div>
+          <strong>Escucha rápida</strong>
+          <p>Reproduce cada efecto e interfaz, con una pausa breve entre pistas.</p>
+        </div>
+        <button class="button button-sequence" id="play-effects" type="button">▶ Reproducir todos los efectos en secuencia</button>
+      </section>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <section id="track-list" class="track-list" aria-label="Pistas de audio"></section>
+      <p id="empty-state" class="empty-state" hidden>No hay pistas que coincidan con la búsqueda.</p>
+      <footer class="page-footer">Usa <kbd>↑</kbd> <kbd>↓</kbd> para recorrer pistas, <kbd>Espacio</kbd> para reproducir y <kbd>Esc</kbd> para detener.</footer>
+    </main>
+  </body>
+</html>
