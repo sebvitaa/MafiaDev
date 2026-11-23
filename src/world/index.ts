@@ -8,6 +8,7 @@ export { installCamera, setCombatTier, type CombatTier } from './camera';
 export { installMapViews } from './bigMap';
 export { installAmbience } from './ambience';
 export { installAreaTitles } from './areaTitle';
+export { installEncounters } from './encounters';
 
 export const WORLD_MAP_KEY = 'world';
 

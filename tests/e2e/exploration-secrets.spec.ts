@@ -16,9 +16,9 @@ const press = async (page: Page, key: string) => { await page.keyboard.press(key
 
 for (const m of [1, 2, 3]) test(`pared ilusoria, atajo, coleccionable y viaje r√°pido (mapa ${m})`, async ({ page }) => {
   test.setTimeout(60_000);
-  await page.goto(`/?skipIntro=1&map=${m}`);
+  await page.goto(`/?skipIntro=1&map=${m}&noEnemies=1`);
   await page.evaluate(() => localStorage.clear());
-  await page.goto(`/?skipIntro=1&map=${m}`);
+  await page.goto(`/?skipIntro=1&map=${m}&noEnemies=1`);
   await page.waitForFunction(() => (window as any).__game?.scene.isActive('TitleScene'));
   await page.keyboard.press('Space');
   await page.waitForFunction(() => (window as any).__game?.scene.isActive('GameScene'));
@@ -59,7 +59,7 @@ for (const m of [1, 2, 3]) test(`pared ilusoria, atajo, coleccionable y viaje r√
   const cp1 = one('cp1'), cp2 = one('cp2');
   await tp(page, cp2.x, cp2.y + 10); await press(page, 'KeyE');
   await tp(page, cp1.x, cp1.y + 10); await press(page, 'KeyE');
-  await press(page, 'KeyF');
+  await press(page, 'KeyG');
   await page.waitForTimeout(700);
   const at = await pos(page);
   expect(Math.hypot(at.x - cp2.x, at.y - cp2.y)).toBeLessThan(24);

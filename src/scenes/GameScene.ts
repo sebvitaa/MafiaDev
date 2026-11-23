@@ -1,7 +1,7 @@
 // Dominio: vicho — composition root (SUP-seba-20261123-084249). SIN lógica de juego aquí:
 // cada dominio se engancha con su install*() exportado desde su index.ts.
 import Phaser from 'phaser';
-import { installAmbience, installAreaTitles, installCamera, installMapViews, installWorld, preloadWorld } from '../world';
+import { installAmbience, installAreaTitles, installCamera, installEncounters, installMapViews, installWorld, preloadWorld } from '../world';
 import { installExploration, stageStart } from '../exploration';
 import { installCharacter } from '../character';
 import type { Player } from '../player';
@@ -34,13 +34,16 @@ export class GameScene extends Phaser.Scene {
     const character = installCharacter(this, 'luchador');
     // PROVISIONAL (vicho, rama vicho/mundo-abierto): jugador cenital del lab de basti hasta que exponga
     // su install*() (PEN-basti pendiente). Volver a installPlayer cuando exista.
-    const hero = new RoomPlayer(this, world.spawn.x, world.spawn.y, character.stats);
+    let enemies: ReturnType<typeof installEncounters>;
+    const hero = new RoomPlayer(this, world.spawn.x, world.spawn.y, character.stats, () => enemies?.targets ?? []);
     this.physics.add.collider(hero.anchor, world.solids);
     this.physics.add.collider(hero.anchor, world.obstacles);
+    enemies = installEncounters(this, hero, world);
     // Espadas de prueba del lab en los objetos type "sword" del mapa.
     const swords = world.map.filterObjects('objects', (o) => o.type === 'sword')!.map((o) => new SwordPickup(this, o.x!, o.y!));
     const tick = (t: number, dt: number) => {
       hero.update(dt);
+      enemies?.update(dt);
       character.abilities.update(dt);
       if (swords.some((s) => s.update(t, hero.anchor.x, hero.anchor.y))) hero.equipSword();
     };
