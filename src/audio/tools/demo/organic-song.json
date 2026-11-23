@@ -1,0 +1,71 @@
+{
+  "bpm": 72,
+  "swing": 0.12,
+  "key": "D",
+  "mode": "minor",
+  "loop": true,
+  "lead": "sax",
+  "bassOct": 1,
+  "fx": { "reverb": 0.12, "hall": 0.24, "delay": 0.07, "delayFb": 0.24, "lowpass": 8500 },
+  "sections": [
+    {
+      "name": "A",
+      "lead": "sax",
+      "lead2": "flute",
+      "glide": true,
+      "acc": "stab",
+      "accIns": "piano",
+      "harmOct": 4,
+      "bass": "walking",
+      "bassIns": "upright",
+      "kit": "jazz",
+      "drums": {
+        "k": "X.......x.......",
+        "s": "....g.......x...",
+        "h": "x.x.x.x.x.x.x.x.",
+        "b": "..x...x...x...x.",
+        "r": "........x......."
+      },
+      "bars": [
+        { "c": "Dm9", "m": "r:4 D5:2 F5:2 A5:4 C6:2 A5:2" },
+        { "c": "Gm7", "m": "r:8 Bb5:2 A5:2 G5:4" },
+        { "c": "C7", "m": "G5:4 Eb5:2 G5:2 Bb5:4 G5:4" },
+        { "c": "Fmaj7", "m": "r:4 A5:4 C6:4 A5:4" },
+        { "c": "Em7b5", "m": "G5:2 Bb5:2 D6:4 C6:2 Bb5:2 A5:4" },
+        { "c": "A7", "m": "r:4 C#6:2 A5:2 G5:4 E5:4" },
+        { "c": "Dm7", "m": "F5:4 A5:4 D6:4 C6:4" },
+        { "c": "A7", "m": "r:8 G5:2 A5:2 C#6:4" }
+      ]
+    },
+    {
+      "name": "B",
+      "lead": "sax",
+      "lead2": "flute",
+      "glide": true,
+      "acc": "stab",
+      "accIns": "piano",
+      "harmOct": 4,
+      "bass": "walking",
+      "bassIns": "upright",
+      "kit": "jazz",
+      "drums": {
+        "k": "X.......x.......",
+        "s": "....g.......x...",
+        "h": "x.x.x.x.x.x.x.x.",
+        "b": "..x...x...x...x.",
+        "r": "........x......."
+      },
+      "bars": [
+        { "c": "Bbmaj7", "m": "D6:4 C6:2 Bb5:2 A5:4 F5:4" },
+        { "c": "A7", "m": "r:4 E5:4 G5:4 A5:4" },
+        { "c": "Dm9", "m": "D6:2 C6:2 A5:4 F5:4 A5:4" },
+        { "c": "Gm7", "m": "Bb5:4 D6:4 C6:4 A5:4" },
+        { "c": "Em7b5", "m": "r:8 G5:2 Bb5:2 D6:4" },
+        { "c": "A7", "m": "C#6:4 A5:4 G5:4 E5:4" },
+        { "c": "Dm7", "m": "F5:4 A5:4 D6:4 C6:4" },
+        { "c": "A7", "m": "r:4 E5:2 G5:2 A5:4 C#6:4" }
+      ]
+    }
+  ],
+  "order": ["A", "B"]
+}

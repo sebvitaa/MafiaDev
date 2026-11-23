@@ -1,0 +1,31 @@
+{
+  "bpm": 90,
+  "key": "D",
+  "mode": "harmonic",
+  "loop": false,
+  "lead": "sax",
+  "bassOct": 1,
+  "fx": { "hall": 0.3, "reverb": 0.12, "lowpass": 11000 },
+  "sections": [{
+    "name": "A",
+    "lead": "sax",
+    "acc": "pad",
+    "accIns": "piano",
+    "harmOct": 4,
+    "bass": "line",
+    "bassIns": "upright",
+    "kit": "jazz",
+    "drums": {
+      "k": "X...............",
+      "s": "................",
+      "h": "X...............",
+      "r": "................"
+    },
+    "bars": [{
+      "c": "Dm(add9)",
+      "m": "A4:2 D5:2 F5:2 A5:10",
+      "b": "D2:2 r:14"
+    }]
+  }],
+  "order": ["A"]
+}

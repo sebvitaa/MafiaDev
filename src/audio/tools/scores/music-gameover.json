@@ -1,0 +1,31 @@
+{
+  "bpm": 80,
+  "swing": 0,
+  "key": "D",
+  "mode": "harmonic",
+  "loop": false,
+  "fx": { "hall": 0.45 },
+  "sections": [{
+    "name": "A",
+    "lead": "choir",
+    "acc": "pad",
+    "accIns": "strings",
+    "bass": "line",
+    "bassIns": "cello",
+    "kit": "orch",
+    "drums": {
+      "k": "X...............",
+      "s": "................",
+      "h": "................",
+      "o": "x...............",
+      "b": "................",
+      "r": "................"
+    },
+    "bars": [{
+      "c": "Dm(add9)",
+      "m": "D4:16",
+      "b": "D2:16"
+    }]
+  }],
+  "order": ["A"]
+}

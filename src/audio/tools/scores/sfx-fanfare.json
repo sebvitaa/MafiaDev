@@ -1,0 +1,37 @@
+{
+  "bpm": 100,
+  "swing": 0,
+  "key": "D",
+  "mode": "major",
+  "loop": false,
+  "fx": {"hall": 0.35},
+  "sections": [
+    {
+      "name": "A",
+      "lead": "strings",
+      "lead2": "choir",
+      "acc": "stab",
+      "accIns": "strings",
+      "bass": "none",
+      "kit": "orch",
+      "drums": {"k":"x.x.xxx.x.x.xxx.", "o":"................"},
+      "bars": [
+        {"c":"D", "m":"D5:4 F#5:2 A5:4 G5:2 F#5:2 E5:2", "m2":"D5:8 A5:8"}
+      ]
+    },
+    {
+      "name": "B",
+      "lead": "strings",
+      "lead2": "choir",
+      "acc": "pad",
+      "accIns": "strings",
+      "bass": "none",
+      "kit": "orch",
+      "drums": {"k":"x.x.xxx.x.x.xxx.", "o":"x..............."},
+      "bars": [
+        {"c":"D", "m":"F#5:2 E5:2 D5:2 C#5:2 D5:8", "m2":"F#5:2 E5:2 D5:2 C#5:2 D6:8"}
+      ]
+    }
+  ],
+  "order": ["A","B"]
+}
