@@ -12,7 +12,7 @@ export { CreditsScene } from './scenes/CreditsScene';
 export function installUi(scene: Phaser.Scene): void {
   scene.scene.launch('HudScene');
   fadeIn(scene, 400);
-  installGlobalKeys(scene);
+  installGlobalKeys(scene, { inGame: true }); // M = mapa y F = viaje rápido (vicho): aquí solo 0 silencia
   scene.input.setDefaultCursor('none');
   const ctx = {};
   const pause = () => {
