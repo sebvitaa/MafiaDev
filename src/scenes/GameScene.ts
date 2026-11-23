@@ -9,6 +9,8 @@ import { RoomPlayer } from '../player/room-prototype/RoomPlayer';
 import { SwordPickup } from '../player/room-prototype/SwordPickup';
 import { installAudio } from '../audio';
 import { installUi } from '../ui';
+import { installGameStatus } from '../ui/gameStatus';
+import { installBoss, type Boss } from '../world/boss';
 
 export class GameScene extends Phaser.Scene {
   /** Público para tests e2e (tests/e2e/smoke.spec.ts). */
@@ -35,16 +37,18 @@ export class GameScene extends Phaser.Scene {
     // PROVISIONAL (vicho, rama vicho/mundo-abierto): jugador cenital del lab de basti hasta que exponga
     // su install*() (PEN-basti pendiente). Volver a installPlayer cuando exista.
     let enemies: ReturnType<typeof installEncounters>;
-    const hero = new RoomPlayer(this, world.spawn.x, world.spawn.y, character.stats, () => enemies?.targets ?? []);
+    let boss: Boss | undefined;
+    const hero = new RoomPlayer(this, world.spawn.x, world.spawn.y, character.stats,
+      () => [...(enemies?.targets ?? []), ...(boss?.targets ?? [])], character.abilities);
     this.physics.add.collider(hero.anchor, world.solids);
     this.physics.add.collider(hero.anchor, world.obstacles);
     enemies = installEncounters(this, hero, world);
+    boss = installBoss(this, hero, world);
     // Espadas de prueba del lab en los objetos type "sword" del mapa.
     const swords = world.map.filterObjects('objects', (o) => o.type === 'sword')!.map((o) => new SwordPickup(this, o.x!, o.y!));
     const tick = (t: number, dt: number) => {
       hero.update(dt);
       enemies?.update(dt);
-      character.abilities.update(dt);
       if (swords.some((s) => s.update(t, hero.anchor.x, hero.anchor.y))) hero.equipSword();
     };
     // Personaje más pequeño que en el lab (pensado para 960x600); el juego es 480x270 a lo Titan Souls.
@@ -69,5 +73,6 @@ export class GameScene extends Phaser.Scene {
     installAreaTitles(this, world.map, hero.anchor, mapCams);
     installAudio(this);
     installUi(this);
+    installGameStatus(this, hero.fireball);
   }
 }

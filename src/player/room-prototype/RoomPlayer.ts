@@ -48,6 +48,8 @@ export class RoomPlayer {
     y: number,
     stats: CharacterStats,
     targets: () => readonly (SwordDamageTarget & FireballDamageTarget)[] = () => [],
+    // GameScene pasa los slots del personaje: crear otros duplicaba Teleport (dos papeles y dos TP por clic).
+    abilities?: ReturnType<typeof createAbilitySlots>,
   ) {
     this.motion = new RoomMotion(stats);
     this.health = new Health(playerMaxHp(stats), balance.hurtInvulnerabilityMs);
@@ -55,7 +57,7 @@ export class RoomPlayer {
     this.fireball = new RoomFireball(scene, targets);
     this.input = new Input(scene);
     const keyboard = scene.input.keyboard!;
-    this.abilities = createAbilitySlots(scene, ['teleport']);
+    this.abilities = abilities ?? createAbilitySlots(scene, ['teleport']);
     this.abilityModifier = keyboard.addKey('Q');
     this.abilityKeys = ['Q', 'ONE', 'TWO', 'THREE', 'FOUR'].map((code) => {
       const key = keyboard.addKey(code);

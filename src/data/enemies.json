@@ -17,5 +17,11 @@
     "attackRange": 64, "halfAngleDeg": 55, "radius": 18, "lungeSpeed": 55,
     "armored": true, "color": 6389420, "loot": "enemy_basic"
   },
+  "boss": {
+    "name": "BODOQUE", "hp": 750, "dmg": 50, "speed": 70, "aggroRange": 600,
+    "windupMs": 650, "activeMs": 180, "recoveryMs": 1100, "staggerMs": 120,
+    "attackRange": 64, "halfAngleDeg": 55, "radius": 24, "lungeSpeed": 55,
+    "armored": true, "color": 14242859, "loot": "miniboss"
+  },
   "miniboss": { "hp": 30, "dmg": 2, "speed": 70, "windupMs": 500, "loot": "miniboss" }
 }
