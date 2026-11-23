@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { AudioDirector } from '../audio';
-import { C, panel, text } from './theme';
+import { hdLayer } from './hd/HdLayer';
 
 const KEY_OK = ['ENTER', 'SPACE', 'X', 'Z'];
 
@@ -16,7 +16,7 @@ function wrap(message: string, maxChars: number): string[] {
   return lines;
 }
 
-/** Panel modal pequeño. El dueño del menú debe desactivarlo mientras la promesa está abierta. */
+/** Crisp DOM confirmation panel. The owner deactivates its menu while this promise is open. */
 export function confirmDialog(
   scene: Phaser.Scene,
   message: string,
@@ -25,58 +25,53 @@ export function confirmDialog(
   return new Promise((resolve) => {
     const width = scene.scale.width;
     const height = scene.scale.height;
+    const layer = hdLayer(scene);
     const lines = wrap(message, 31);
     const boxW = Math.min(220, width - 16);
     const boxH = Math.min(height - 16, 66 + lines.length * 10);
     const x = (width - boxW) / 2;
     const y = (height - boxH) / 2;
-    let choice = 1; // NO es la opción segura por defecto.
+    let choice = 1;
     let settled = false;
     let charIndex = 0;
     const fullMessage = lines.join('\n');
-    const objects: Phaser.GameObjects.GameObject[] = [];
-    const fadeTargets: Array<{ setAlpha(value: number): unknown }> = [];
-    const add = <T extends Phaser.GameObjects.GameObject>(object: T): T => { objects.push(object); return object; };
+    const elements: HTMLElement[] = [];
+    const add = <T extends HTMLElement>(element: T): T => { elements.push(element); return element; };
 
-    const shade = add(scene.add.rectangle(0, 0, width, height, 0x090811, 0.72).setOrigin(0));
-    const frame = add(panel(scene, x, y, boxW, boxH, 0.98));
-    const messageText = add(text(scene, width / 2, y + 16, '', { align: 'center', color: C.text })).setOrigin(0.5, 0);
-    fadeTargets.push(shade, frame, messageText);
+    const shade = add(layer.el('div', { x: 0, y: 0, width, height, depth: 100, className: 'hd-dialog-shade', interactive: true }));
+    shade.style.background = 'rgba(9,8,17,.72)';
+    const frame = add(layer.panel(x, y, boxW, boxH, { depth: 101, alpha: 0.98 }));
+    frame.style.opacity = '0';
+    const messageText = add(layer.text(width / 2, y + 16, '', {
+      depth: 102, width: boxW - 24, align: 'center', fontSize: 13, lineHeight: 15, className: 'hd-dialog-message',
+    }));
+    messageText.style.textAlign = 'center';
+    messageText.style.opacity = '0';
+
     const buttonY = y + boxH - 29;
     const buttonW = 70, buttonH = 17, gap = 12;
     const buttonX = width / 2 - buttonW - gap / 2;
     const labels = [opts.yes ?? 'SÍ', opts.no ?? 'NO'];
-    const buttonFrames: Phaser.GameObjects.Graphics[] = [];
-    const buttonLabels: Phaser.GameObjects.Text[] = [];
-    const buttonZones: Phaser.GameObjects.Zone[] = [];
+    const buttons: HTMLButtonElement[] = [];
     for (let i = 0; i < 2; i++) {
       const bx = buttonX + i * (buttonW + gap);
-      const buttonFrame = add(scene.add.graphics());
-      buttonFrames.push(buttonFrame);
-      fadeTargets.push(buttonFrame);
-      const buttonLabel = add(text(scene, bx + buttonW / 2, buttonY + 4, labels[i], { align: 'center' }).setOrigin(0.5, 0));
-      buttonLabels.push(buttonLabel);
-      fadeTargets.push(buttonLabel);
-      const zone = add(scene.add.zone(bx, buttonY, buttonW, buttonH).setOrigin(0, 0).setInteractive());
-      zone.on('pointerover', () => focus(i));
-      zone.on('pointerdown', () => { focus(i); choose(i); });
-      buttonZones.push(zone);
+      const button = add(layer.el('button', {
+        x: bx, y: buttonY, width: buttonW, height: buttonH, depth: 103,
+        className: 'hd-choice', text: labels[i], interactive: true,
+      }));
+      button.type = 'button';
+      button.addEventListener('pointerenter', () => focus(i));
+      button.addEventListener('pointerdown', (event) => { event.preventDefault(); event.stopPropagation(); focus(i); choose(i); });
+      buttons.push(button);
     }
+    shade.addEventListener('pointerdown', (event) => { event.preventDefault(); event.stopPropagation(); });
 
-    const drawButtons = () => {
-      buttonFrames.forEach((g, i) => {
-        const bx = buttonX + i * (buttonW + gap);
-        g.clear();
-        g.fillStyle(i === choice ? 0x3a3352 : 0x221d33, 1).fillRect(bx, buttonY, buttonW, buttonH);
-        g.lineStyle(1, i === choice ? C.accent : 0x5a5370, 1).strokeRect(bx + 0.5, buttonY + 0.5, buttonW - 1, buttonH - 1);
-      });
-      buttonLabels.forEach((label, i) => label.setColor(i === choice ? '#ff5fa2' : '#ebe7f4'));
-    };
+    const drawButtons = () => buttons.forEach((button, i) => button.classList.toggle('is-selected', i === choice));
     const cleanup = () => {
       scene.input.keyboard?.off('keydown', onKey);
       scene.events.off(Phaser.Scenes.Events.SHUTDOWN, onShutdown);
       timer?.remove();
-      objects.forEach((object) => object.destroy());
+      elements.forEach((element) => element.remove());
     };
     const finish = (yes: boolean) => {
       if (settled) return;
@@ -109,8 +104,12 @@ export function confirmDialog(
     let timer: Phaser.Time.TimerEvent | undefined;
 
     drawButtons();
-    fadeTargets.forEach((object) => object.setAlpha(0));
-    scene.tweens.add({ targets: fadeTargets, alpha: 1, duration: 120, ease: 'Cubic.Out' });
+    requestAnimationFrame(() => {
+      frame.style.transition = 'opacity 120ms ease-out';
+      messageText.style.transition = 'opacity 120ms ease-out';
+      frame.style.opacity = '1';
+      messageText.style.opacity = '1';
+    });
     scene.input.keyboard?.on('keydown', onKey);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, onShutdown);
     timer = scene.time.addEvent({
@@ -118,7 +117,7 @@ export function confirmDialog(
       repeat: fullMessage.length - 1,
       callback: () => {
         charIndex++;
-        messageText.setText(fullMessage.slice(0, charIndex));
+        messageText.textContent = fullMessage.slice(0, charIndex);
         if (charIndex % 4 === 0) AudioDirector.ui('sfx-ui-move');
       },
     });

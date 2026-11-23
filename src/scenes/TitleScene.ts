@@ -8,6 +8,7 @@ import { AudioDirector, settings } from '../audio';
 import { confirmDialog } from '../ui/ConfirmDialog';
 import { Menu, type MenuItem } from '../ui/Menu';
 import { installGlobalKeys, shake } from '../ui/globalKeys';
+import { hdLayer } from '../ui/hd/HdLayer';
 import { buildLogo, idleShine, LOGO_TITLE_Y, squashLogo, type Logo } from '../ui/logo';
 import { C, reducedMotion, scanlines, skipIntro, text } from '../ui/theme';
 import { fadeIn, flashTo } from '../ui/transitions';
@@ -25,7 +26,7 @@ export const STAGES = [
 export class TitleScene extends Phaser.Scene {
   private menu: Menu | null = null;
   private logo!: Logo;
-  private menuUi: Phaser.GameObjects.GameObject[] = [];
+  private menuMotion: Array<{ element: HTMLElement; proxy: Phaser.GameObjects.Container }> = [];
   private stageIdx = 0;
 
   constructor() {
@@ -38,7 +39,8 @@ export class TitleScene extends Phaser.Scene {
     const fromSplash = data.fromSplash === true && !instant;
     const calm = reducedMotion(settings.get().reducedMotion);
     this.menu = null;
-    this.menuUi = [];
+    this.menuMotion = [];
+    this.events.off(Phaser.Scenes.Events.POST_UPDATE, this.syncMenuMotion);
     const last = Number(this.registry.get('stage') ?? 1);
     this.stageIdx = Math.max(0, STAGES.findIndex((s) => s.id === last));
     document.title = 'MafiaDev · Metroidvania';
@@ -162,23 +164,38 @@ export class TitleScene extends Phaser.Scene {
   private buildMenu(items: MenuItem[], instant: boolean, rows: number): void {
     const { width: w, height: h } = this.scale;
     this.menu?.destroy();
-    this.menuUi.forEach((o) => o.destroy());
+    this.menu = null;
+    this.events.off(Phaser.Scenes.Events.POST_UPDATE, this.syncMenuMotion);
+    this.menuMotion.forEach(({ element, proxy }) => { element.remove(); proxy.destroy(); });
+    this.menuMotion = [];
     const lh = 14;
     const bw = 190, bh = rows * lh + 14, by = h - 22 - bh;
-    const box = this.add.graphics().setDepth(10);
-    box.fillStyle(C.panelDark, 0.82).fillRect(w / 2 - bw / 2, by, bw, bh);
-    box.lineStyle(1, C.accent, 0.8).strokeRect(w / 2 - bw / 2 + 0.5, by + 0.5, bw - 1, bh - 1);
+    const layer = hdLayer(this);
+    const box = layer.panel(w / 2 - bw / 2, by, bw, bh, { depth: 10 });
     this.menu = new Menu(this, w / 2, by + 8, items, { align: 'center', lineHeight: lh, rowWidth: bw - 8 });
     this.menu.container.setDepth(11);
-    const hint = text(this, w / 2, h - 10, '↑ ↓ ELEGIR  ·  ← → ESCENARIO  ·  ENTER / ESPACIO', { color: C.dim, align: 'center' }).setOrigin(0.5).setDepth(10);
-    this.menuUi = [box, this.menu.container, hint];
+    this.menu.refresh(false);
+    const hint = layer.text(w / 2, h - 17, '↑ ↓ ELEGIR  ·  ← → ESCENARIO  ·  ENTER / ESPACIO', {
+      depth: 10, width: 460, color: '#8a83a3', align: 'center', fontSize: 11,
+    });
+    const boxMotion = this.add.container(0, instant ? 0 : 20).setAlpha(instant ? 1 : 0);
+    const hintMotion = this.add.container(0, instant ? 0 : 20).setAlpha(instant ? 1 : 0);
+    this.menuMotion = [{ element: box, proxy: boxMotion }, { element: hint, proxy: hintMotion }];
+    this.events.on(Phaser.Scenes.Events.POST_UPDATE, this.syncMenuMotion);
+    this.syncMenuMotion();
     if (!instant) {
-      for (const o of this.menuUi as (Phaser.GameObjects.Components.Alpha & Phaser.GameObjects.Components.Transform & Phaser.GameObjects.GameObject)[]) {
-        const y = o.y;
-        o.setAlpha(0).setY(y + 20);
-        this.tweens.add({ targets: o, alpha: 1, y, duration: 260, ease: 'Cubic.Out' });
-      }
+      this.menu.container.setAlpha(0).setY(by + 28);
+      this.tweens.add({ targets: boxMotion, alpha: 1, y: 0, duration: 260, ease: 'Cubic.Out' });
+      this.tweens.add({ targets: hintMotion, alpha: 1, y: 0, duration: 260, ease: 'Cubic.Out' });
+      this.tweens.add({ targets: this.menu.container, alpha: 1, y: by + 8, duration: 260, ease: 'Cubic.Out' });
     }
+  }
+
+  private syncMenuMotion = (): void => {
+    this.menuMotion.forEach(({ element, proxy }) => {
+      element.style.opacity = String(proxy.alpha);
+      element.style.transform = `translateY(${proxy.y}px)`;
+    });
   }
 
   /** 2.45 — botón discreto de pantalla completa (esquina superior derecha). */
