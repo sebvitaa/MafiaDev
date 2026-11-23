@@ -11,7 +11,7 @@ const wallAt = (page: Page, x: number, y: number) =>
   page.evaluate(([x, y]) => (window as any).__game.scene.getScene('GameScene').children.list
     .some((o: any) => o.layer?.name === 'walls' && o.getTileAtWorldXY(x, y)), [x, y]);
 const texts = (page: Page) =>
-  page.evaluate(() => (window as any).__game.scene.getScene('GameScene').children.list.filter((o: any) => o.type === 'Text').map((o: any) => o.text as string));
+  page.evaluate(() => (window as any).__game.scene.getScene('GameScene').children.list.filter((o: any) => o.type === 'Text').map((o: any) => o.text as string) as string[]);
 const press = async (page: Page, key: string) => { await page.keyboard.press(key); await page.waitForTimeout(150); };
 
 test('pared ilusoria, atajo, coleccionable y viaje rápido', async ({ page }) => {
