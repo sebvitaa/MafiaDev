@@ -24,9 +24,10 @@ function drawBonfire(scene: Phaser.Scene, x: number, y: number) {
   base.fillStyle(0x9aa3ad).fillRect(x - 1, y - 16, 2, 14); // hoja clavada
   base.fillStyle(0x6b5a4a).fillRect(x - 3, y - 18, 6, 2).fillRect(x - 1, y - 22, 2, 4); // guarda y empuñadura
   const glow = scene.add.circle(x, y - 4, 26, 0xff8a3d, 0).setDepth(y - 1).setBlendMode(Phaser.BlendModes.ADD);
-  const flame = scene.add.graphics().setDepth(y + 1).setVisible(false);
-  flame.fillStyle(0xff6a3d).fillTriangle(x - 6, y - 1, x + 6, y - 1, x, y - 15);
-  flame.fillStyle(0xffd75e).fillTriangle(x - 3, y - 1, x + 3, y - 1, x, y - 9);
+  // Dibujada relativa a su posición (base de la llama): el tween de scaleY la estira en su sitio.
+  const flame = scene.add.graphics({ x, y: y - 1 }).setDepth(y + 1).setVisible(false);
+  flame.fillStyle(0xff6a3d).fillTriangle(-6, 0, 6, 0, 0, -14);
+  flame.fillStyle(0xffd75e).fillTriangle(-3, 0, 3, 0, 0, -8);
   return { glow, flame };
 }
 
