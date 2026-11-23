@@ -44,7 +44,8 @@ export function installMapViews(
   let miniOn = true; // preferencia del jugador; el minimapa se oculta mientras el mapa grande está abierto
   const toggleBig = () => { big.setVisible(!big.visible); mini.setVisible(miniOn && !big.visible); };
   const toggleMini = () => { miniOn = !miniOn; mini.setVisible(miniOn && !big.visible); };
-  keys.on('keydown-M', toggleBig);
+  keys.addCapture('TAB'); // sin esto el navegador mueve el foco fuera del canvas
+  keys.on('keydown-TAB', toggleBig); // M es silencio global (seba)
   keys.on('keydown-N', toggleMini);
 
   const onUpdate = (time: number) => {
@@ -60,7 +61,7 @@ export function installMapViews(
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-    keys.off('keydown-M', toggleBig);
+    keys.off('keydown-TAB', toggleBig);
     keys.off('keydown-N', toggleMini);
     scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate);
   });

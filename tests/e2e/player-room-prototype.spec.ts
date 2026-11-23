@@ -355,18 +355,18 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   expect((await state(page)).dummyHits).toBe(1);
 });
 
-test('E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en cooldown', async ({ page }) => {
+test('clic derecho mantenido apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en cooldown', async ({ page }) => {
   const canvas = page.locator('canvas');
   const box = await canvas.boundingBox();
   if (!box) throw new Error('No se encontró el canvas del prototipo');
   await page.mouse.move(box.x + box.width * 820 / 960, box.y + box.height * 400 / 600);
-  await page.keyboard.down('e');
+  await page.mouse.down({ button: 'right' });
   await expect.poll(async () => (await state(page)).fireballAiming).toBe(true);
   const aimed = await state(page);
   expect(aimed.fireballAimX).toBeCloseTo(820, 0);
   expect(aimed.fireballAimY).toBeCloseTo(400, 0);
   expect(aimed.dummyHp).toBe(100);
-  await page.keyboard.up('e');
+  await page.mouse.up({ button: 'right' });
   expect((await state(page)).fireballPhase).toBe('falling');
   expect((await state(page)).fireballCooldown).toBeGreaterThan(6900);
   await page.waitForTimeout(500);
@@ -384,9 +384,9 @@ test('E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en
   expect((await state(page)).fireballBurnVisible).toBe(true);
   await expect.poll(async () => (await state(page)).fireballBurnVisible).toBe(false);
   expect((await state(page)).fireballCooldown).toBeGreaterThan(2500);
-  await page.keyboard.down('e');
+  await page.mouse.down({ button: 'right' });
   expect((await state(page)).fireballAiming).toBe(false);
-  await page.keyboard.up('e');
+  await page.mouse.up({ button: 'right' });
   await page.keyboard.press('r');
   await expect.poll(async () => page.evaluate(() => {
     const scene = window.__game!.scene.getScene('RoomPrototype');

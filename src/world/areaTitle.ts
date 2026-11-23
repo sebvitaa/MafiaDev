@@ -26,7 +26,8 @@ export function installAreaTitles(scene: Phaser.Scene, map: Phaser.Tilemaps.Tile
       seen.add(b);
       title.setText(NAMES[b]);
       scene.tweens.killTweensOf([title, rule]);
-      scene.tweens.add({ targets: [title, rule], alpha: 1, duration: 700, hold: 1800, yoyo: true });
+      // 4 s en total (600 entrada + 2800 + 600 salida). from:0 explícito: si se corta a medio fade, el yoyo vuelve a 0 y no queda pegado.
+      scene.tweens.add({ targets: [title, rule], alpha: { from: 0, to: 1 }, duration: 600, hold: 2800, yoyo: true });
     }
     // Fijo a la pantalla aunque la cámara tenga zoom: se coloca en el centro de lo que ve y se escala con 1/zoom.
     const { centerX, centerY } = cam.worldView;

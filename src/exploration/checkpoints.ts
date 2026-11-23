@@ -53,11 +53,11 @@ export function installCheckpoints(scene: Phaser.Scene, map: Phaser.Tilemaps.Til
   let pressed = false;
   const onE = () => { pressed = true; };
   scene.input.keyboard!.on('keydown-E', onE);
-  // V23 viaje rápido: F junto a una hoguera encendida salta a la siguiente encendida (orden del mapa).
+  // V23 viaje rápido: G junto (F es pantalla completa global) a una hoguera encendida salta a la siguiente encendida (orden del mapa).
   // shortcut: hogueras encendidas solo en esta partida (salvo la guardada); persistir con SaveData de mundo (shared).
   let travel = false;
   const onF = () => { travel = true; };
-  scene.input.keyboard!.on('keydown-F', onF);
+  scene.input.keyboard!.on('keydown-G', onF);
 
   const onUpdate = () => {
     const near = fires.find((f) => Phaser.Math.Distance.Between(player.x, player.y, f.x, f.y) < REACH);
@@ -68,7 +68,7 @@ export function installCheckpoints(scene: Phaser.Scene, map: Phaser.Tilemaps.Til
     hint.setVisible(!!near);
     if (!near) return;
     const lit = fires.filter((f) => f.lit);
-    hint.setText(near.lit && lit.length > 1 ? 'E descansar · F viajar' : 'E descansar').setPosition(near.x, near.y - 24);
+    hint.setText(near.lit && lit.length > 1 ? 'E descansar · G viajar' : 'E descansar').setPosition(near.x, near.y - 24);
     if (wantsTravel && near.lit && lit.length > 1) {
       const to = lit[(lit.indexOf(near) + 1) % lit.length];
       const cam = scene.cameras.main;
@@ -102,7 +102,7 @@ export function installCheckpoints(scene: Phaser.Scene, map: Phaser.Tilemaps.Til
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate);
     scene.input.keyboard?.off('keydown-E', onE);
-    scene.input.keyboard?.off('keydown-F', onF);
+    scene.input.keyboard?.off('keydown-G', onF);
     bus.offContext(hint);
   });
 }
