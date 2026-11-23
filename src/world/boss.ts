@@ -17,7 +17,7 @@ export function installBoss(scene: Phaser.Scene, player: EnemyPlayer,
   let won = false;
   scene.registry.set('bossEnding',false);
   const audio = installBossAudio(scene);
-  const reinforcements = new EnemySystem(scene, player, world.solids as unknown as Phaser.Physics.Arcade.StaticGroup);
+  const reinforcements = new EnemySystem(scene, player, world.solids,world.obstacles);
   const spawn = () => {
     if (boss || won || !arena || !player.alive) return;
     const x=arena.x!+arena.width!/2, y=arena.y!+arena.height!/2;
@@ -28,8 +28,7 @@ export function installBoss(scene: Phaser.Scene, player: EnemyPlayer,
       onSummon: position => {
         if(reinforcements.targets.length >= 4) return;
         for(const side of [-1,1]) {
-          const enemy=reinforcements.spawn('cobrador',position.x+side*48,position.y+30);
-          scene.physics.add.collider(enemy.anchor,world.obstacles);
+          reinforcements.spawn('cobrador',position.x+side*48,position.y+30);
         }
       },
       onTimeTheft: () => scene.registry.set('heroSlowUntil',scene.time.now+1000),

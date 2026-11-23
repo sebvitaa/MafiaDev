@@ -2,6 +2,7 @@
 // grande (M lo abre/cierra). Ambas son cámaras extra que ven la niebla de guerra; la cámara principal no.
 // SUP-vicho-20261123-121240: teclas M/N locales hasta que existan acciones en Input (shared).
 import Phaser from 'phaser';
+import { makeMapOverview } from './mapOverview';
 
 const MINI = { x: 6, y: 22, w: 92, h: 58, zoom: 0.11 }; // bajo los corazones del HUD (seba)
 
@@ -33,16 +34,29 @@ export function installMapViews(
     .setStrokeStyle(k, 0x07070d).setDepth(1e6);
   let heading = 0;
   const frame = scene.add.graphics().setDepth(1e6);
+  const overview = makeMapOverview(scene, map);
 
   // Cada cámara ve solo sus marcadores; la principal no ve ninguno ni la niebla.
-  scene.cameras.main.ignore([bigMarker, title, miniMarker, frame]);
+  scene.cameras.main.ignore([bigMarker, title, miniMarker, frame, overview.image]);
   big.ignore([miniMarker, frame]);
   mini.ignore([bigMarker, title]);
   fog.setVisible(true);
+  const mapObjects = new Set<Phaser.GameObjects.GameObject>([overview.image, fog, bigMarker, title, miniMarker, frame]);
+  const ignoreWorld = (object: Phaser.GameObjects.GameObject) => {
+    if (!mapObjects.has(object)) { mini.ignore(object); big.ignore(object); }
+  };
+  scene.children.list.forEach(ignoreWorld);
+  // New enemies, projectiles and particles must not leak into the map cameras either.
+  scene.events.on(Phaser.Scenes.Events.ADDED_TO_SCENE, ignoreWorld);
 
   const keys = scene.input.keyboard!;
+  const refreshAfterInteraction = () => { scene.time.delayedCall(0, overview.refresh); };
+  keys.on('keydown-E', refreshAfterInteraction);
   let miniOn = true; // preferencia del jugador; el minimapa se oculta mientras el mapa grande está abierto
-  const toggleBig = () => { big.setVisible(!big.visible); mini.setVisible(miniOn && !big.visible); };
+  const toggleBig = () => {
+    big.setVisible(!big.visible); mini.setVisible(miniOn && !big.visible);
+    if (big.visible) overview.refresh();
+  };
   const toggleMini = () => { miniOn = !miniOn; mini.setVisible(miniOn && !big.visible); };
   keys.on('keydown-M', toggleBig); // en el juego M es del mapa; silencio = 0 (seba, #10)
   keys.on('keydown-N', toggleMini);
@@ -62,7 +76,9 @@ export function installMapViews(
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     keys.off('keydown-M', toggleBig);
     keys.off('keydown-N', toggleMini);
+    keys.off('keydown-E', refreshAfterInteraction);
     scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate);
+    scene.events.off(Phaser.Scenes.Events.ADDED_TO_SCENE, ignoreWorld);
   });
   return [mini, big];
 }

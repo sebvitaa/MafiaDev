@@ -17,13 +17,21 @@ export function installFog(scene: Phaser.Scene, map: Phaser.Tilemaps.Tilemap, pl
 
   const redraw = () => {
     fog.clear().fillStyle(0x07070d, 1);
-    for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
-      if (!grid.has(cx, cy)) fog.fillRect(cx * CELL, cy * CELL, CELL, CELL);
+    for (let cy = 0; cy < rows; cy++) {
+      let start = -1;
+      for (let cx = 0; cx <= cols; cx++) {
+        if (cx < cols && !grid.has(cx, cy)) { if (start < 0) start = cx; }
+        else if (start >= 0) { fog.fillRect(start * CELL, cy * CELL, (cx - start) * CELL, CELL); start = -1; }
+      }
     }
   };
   redraw();
 
+  let lastX = NaN, lastY = NaN;
   const onUpdate = () => {
+    const cx = Math.floor(player.x / CELL), cy = Math.floor(player.y / CELL);
+    if (cx === lastX && cy === lastY) return;
+    lastX = cx; lastY = cy;
     let changed = false;
     for (let dy = -REVEAL; dy <= REVEAL; dy++) for (let dx = -REVEAL; dx <= REVEAL; dx++) {
       changed = grid.mark(player.x + dx * CELL, player.y + dy * CELL) || changed;
