@@ -8,7 +8,7 @@ const config: BodoqueConfig = {
   radius: 28,
   idleMs: 100,
   phaseThresholds: [0.66, 0.33],
-  heart: { hp: 100, openingMs: 1200, defeatMs: 1600, criticalHp: 23 },
+  heart: { hp: 100, openingMs: 1200, defeatMs: 1600, criticalHp: 23, captionMs: 5500 },
   attacks: {
     microphoneMallet: { windupMs: 500, activeMs: 100, recoveryMs: 200, damage: 10, range: 80, halfAngleDeg: 35, parryable: true },
     cameraFlash: { windupMs: 300, activeMs: 60, recoveryMs: 200, damage: 15, range: 160, halfAngleDeg: 45, parryable: false },
@@ -64,7 +64,12 @@ describe('BodoqueBrain', () => {
     expect(brain.takeDamage(500, 'heart').applied).toBe(100);
     expect(brain.state).toBe('dying');
     expect(brain.consumeVictory()).toBe(false);
-    brain.update(1600, { x: 0, y: 0 }, { x: 0, y: 0 });
+    brain.update(5499, { x: 0, y: 0 }, { x: 0, y: 0 });
+    expect(brain.captionVisible).toBe(true);
+    expect(brain.state).toBe('dying');
+    expect(brain.finalProgress).toBeCloseTo(1, 2);
+    brain.update(1, { x: 0, y: 0 }, { x: 0, y: 0 });
+    expect(brain.captionVisible).toBe(false);
     expect(brain.state).toBe('defeated');
     expect(brain.consumeVictory()).toBe(true);
     brain.update(10000, { x: 0, y: 0 }, { x: 0, y: 0 });
@@ -88,8 +93,14 @@ describe('BodoqueBrain', () => {
     expect(brain.takeDamage(1, 'heart').criticalTriggered).toBe(true);
     expect(brain.takeDamage(1, 'heart').criticalTriggered).toBe(false);
     expect(brain.hp).toBe(22);
+    brain.update(5500, { x: 0, y: 0 }, { x: 0, y: 0 });
+    expect(brain.captionVisible).toBe(false);
     expect(brain.takeDamage(99, 'heart').applied).toBe(22);
     expect(brain.hp).toBe(0);
+    brain.update(1599, { x: 0, y: 0 }, { x: 0, y: 0 });
+    expect(brain.state).toBe('dying');
+    brain.update(1, { x: 0, y: 0 }, { x: 0, y: 0 });
+    expect(brain.state).toBe('defeated');
   });
 
   it('uses sector geometry for the flash and a capsule for the charge path', () => {

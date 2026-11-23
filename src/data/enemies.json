@@ -29,7 +29,7 @@
     "radius": 28,
     "idleMs": 420,
     "phaseThresholds": [0.66, 0.33],
-    "heart": { "hp": 100, "openingMs": 1200, "defeatMs": 1600, "criticalHp": 23 },
+    "heart": { "hp": 100, "openingMs": 1200, "defeatMs": 1600, "criticalHp": 23, "captionMs": 5500 },
     "bounds": { "left": 56, "right": 904, "top": 104, "bottom": 544 },
     "attacks": {
       "microphoneMallet": {

@@ -14,6 +14,9 @@ test('El Set conecta espada, música, corazón y desenlace antes de los crédito
     const scene = window.__game?.scene.getScene('GameScene') as GameScene | undefined;
     return scene?.boss?.targets.length === 1;
   });
+  const liveTag = page.getByText('EN VIVO', { exact: true });
+  await expect(liveTag).toBeVisible();
+  await expect(page.getByText('CANAL 23', { exact: true })).toBeVisible();
   const music = () => page.evaluate(async () => {
     const url = '/src/audio/index.ts';
     return (await import(/* @vite-ignore */ url)).AudioDirector.currentMusic;
@@ -51,17 +54,26 @@ test('El Set conecta espada, música, corazón y desenlace antes de los crédito
     const scene = window.__game!.scene.getScene('GameScene') as GameScene;
     scene.boss!.targets[0].takeFireDamage(77, { x: 1, y: 0 });
   });
-  await page.waitForFunction(() => {
+  const numbers = await page.evaluate(() => {
     const scene = window.__game!.scene.getScene('GameScene');
     const set = scene.children.getByName('set-broadcast') as Phaser.GameObjects.Container;
-    return (set.getByName('room-codex-caption') as Phaser.GameObjects.Text).visible;
+    return set.getAll('name', 'room-codex-monitor-number').map(object => {
+      const text = object as Phaser.GameObjects.Text;
+      return text.visible && text.text === '23';
+    });
   });
+  expect(numbers).toEqual([true, true]);
+  const caption = page.getByRole('status').filter({ hasText: '¡Queda una pura...!' });
+  await expect(caption).toBeVisible();
   await page.screenshot({ path: 'test-results/el-set-corazon.png' });
   await page.evaluate(() => {
     const scene = window.__game!.scene.getScene('GameScene') as GameScene;
     scene.boss!.targets[0].takeSwordDamage(23, { x: 1, y: 0 });
   });
+  await expect(caption).toBeVisible();
   await expect(video).toHaveAttribute('aria-label', 'Fin de transmisión', { timeout: 12000 });
+  await expect(caption).toBeHidden();
+  await expect(liveTag).toBeHidden();
   await expect(video).toHaveAttribute('src', /cine3\.webm#t=0\.82$/);
   await expect.poll(() => video.evaluate(v => (v as HTMLVideoElement).currentTime)).toBeGreaterThan(.82);
   expect(await music()).toBeNull();

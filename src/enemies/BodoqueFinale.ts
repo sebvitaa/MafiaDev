@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
+import { hdLayer } from '../ui/hd/HdLayer';
+import './bodoque-broadcast.css';
 import { HEART_CUT_FRAME, HEART_LAST_FRAME, HEART_TEXTURE } from './codexHeart';
 import type { BodoqueBrain, BodoquePoint } from './BodoqueBrain';
 
-// SUP-basti-20261123-144553: local broadcast visuals; brief caption 1500ms, defeat 1600ms in enemies.json.
-/** Local-only broadcast/chest/core presentation. All effects are pooled Graphics, no timers/listeners. */
+/** Broadcast effects in the room and a camera-independent caption for the last line. */
 export class BodoqueFinale {
   readonly core: Phaser.GameObjects.Graphics;
-  readonly caption: Phaser.GameObjects.Text;
-  readonly channel: Phaser.GameObjects.Text;
+  private readonly caption: HTMLDivElement;
+  private readonly channel: HTMLDivElement;
+  private readonly channelNumbers: Phaser.GameObjects.Text[];
   readonly monitors: Phaser.GameObjects.Text[];
   readonly panels: Phaser.GameObjects.Graphics;
   private readonly atmosphere: Phaser.GameObjects.Graphics;
@@ -28,23 +30,47 @@ export class BodoqueFinale {
     this.core = scene.add.graphics().setName('room-codex-core').setVisible(false);
     this.lastFrame = arena ? HEART_CUT_FRAME : HEART_LAST_FRAME;
     this.emblem = scene.add.image(0, 0, HEART_TEXTURE, 0).setName('bodoque-heart-emblem').setVisible(false);
-    this.channel = scene.add.text(942, 67, 'CANAL 23 · EN VIVO', { fontFamily: 'monospace',
-      fontSize: '12px', color: '#ffb1b7', backgroundColor: '#171320' }).setOrigin(1, 0).setDepth(12001)
-      .setName('room-codex-channel');
-    this.caption = scene.add.text(480, 505, '', { fontFamily: 'monospace', fontSize: '17px',
-      color: '#fff4e0', backgroundColor: '#201522', stroke: '#201522', strokeThickness: 4, align: 'center' })
-      .setOrigin(0.5).setDepth(12002).setName('room-codex-caption').setVisible(false);
-    this.monitors = [92, 790].map((x) => scene.add.text(x + 39, 133, '23\nEN VIVO', {
-      fontFamily: 'monospace', fontSize: '12px', align: 'center', color: '#deb0f8',
+    const overlay = hdLayer(scene);
+    this.channel = overlay.el('div', { x: 471, y: 8, depth: 10, className: 'bodoque-channel' });
+    this.channel.hidden = true;
+    const liveTag = document.createElement('span');
+    liveTag.className = 'bodoque-channel-live';
+    liveTag.textContent = 'EN VIVO';
+    const station = document.createElement('span');
+    station.className = 'bodoque-channel-station';
+    station.textContent = 'CANAL ';
+    const number = document.createElement('strong');
+    number.textContent = '23';
+    station.append(number);
+    this.channel.append(liveTag, station);
+    this.caption = overlay.el('div', { x: 240, y: 181, depth: 10, className: 'bodoque-caption' });
+    this.caption.hidden = true;
+    this.caption.setAttribute('role', 'status');
+    const speaker = document.createElement('div');
+    speaker.className = 'bodoque-caption-speaker';
+    speaker.textContent = 'Bodoque';
+    const signal = document.createElement('span');
+    signal.textContent = 'ERROR 23';
+    speaker.append(signal);
+    const line = document.createElement('div');
+    line.className = 'bodoque-caption-line';
+    line.textContent = '¡Queda una pura...!';
+    this.caption.append(speaker, line);
+    const monitorCenters = [131, 829];
+    this.channelNumbers = monitorCenters.map(x => scene.add.text(x, 125, '23', {
+      fontFamily: 'monospace', fontSize: '57px', fontStyle: 'bold', color: '#fff8df',
+    }).setOrigin(0.5).setDepth(9002).setName('room-codex-monitor-number'));
+    this.monitors = monitorCenters.map(x => scene.add.text(x, 159, 'CANAL', {
+      fontFamily: 'monospace', fontSize: '16px', fontStyle: 'bold', color: '#ffc0d5',
     }).setOrigin(0.5).setDepth(9002).setName('room-codex-monitor-text'));
     if (arena) {
       // El atrezo usa el espacio de diseño del laboratorio. El cuerpo y el núcleo ya están en coordenadas Tiled.
       scene.add.container(arena.x - 480 * 0.7, arena.y - 270 * 0.7,
-        [this.atmosphere, this.panels, ...this.monitors, this.channel, this.caption]).setScale(0.7).setDepth(9000).setName('set-broadcast');
+        [this.atmosphere, this.panels, ...this.channelNumbers, ...this.monitors]).setScale(0.7).setDepth(9000).setName('set-broadcast');
       // Phaser destruye el contenedor al cerrar la escena.
     }
     this.owned = [this.atmosphere, this.panels, this.chest, this.core, this.emblem,
-      this.channel, this.caption, ...this.monitors];
+      ...this.channelNumbers, ...this.monitors];
     this.owned.forEach((object) => (object as Phaser.GameObjects.Graphics).setVisible(false));
   }
 
@@ -62,27 +88,26 @@ export class BodoqueFinale {
     this.interruptionMs = Math.max(0, this.interruptionMs - Math.max(0, dtMs));
     this.hitMs = Math.max(0, this.hitMs - Math.max(0, dtMs));
     const live = brain.state !== 'inactive';
-    this.channel.setVisible(live);
+    const onAir = brain.active;
+    if (this.channel.hidden === onAir) this.channel.hidden = !onAir;
     this.panels.setVisible(live).clear();
     const final = ['opening', 'heart', 'dying', 'defeated'].includes(brain.state);
     const dying = brain.state === 'dying' || brain.state === 'defeated';
     const end = brain.state === 'defeated' ? 1 : dying ? brain.finalProgress : 0;
     const pulse = Math.sin(this.timeMs / (brain.critical ? 65 : 190));
     this.monitors.forEach((monitor, i) => {
-      const x = i === 0 ? 92 : 790;
-      this.panels.fillStyle(0x0b0d18, 0.96).fillRoundedRect(x, 107, 78, 52, 5)
-        .lineStyle(2, dying ? 0x433444 : 0xbb699b, 0.8).strokeRoundedRect(x, 107, 78, 52, 5);
-      monitor.setVisible(live).setAlpha(1 - end).setText(dying ? 'SIN\nSEÑAL'
-        : this.interruptionMs > 0 ? 'APUESTA' : brain.critical ? 'ERROR 23' : '23\nEN VIVO');
+      const left = monitor.x - 60;
+      this.panels.fillStyle(0x0c0b17).fillRoundedRect(left, 89, 120, 84, 5)
+        .lineStyle(3, dying ? 0x514357 : 0xc477a2).strokeRoundedRect(left, 89, 120, 84, 5)
+        .fillStyle(0x28182c).fillRect(left + 5, 149, 110, 19);
+      this.channelNumbers[i].setVisible(live).setAlpha(1 - end);
+      monitor.setVisible(live).setAlpha(1 - end).setText(dying ? 'SIN SEÑAL'
+        : this.interruptionMs > 0 ? 'APUESTA' : brain.critical ? 'ERROR' : 'CANAL');
       if (live && end < 1) {
-        for (let row = 0; row < 4; row++) {
-          const offset = (this.timeMs * 0.035 + row * 11) % 45;
-          this.panels.lineStyle(1, 0xef9de9, this.interruptionMs > 0 ? 0.5 : 0.12)
-            .lineBetween(x + 3, 110 + offset, x + 75, 110 + offset);
-        }
+        const scanY = 94 + (this.timeMs * 0.035) % 51;
+        this.panels.lineStyle(1, 0xf298ce, 0.18).lineBetween(left + 5, scanY, left + 115, scanY);
       }
     });
-    this.channel.setText(dying ? 'CANAL 23 · FIN DE TRANSMISIÓN' : 'CANAL 23 · EN VIVO');
     this.atmosphere.clear().setVisible(live);
     // Local broadcast rain rises before the ending, falls normally once the core breaks.
     for (let i = 0; i < 24; i++) {
@@ -91,9 +116,8 @@ export class BodoqueFinale {
       this.atmosphere.lineStyle(1, 0xc9d4ff, dying ? 0.27 : 0.09)
         .lineBetween(x, y, x - 2, y + 8);
     }
-    this.caption.setVisible(this.interruptionMs > 0 && !dying)
-      .setText('ERROR 23\nBODOQUE: ¡Queda una pura...!')
-      .setX(480 + (this.interruptionMs > 1200 ? Math.sin(this.timeMs * 0.1) * 2 : 0));
+    const hideCaption = !brain.captionVisible;
+    if (this.caption.hidden !== hideCaption) this.caption.hidden = hideCaption;
     if (this.interruptionMs > 0 && !dying) {
       // Letterbox is confined to room edges; gameplay remains readable and interactive.
       this.atmosphere.fillStyle(0x180711, 0.65).fillRect(56, 104, 848, 12).fillRect(56, 526, 848, 12);
@@ -147,6 +171,8 @@ export class BodoqueFinale {
     if (this.destroyed) return;
     this.destroyed = true;
     this.interruptionMs = 0;
+    this.channel.remove();
+    this.caption.remove();
     this.owned.forEach((object) => object.destroy());
   }
 }

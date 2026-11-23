@@ -4,7 +4,6 @@ import type { RoomScene } from '../../src/player/room-prototype/RoomScene';
 const inspect = (page: Page) => page.evaluate(() => {
   const s = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
   return { hp: s.bodoque.hp, state: s.bodoque.state, critical: s.bodoque.finale.criticalCount,
-    caption: s.bodoque.finale.caption.text, captionVisible: s.bodoque.finale.caption.visible,
     monitors: s.bodoque.finale.monitors.map((m) => m.text), killed: s.localBossEvents.killed,
     victory: s.bodoque.victoryLabel.visible, targets: s.bodoque.damageTargets.length,
     coreX: s.bodoque.finale.core.x, coreY: s.bodoque.finale.core.y,
@@ -14,6 +13,7 @@ const inspect = (page: Page) => page.evaluate(() => {
 });
 
 test('Corazón Codex conserva HP, muestra ERROR 23 una vez, permite daño durante transmisión y limpia al reiniciar', async ({ page }) => {
+  const caption = page.getByRole('status').filter({ hasText: '¡Queda una pura...!' });
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/src/player/room-prototype/');
@@ -40,17 +40,20 @@ test('Corazón Codex conserva HP, muestra ERROR 23 una vez, permite daño durant
     const s = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
     s.bodoque.heartTarget.takeSwordDamage(77, { x: 1, y: 0 });
   });
-  expect(await inspect(page)).toMatchObject({ hp: 23, critical: 1, captionVisible: true,
-    caption: 'ERROR 23\nBODOQUE: ¡Queda una pura...!', monitors: ['APUESTA', 'APUESTA'], killed: false });
+  expect(await inspect(page)).toMatchObject({ hp: 23, critical: 1, monitors: ['APUESTA', 'APUESTA'], killed: false });
+  await expect(caption).toBeVisible();
   await page.screenshot({ path: 'test-results/codex-error23.png', fullPage: true });
   await page.evaluate(() => {
     const s = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
     s.bodoque.heartTarget.takeFireDamage(1, { x: 1, y: 0 });
   });
-  expect(await inspect(page)).toMatchObject({ hp: 22, critical: 1, captionVisible: true });
+  expect(await inspect(page)).toMatchObject({ hp: 22, critical: 1 });
+  await expect(caption).toBeVisible();
   await page.keyboard.press('r');
   await expect.poll(() => inspect(page)).toMatchObject({ hp: 600, state: 'inactive', critical: 0,
-    captionVisible: false, killed: false });
+    killed: false });
+  await expect(caption).toBeHidden();
+  await expect(page.getByText('EN VIVO', { exact: true })).toBeHidden();
   expect(await page.evaluate(() => {
     const s = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
     return s.children.list.filter((o) => o.name === 'room-codex-core').length;
@@ -66,13 +69,15 @@ test('Corazón Codex conserva HP, muestra ERROR 23 una vez, permite daño durant
     s.bodoque.heartTarget.takeFireDamage(9999, { x: 1, y: 0 });
   });
   expect(await inspect(page)).toMatchObject({ hp: 0, state: 'dying', killed: false, victory: false, targets: 0 });
+  await expect(caption).toBeVisible();
   await page.waitForFunction(() => {
     const s = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
     const emblem = s.bodoque.finale.emblem;
     const frame = Number(emblem.frame.name);
     return emblem.visible && frame >= 15 && frame <= 43;
   });
-  await expect.poll(() => inspect(page)).toMatchObject({ state: 'defeated', killed: true, victory: true,
+  await expect.poll(() => inspect(page), { timeout: 12_000 }).toMatchObject({ state: 'defeated', killed: true, victory: true,
     emblemVisible: false });
+  await expect(caption).toBeHidden();
   expect(errors).toEqual([]);
 });
