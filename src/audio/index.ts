@@ -126,3 +126,4 @@ export function installAudio(scene: Phaser.Scene): void {
     endSlow();
   });
 }
+export { SFX_KEYS, MUSIC_EAGER, MUSIC_LAZY, AMBIENT_KEYS, VOICE_KEYS, sfxFileKeys } from './manifest';
