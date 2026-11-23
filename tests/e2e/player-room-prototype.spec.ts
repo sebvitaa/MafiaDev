@@ -374,25 +374,26 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   await page.mouse.down();
   await expect.poll(async () => (await state(page)).charge).toBe(1);
   await page.keyboard.down('ArrowRight');
-  await expect.poll(async () => (await state(page)).x, { intervals: [16] }).toBeGreaterThan(700);
+  await expect.poll(async () => (await state(page)).x, { intervals: [16] }).toBeGreaterThan(710);
   await page.keyboard.up('ArrowRight');
   expect((await state(page)).charge).toBe(1);
   const releasePose = await state(page);
   expect(releasePose.x).toBeGreaterThan(680);
   expect(releasePose.chargeEffectX).toBeCloseTo(releasePose.x, 0);
   expect(releasePose.chargeEffectY).toBeCloseTo(releasePose.y - 18, 0);
-  await page.mouse.up();
-  await expect.poll(async () => (await state(page)).dummyHp).toBe(50);
-  const swingPose = await state(page);
-  expect(swingPose.slashVisible).toBe(true);
+  // Observe the overlap in the browser's animation frames. The whole swing can
+  // finish between two snapshots sent over the Playwright connection.
+  const movingSwing = page.waitForFunction(() => {
+    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
+    return scene.player.body.velocity.x < 0 && scene.player.attack.slash.visible
+      && scene.trainingDummy.hp === 50;
+  });
   await page.keyboard.down('ArrowLeft');
-  await page.waitForTimeout(130);
-  await page.keyboard.up('ArrowLeft');
-  expect((await state(page)).x).toBeLessThan(swingPose.x);
-  expect((await state(page)).slashVisible).toBe(true);
-  expect((await state(page)).dummyHp).toBe(50);
   await page.mouse.up();
-  expect((await state(page)).dummyHits).toBe(1);
+  await movingSwing;
+  await page.keyboard.up('ArrowLeft');
+  await expect.poll(async () => (await state(page)).slashVisible).toBe(false);
+  expect(await state(page)).toMatchObject({ dummyHp: 50, dummyHits: 1 });
 });
 
 test('clic derecho mantenido apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en cooldown', async ({ page }) => {
