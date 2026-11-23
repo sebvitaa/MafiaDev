@@ -1,6 +1,7 @@
 // Dominio: vicho — mundo abierto cenital (SUP-vicho-20261123-105154): mapa Tiled, cámara, ambientación.
 import Phaser from 'phaser';
 import { BIOME_TILES_KEY, makeBiomeTiles } from './biomeTiles';
+import { installSurroundings } from './surroundings';
 
 export { installCamera, setCombatTier, type CombatTier } from './camera';
 export { installMapViews } from './bigMap';
@@ -32,6 +33,7 @@ export function installWorld(scene: Phaser.Scene): World {
   map.createLayer('deco', tiles, 0, 0);
   const solids = map.createLayer('walls', tiles, 0, 0) as Phaser.Tilemaps.TilemapLayer; // sin gpu=true: capa clásica con colisión
   solids.setCollisionByExclusion([-1, 0]);
+  installSurroundings(scene, map, tiles);
 
   const bounds = new Phaser.Geom.Rectangle(0, 0, map.widthInPixels, map.heightInPixels);
   scene.physics.world.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
