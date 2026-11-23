@@ -31,6 +31,11 @@ export function installObstacles(scene: Phaser.Scene, map: Phaser.Tilemaps.Tilem
     if (!def) continue;
     const image = group.create(object.x, object.y, def.key).setOrigin(0.5, 1).setDepth(object.y);
     image.refreshBody();
+    // La silueta puede ser alta; el bloqueo es solamente su apoyo en el suelo.
+    const body = image.body as Phaser.Physics.Arcade.StaticBody;
+    const width = Math.max(8, Math.round(def.w * 0.6));
+    const height = Math.max(6, Math.min(10, Math.round(def.h * 0.28)));
+    body.setSize(width, height).setOffset(Math.round((def.w - width) / 2), def.h - height);
   }
   return group;
 }
