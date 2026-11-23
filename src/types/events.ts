@@ -11,11 +11,15 @@ export type GameEvents = {
   'player:parry': { success: boolean };
   'player:hit': { dmg: number; hp: number; maxHp: number };
   'player:died': Empty;
+  /** Lo emite vicho al terminar el respawn; cierra el overlay de muerte (seba). */
+  'player:respawned': Empty;
   'enemy:hit': { id: string; dmg: number; x: number; y: number };
   'enemy:killed': { id: string; kind: string; x: number; y: number };
   'boss:phase': { phase: number };
   'ability:used': { id: string };
   'ability:ready': { id: string };
+  /** Fin del efecto de una habilidad con duración (p. ej. parar el tiempo). Lo emite alejandro. */
+  'ability:ended': { id: string };
   'item:picked': { itemId: string; rarity: Rarity };
   'chest:opened': { id: string; hidden: boolean };
   'checkpoint:reached': { id: string };
