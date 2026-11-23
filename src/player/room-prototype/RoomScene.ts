@@ -3,6 +3,7 @@ import classes from '../../data/classes.json';
 import { RoomPlayer } from './RoomPlayer';
 import { SwordPickup } from './SwordPickup';
 import { TrainingDummy } from './TrainingDummy';
+import { EnemySystem } from '../../enemies';
 
 export const ROOM = { width: 960, height: 600, left: 56, top: 104, right: 904, bottom: 544 };
 
@@ -11,12 +12,15 @@ export class RoomScene extends Phaser.Scene {
   player!: RoomPlayer;
   swordPickup!: SwordPickup;
   trainingDummy!: TrainingDummy;
+  enemies?: EnemySystem;
   obstacles: Phaser.GameObjects.Container[] = [];
   private status!: Phaser.GameObjects.Text;
+  private healthLabel!: Phaser.GameObjects.Text;
 
   constructor() { super('RoomPrototype'); }
 
   create(): void {
+    this.enemies = undefined;
     this.obstacles = [];
     this.drawRoom();
     this.physics.world.setBounds(ROOM.left, ROOM.top, ROOM.right - ROOM.left, ROOM.bottom - ROOM.top);
@@ -26,7 +30,15 @@ export class RoomScene extends Phaser.Scene {
     this.block(solids, 480, 170, 112, 32, 42);
     this.block(solids, 700, 450, 80, 40, 34);
     this.trainingDummy = new TrainingDummy(this, 820, 400);
-    this.player = new RoomPlayer(this, 480, 400, { ...classes.luchador.stats }, () => [this.trainingDummy]);
+    this.player = new RoomPlayer(this, 480, 400, { ...classes.luchador.stats },
+      () => [this.trainingDummy, ...(this.enemies?.targets ?? [])]);
+    const combatEnabled = new URLSearchParams(window.location.search).get('enemies') === '1';
+    if (combatEnabled) {
+      this.enemies = new EnemySystem(this, this.player, solids);
+      this.enemies.spawn('slime', 170, 420);
+      this.enemies.spawn('cobrador', 800, 200);
+      this.enemies.spawn('knight', 610, 160);
+    }
     // SUP-basti-20261123-112350: place pickup on the open right side, away from spawn and pillars.
     this.swordPickup = new SwordPickup(this, 760, 400);
     this.physics.add.collider(this.player.anchor, solids);
@@ -37,6 +49,9 @@ export class RoomScene extends Phaser.Scene {
     this.add.text(64, 32, 'SALA 01  /  PATIO DE PRUEBAS', {
       fontFamily: 'monospace', fontSize: '13px', color: '#d8c69b',
     }).setDepth(10_000);
+    this.healthLabel = this.add.text(896, 32, '', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#a3f3c8', align: 'right',
+    }).setOrigin(1, 0).setDepth(10_000).setName('player-health');
     this.status = this.add.text(896, 565, '', {
       fontFamily: 'monospace', fontSize: '12px', color: '#9fb5b5',
     }).setOrigin(1, 0).setDepth(10_000);
@@ -52,6 +67,7 @@ export class RoomScene extends Phaser.Scene {
   update(_time: number, dtMs: number): void {
     this.trainingDummy.update(dtMs);
     this.player.update(dtMs);
+    this.enemies?.update(dtMs);
     if (this.swordPickup.update(this.time.now, this.player.anchor.x, this.player.anchor.y)) {
       this.player.equipSword();
     }
@@ -60,6 +76,9 @@ export class RoomScene extends Phaser.Scene {
     this.trainingDummy.healthLabel.setDepth(this.trainingDummy.visual.y + 21);
     this.trainingDummy.damageLabel.setDepth(this.trainingDummy.visual.y + 22);
     this.trainingDummy.defeatedLabel.setDepth(this.trainingDummy.visual.y + 23);
+    this.healthLabel.setColor(this.player.alive ? '#a3f3c8' : '#ff8290').setText(this.player.alive
+      ? `VIDA ${this.player.hp}/${this.player.maxHp}${this.enemies ? ` | ENEMIGOS ${this.enemies.targets.length}` : ''}`
+      : 'DERROTADO / R PARA REINICIAR');
     const { motion } = this.player;
     const label = motion.dash.active ? 'DASH' : motion.height > 0 ? 'AIRE' : 'SUELO';
     const swordLabel = this.player.hasSword ? this.player.attack.active ? ' / ATAQUE' : ' / ESPADA' : '';

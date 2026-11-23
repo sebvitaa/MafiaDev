@@ -9,6 +9,9 @@ import type { SwordDamageTarget } from './SwordCombat';
 import { RoomFireball } from './RoomFireball';
 import type { FireballDamageTarget } from './FireballCombat';
 import tuning from '../../data/tuning.json';
+import { createAbilitySlots } from '../../abilities';
+import { Health, balance, playerMaxHp, playerSwordDamage } from '../../combat';
+import { bus } from '../../core/EventBus';
 
 /** Prototype-local adapter; does not replace the lateral Player or publish gameplay events. */
 export class RoomPlayer {
@@ -20,6 +23,14 @@ export class RoomPlayer {
   readonly motion: RoomMotion;
   readonly attack: SwordAttack;
   readonly fireball: RoomFireball;
+  readonly health: Health;
+  readonly radius = 8;
+  private readonly abilities: ReturnType<typeof createAbilitySlots>;
+  private readonly abilityModifier: Phaser.Input.Keyboard.Key;
+  private readonly abilityKeys: Phaser.Input.Keyboard.Key[];
+  private hurtMs = 0;
+  private hurtDirection = { x: 0, y: 0 };
+  private suppressAttackRelease = false;
   hasSword = false;
   private readonly input: Input;
   private readonly shift: Phaser.Input.Keyboard.Key;
@@ -38,27 +49,37 @@ export class RoomPlayer {
     targets: () => readonly (SwordDamageTarget & FireballDamageTarget)[] = () => [],
   ) {
     this.motion = new RoomMotion(stats);
-    this.attack = new SwordAttack(scene, targets);
+    this.health = new Health(playerMaxHp(stats), balance.hurtInvulnerabilityMs);
+    this.attack = new SwordAttack(scene, targets, playerSwordDamage(stats));
     this.fireball = new RoomFireball(scene, targets);
     this.input = new Input(scene);
     const keyboard = scene.input.keyboard!;
+    this.abilities = createAbilitySlots(scene, ['teleport']);
+    this.abilityModifier = keyboard.addKey('Q');
+    this.abilityKeys = ['Q', 'ONE', 'TWO', 'THREE', 'FOUR'].map((code) => {
+      const key = keyboard.addKey(code);
+      key.enabled = true;
+      return key;
+    });
     this.shift = keyboard.addKey('SHIFT');
     const jumpKeys = BINDINGS.jump;
     const dashKeys = BINDINGS.dash.filter((key) => key !== 'SHIFT');
     const jump = (event: KeyboardEvent) => { if (!event.repeat) this.jumpQueued = true; };
     const dash = (event: KeyboardEvent) => { if (!event.repeat) this.dashQueued = true; };
     const attack = (pointer: Phaser.Input.Pointer) => {
-      if (pointer.button === 0 && this.hasSword && !this.motion.dash.active) {
+      if (pointer.button === 0) this.suppressAttackRelease = this.abilityModifier.isDown || !this.alive;
+      if (pointer.button === 0 && !this.suppressAttackRelease && this.hasSword && !this.motion.dash.active && this.hurtMs === 0) {
         this.attack.beginInput(this.anchor.x, this.anchor.y, this.motion.height, this.motion.facing, this.equippedSword);
       }
     };
     const attackRelease = (pointer: Phaser.Input.Pointer) => {
-      if (pointer.button === 0) {
+      if (pointer.button === 0 && this.abilityModifier.isDown) this.suppressAttackRelease = true;
+      if (pointer.button === 0 && !this.suppressAttackRelease && this.alive) {
         this.attack.releaseInput(this.anchor.x, this.anchor.y, this.motion.height, this.motion.facing, this.equippedSword);
       }
     };
     const aimDown = (event: KeyboardEvent) => {
-      if (event.repeat) return;
+      if (event.repeat || !this.alive || this.hurtMs > 0) return;
       const pointer = scene.input.activePointer;
       this.fireball.beginAim(pointer.worldX, pointer.worldY);
     };
@@ -86,7 +107,10 @@ export class RoomPlayer {
       this.jumpQueued = false; this.dashQueued = false; this.dashDirection = undefined; taps.clear();
       this.attack.cancelInput();
       this.fireball.cancelAim();
+      this.suppressAttackRelease = true;
     };
+    const enterAbilityMode = () => { this.suppressAttackRelease = true; this.attack.cancelInput(); };
+    keyboard.on('keydown-Q', enterAbilityMode);
     for (const key of jumpKeys) keyboard.on(`keydown-${key}`, jump);
     for (const key of dashKeys) keyboard.on(`keydown-${key}`, dash);
     scene.game.events.on(Phaser.Core.Events.BLUR, clear);
@@ -103,6 +127,7 @@ export class RoomPlayer {
       scene.input.off(Phaser.Input.Events.POINTER_MOVE, aimMove);
       keyboard.off('keydown-E', aimDown);
       keyboard.off('keyup-E', aimUp);
+      keyboard.off('keydown-Q', enterAbilityMode);
     });
 
     this.anchor = scene.add.rectangle(x, y, 14, 8, 0xffffff, 0);
@@ -140,9 +165,21 @@ export class RoomPlayer {
   }
 
   update(dtMs: number): void {
+    this.health.update(dtMs);
+    this.hurtMs = Math.max(0, this.hurtMs - dtMs);
+    this.input.update();
+    this.abilities.update(dtMs);
+    if (!this.alive) { this.body.setVelocity(0, 0); return; }
     this.attack.update(dtMs);
     this.fireball.update(dtMs);
-    this.input.update();
+    if (this.hurtMs > 0) {
+      this.motion.update({ x: 0, y: 0, run: false, jumpHeld: false,
+        jumpPressed: false, dashPressed: false }, dtMs);
+      this.body.setVelocity(this.hurtDirection.x * balance.playerKnockbackSpeed,
+        this.hurtDirection.y * balance.playerKnockbackSpeed);
+      this.jumpQueued = false; this.dashQueued = false; this.dashDirection = undefined;
+      return;
+    }
     const events = this.motion.update({
       x: this.input.axisX,
       y: Number(this.input.held('down')) - Number(this.input.held('up')),
@@ -161,6 +198,33 @@ export class RoomPlayer {
 
   equipSword(): void { this.hasSword = true; }
 
+  get alive(): boolean { return this.health.alive; }
+  get hp(): number { return this.health.hp; }
+  get maxHp(): number { return this.health.maxHp; }
+
+  takeEnemyDamage(damage: number, direction: { x: number; y: number }): boolean {
+    const result = this.health.damage(damage);
+    if (result.applied === 0) return false;
+    this.attack.interrupt();
+    this.motion.dash.cancel();
+    this.fireball.cancelAim();
+    this.suppressAttackRelease = true;
+    this.hurtMs = balance.hurtLockMs;
+    this.hurtDirection = { ...direction };
+    this.motion.velocity = { x: 0, y: 0 };
+    bus.emit('player:hit', { dmg: result.applied / balance.pointsPerHeart,
+      hp: Math.ceil(this.hp / balance.pointsPerHeart), maxHp: this.maxHp / balance.pointsPerHeart });
+    if (result.killed) {
+      this.motion.height = 0;
+      this.motion.verticalVelocity = 0;
+      for (const key of this.abilityKeys) { key.reset(); key.enabled = false; }
+      this.body.setVelocity(0, 0);
+      this.body.enable = false;
+      bus.emit('player:died', {});
+    }
+    return true;
+  }
+
   private updateTrail(): void {
     const scene = this.anchor.scene;
     this.trail.update(scene.time.now, this.motion.dash.active, this.anchor.x, this.anchor.y, this.motion.height);
@@ -173,7 +237,9 @@ export class RoomPlayer {
     this.shadow.setPosition(x, y).setDepth(y - 0.25);
     this.shadow.setScale(1 / (1 + height / 180)).setAlpha(0.7 / (1 + height / 120));
     this.visual.setPosition(x, y - height).setDepth(y);
-    this.visual.setAlpha(this.motion.dash.active ? 0.8 : 1);
+    this.visual.setAlpha(!this.alive ? 0.3 : this.health.invulnerable
+      ? Math.floor(this.anchor.scene.time.now / 70) % 2 === 0 ? 0.4 : 1
+      : this.motion.dash.active ? 0.8 : 1);
     this.equippedSword.setVisible(this.hasSword);
     if (this.attack.holdingInput) {
       this.attack.followChargePose(x, y, height, facing, this.equippedSword);

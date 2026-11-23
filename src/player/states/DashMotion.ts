@@ -25,6 +25,14 @@ export class DashMotion {
     this.remainingMs = Math.max(0, this.remainingMs - elapsed);
     this.recoveryMs = Math.max(0, this.recoveryMs - elapsed);
   }
+
+  /** Recibir daño corta el desplazamiento y conserva la recuperación pendiente. */
+  cancel(): boolean {
+    if (!this.active) return false;
+    this.recoveryMs = Math.max(0, this.recoveryMs - this.remainingMs);
+    this.remainingMs = 0;
+    return true;
+  }
 }
 
 export function horizontalSpeed(direction: number, speed: number, running: boolean, multiplier: number): number {

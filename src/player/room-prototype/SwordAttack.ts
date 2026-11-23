@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import tuning from '../../data/tuning.json';
+import { lineClear } from '../../enemies/navigation';
 import {
   SwordCharge,
   SwordCombo,
@@ -49,6 +50,7 @@ export class SwordAttack {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly targets: () => readonly SwordDamageTarget[] = () => [],
+    private readonly baseDamage = tuning.roomPrototype.swordAttackDamage,
   ) {
     this.slashShape = scene.add.graphics();
     this.slash = scene.add.container(0, 0, [this.slashShape]).setVisible(false);
@@ -107,6 +109,17 @@ export class SwordAttack {
     this.chargeEnabled = false;
     this.charge.cancel();
     this.chargeEffect.setVisible(false);
+  }
+
+  /** Daño/muerte interrumpen también el golpe activo y su buffer. */
+  interrupt(): void {
+    this.cancelInput();
+    this.combo.reset();
+    this.chargedRemainingMs = 0;
+    this.hitRemainingMs = 0;
+    this.scene.tweens.killTweensOf(this.slash);
+    if (this.weapon) this.scene.tweens.killTweensOf(this.weapon);
+    this.slash.setVisible(false);
   }
 
   /** Called after Arcade resolves movement so held sword and charge FX match the player pose. */
@@ -199,7 +212,7 @@ export class SwordAttack {
     const hitWindow = (config.swordAttackHitWindowsMs as [number, number, number])[attack - 1];
     const range = (config.swordAttackRanges as [number, number, number])[attack - 1];
     const halfAngle = (config.swordAttackHalfAnglesDeg as [number, number, number])[attack - 1];
-    this.hitDamage = this.combo.damageFor(config.swordAttackDamage, attack);
+    this.hitDamage = this.combo.damageFor(this.baseDamage, attack);
     this.hitRange = range;
     this.hitAngle = halfAngle;
     this.hitKnockback = attack === 3 ? config.swordFinisherKnockback : 0;
@@ -222,7 +235,7 @@ export class SwordAttack {
     this.chargedElapsedMs = 0;
     this.chargedRemainingMs = config.swordChargeDurationMs;
     this.hitRemainingMs = config.swordChargeHitWindowMs;
-    this.hitDamage = Math.round(config.swordAttackDamage * (1
+    this.hitDamage = Math.round(this.baseDamage * (1
       + (config.swordChargeDamageMultiplier - 1) * progress));
     this.hitRange = baseRange * (1 + (config.swordChargeRangeMultiplier - 1) * progress);
     this.hitAngle = config.swordChargeHalfAngleDeg;
@@ -319,7 +332,9 @@ export class SwordAttack {
       x: this.origin.x + this.facing.x * this.swingTravel * eased,
       y: this.origin.y + this.facing.y * this.swingTravel * eased,
     };
-    this.hitTracker.apply(hitOrigin, this.facing, this.targets(), this.hitRange,
+    const solids = [...this.scene.physics.world.staticBodies].filter((body) => body.enable);
+    const targets = this.targets().filter((target) => lineClear(this.origin, target, solids));
+    this.hitTracker.apply(hitOrigin, this.facing, targets, this.hitRange,
       this.hitAngle, this.hitDamage, this.hitKnockback);
   }
 
