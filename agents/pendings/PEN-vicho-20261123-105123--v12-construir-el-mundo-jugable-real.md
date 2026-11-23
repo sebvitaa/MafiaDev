@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T13:51:23.419Z
 title: V12 Construir el mundo jugable real
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done             # open | in_progress | blocked | done | wontfix
 area: world
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-vicho-20261123-131122               # hash o HIS-ID al cerrar
 ---
 
 ## Contexto
@@ -22,6 +22,6 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 ```
 
 ## Criterio de cierre
-- [ ] Se puede recorrer de inicio a jefe sin quedar atascado
+- [x] Se puede recorrer de inicio a jefe sin quedar atascado
 
 ## Notas

@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T13:51:30.384Z
 title: V18 Área tutorial con carteles
 priority: p2   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done             # open | in_progress | blocked | done | wontfix
 area: world
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-vicho-20261123-131122               # hash o HIS-ID al cerrar
 ---
 
 ## Contexto
@@ -22,6 +22,6 @@ MoSCoW: SHOULD. Vista cenital, mundo abierto (no por salas).
 ```
 
 ## Criterio de cierre
-- [ ] Carteles legibles en el área tutorial
+- [x] Carteles legibles en el área tutorial
 
 ## Notas
