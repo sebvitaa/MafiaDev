@@ -47,19 +47,34 @@ export function installCheckpoints(scene: Phaser.Scene, map: Phaser.Tilemaps.Til
   const saved = fires.find((f) => f.id === GameState.data.checkpointId);
   if (saved) { light(saved); place(player, saved.x, saved.y + 10); }
 
-  const hint = scene.add.text(0, 0, 'E  descansar', { fontFamily: 'monospace', fontSize: '8px', color: '#ffd75e' })
+  const hint = scene.add.text(0, 0, '', { fontFamily: 'monospace', fontSize: '8px', color: '#ffd75e' })
     .setOrigin(0.5, 1).setDepth(1e5).setVisible(false);
   let pressed = false;
   const onE = () => { pressed = true; };
   scene.input.keyboard!.on('keydown-E', onE);
+  // V23 viaje rápido: F junto a una hoguera encendida salta a la siguiente encendida (orden del mapa).
+  // shortcut: hogueras encendidas solo en esta partida (salvo la guardada); persistir con SaveData de mundo (shared).
+  let travel = false;
+  const onF = () => { travel = true; };
+  scene.input.keyboard!.on('keydown-F', onF);
 
   const onUpdate = () => {
     const near = fires.find((f) => Phaser.Math.Distance.Between(player.x, player.y, f.x, f.y) < REACH);
     const wants = pressed;
+    const wantsTravel = travel;
     pressed = false;
+    travel = false;
     hint.setVisible(!!near);
     if (!near) return;
-    hint.setPosition(near.x, near.y - 24);
+    const lit = fires.filter((f) => f.lit);
+    hint.setText(near.lit && lit.length > 1 ? 'E descansar · F viajar' : 'E descansar').setPosition(near.x, near.y - 24);
+    if (wantsTravel && near.lit && lit.length > 1) {
+      const to = lit[(lit.indexOf(near) + 1) % lit.length];
+      const cam = scene.cameras.main;
+      cam.fadeOut(250, 0, 0, 0);
+      cam.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => { place(player, to.x, to.y + 10); cam.fadeIn(350); });
+      return;
+    }
     if (!wants) return;
     light(near);
     GameState.data.checkpointId = near.id;
@@ -86,6 +101,7 @@ export function installCheckpoints(scene: Phaser.Scene, map: Phaser.Tilemaps.Til
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
     scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate);
     scene.input.keyboard?.off('keydown-E', onE);
+    scene.input.keyboard?.off('keydown-F', onF);
     bus.offContext(hint);
   });
 }
