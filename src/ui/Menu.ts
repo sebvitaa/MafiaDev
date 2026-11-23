@@ -63,6 +63,7 @@ export class Menu {
         width: rowWidth,
         height: opts.lineHeight ?? 14,
         className: 'hd-menu-row',
+        style: { pointerEvents: '' }, // .is-interactive habilita el clic de la fila seleccionable.
         parent: this.rowRoot,
       });
       row.style.justifyContent = opts.align === 'center' ? 'center' : 'flex-start';

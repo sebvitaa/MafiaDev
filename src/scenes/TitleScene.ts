@@ -151,7 +151,14 @@ export class TitleScene extends Phaser.Scene {
     this.menu?.setActive(false);
     if (stage === null) GameState.load(); else GameState.reset();
     this.registry.set('newGame', stage !== null);
-    if (stage !== null) this.registry.set('stage', stage);
+    if (stage !== null) {
+      this.registry.set('stage', stage);
+      this.registry.set('setCinematicSeen', false);
+    }
+    if ((stage === 1 && !skipIntro()) || stage === 3) {
+      void flashTo(this, 'CinematicScene', { stage });
+      return;
+    }
     void flashTo(this, 'GameScene', stage !== null ? { stage } : undefined);
   }
 
