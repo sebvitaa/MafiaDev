@@ -1,0 +1,10 @@
+{
+  "camera": {
+    "followLerp": 0.12,
+    "lookaheadPx": 40,
+    "lookaheadMs": 250,
+    "minSpeed": 10,
+    "zoomMs": 600,
+    "zoom": { "explore": 1, "combat": 0.85, "miniboss": 0.7, "boss": 0.6 }
+  }
+}
