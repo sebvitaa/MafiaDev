@@ -294,7 +294,7 @@ test('la espada se recoge en el lateral, se equipa visible y ejecuta un tajo ani
   // Enviar cada clic al terminar el golpe, sin gastar la ventana de combo
   // haciendo múltiples viajes de lectura entre el navegador y el runner.
   for (const [step, hp] of [[1, 75], [2, 45], [3, 5]]) {
-    await page.mouse.click(box.x + 480, box.y + 300);
+    await page.mouse.click(box.x + box.width * 820 / 960, box.y + box.height * 383 / 600); // el tajo va al cursor: apuntar al muñeco
     await page.waitForFunction(({ step, hp }) => {
       const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
       const completedStep = step === 3 ? 0 : step; // El remate reinicia el combo al terminar.
@@ -312,7 +312,7 @@ test('la espada se recoge en el lateral, se equipa visible y ejecuta un tajo ani
   expect((await swordState()).slashVisible).toBe(false);
   expect((await swordState()).equippedRotation).toBeCloseTo(restingSwordRotation, 2);
 
-  await page.mouse.click(box.x + 480, box.y + 300);
+  await page.mouse.click(box.x + box.width * 820 / 960, box.y + box.height * 383 / 600); // el tajo va al cursor: apuntar al muñeco
   await expect.poll(async () => (await state(page)).dummyHp).toBe(0);
   expect((await state(page)).dummyDefeated).toBe(true);
   await page.waitForFunction(() => {
@@ -331,7 +331,7 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   });
   const box = await page.locator('canvas').boundingBox();
   if (!box) throw new Error('No se encontró el canvas del prototipo');
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.move(box.x + box.width * 820 / 960, box.y + box.height * 383 / 600);
   await page.mouse.down();
   await page.waitForTimeout(500);
   const charging = await state(page);
@@ -345,7 +345,7 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   expect(movedWhileCharging.y).toBeLessThan(charging.y);
   expect(movedWhileCharging.chargeEffectX).toBeCloseTo(movedWhileCharging.x, 0);
   expect(movedWhileCharging.chargeEffectY).toBeCloseTo(movedWhileCharging.y - 18, 0);
-  expect(movedWhileCharging.swordRotation).toBeCloseTo(Math.atan2(movedWhileCharging.facingY, movedWhileCharging.facingX), 1);
+  expect(movedWhileCharging.swordRotation).toBeCloseTo(Math.atan2(383 - (movedWhileCharging.y - 17), 820 - movedWhileCharging.x), 1);
   expect(movedWhileCharging.dummyHp).toBe(100);
   await page.keyboard.press('c');
   await expect.poll(async () => (await state(page)).dash).toBe(true);
@@ -385,12 +385,12 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   expect((await state(page)).dummyHits).toBe(1);
 });
 
-test('E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en cooldown', async ({ page }) => {
+test('clic derecho mantenido apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en cooldown', async ({ page }) => {
   const canvas = page.locator('canvas');
   const box = await canvas.boundingBox();
   if (!box) throw new Error('No se encontró el canvas del prototipo');
   await page.mouse.move(box.x + box.width * 820 / 960, box.y + box.height * 400 / 600);
-  await page.keyboard.down('e');
+  await page.mouse.down({ button: 'right' });
   await expect.poll(async () => (await state(page)).fireballAiming).toBe(true);
   const aimed = await state(page);
   expect(aimed.fireballAimX).toBeCloseTo(820, 0);
@@ -404,7 +404,7 @@ test('E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en
     (scene as any).__fireballProbe = probe;
     // RoomPlayer registró su release antes: leer aquí observa el mismo evento,
     // antes de que avancen el reloj del juego o los comandos del runner.
-    scene.input.keyboard!.once('keyup-E', () => {
+    scene.input.once('pointerup', () => {
       probe.releasePhase = scene.player.fireball.phase;
       probe.releaseCooldown = scene.player.fireball.cooldownRemainingMs;
     });
@@ -435,11 +435,11 @@ test('E apunta la bola con mouse, cae 600 ms, explota con daño doble y entra en
     scene.events.on('postupdate', observe);
     scene.events.once('shutdown', () => scene.events.off('postupdate', observe));
   });
-  await page.keyboard.up('e');
+  await page.mouse.up({ button: 'right' });
   await page.waitForFunction(() => (window.__game!.scene.getScene('RoomPrototype') as any).__fireballProbe.fadeComplete);
-  await page.keyboard.down('e');
+  await page.mouse.down({ button: 'right' });
   expect((await state(page)).fireballAiming).toBe(false);
-  await page.keyboard.up('e');
+  await page.mouse.up({ button: 'right' });
   const probe = await page.evaluate(() => (window.__game!.scene.getScene('RoomPrototype') as any).__fireballProbe);
   expect(probe).toMatchObject({ releasePhase: 'falling', releaseCooldown: 7000, fallingSeen: true,
     fallingHpIntact: true, explosionSeen: true, burnSeen: true, impactHp: 50, impactHits: 1,

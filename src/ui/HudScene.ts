@@ -14,7 +14,7 @@ import { C, RARITY_COLOR, text } from './theme';
 import { TutorialOverlay } from './tutorial/TutorialOverlay';
 
 const isBoss = (s: string) => /boss/i.test(s);
-const BOSS_HP = (enemies as Record<string, { hp?: number }>).miniboss?.hp ?? 30;
+const BOSS_HP = (enemies as Record<string, { hp?: number }>).boss?.hp ?? 30; // jefe final (src/world/boss.ts)
 
 export class HudScene extends Phaser.Scene {
   private hearts!: Phaser.GameObjects.Container;
@@ -44,7 +44,7 @@ export class HudScene extends Phaser.Scene {
     bus.on('player:hit', (e) => this.onHit(e.hp, e.maxHp), this);
     bus.on('player:died', () => this.setLowHp(false), this);
     bus.on('boss:phase', ({ phase }) => { if (phase === 1) this.showBoss(); }, this);
-    bus.on('enemy:hit', ({ id, dmg }) => { if (isBoss(id) || this.boss.root.visible) this.damageBoss(id, dmg); }, this);
+    bus.on('enemy:hit', ({ id, dmg }) => { if (isBoss(id)) this.damageBoss(id, dmg); }, this); // solo el jefe: los mobs vaciaban la barra
     bus.on('enemy:killed', ({ id, kind }) => { if (isBoss(kind) || isBoss(id)) this.hideBoss(); }, this);
     bus.on('ability:used', ({ id }) => this.abilityUsed(id), this);
     bus.on('ability:ready', () => this.abilityReady(), this);

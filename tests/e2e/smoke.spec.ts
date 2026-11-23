@@ -6,7 +6,7 @@ test('arranca, entra al juego y el jugador se mueve', async ({ page }) => {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
 
-  await page.goto('/?skipIntro=1'); // sin animaciones de apertura; Space = «Jugar» en el menú del título
+  await page.goto('/?skipIntro=1&noEnemies=1'); // sin animaciones de apertura; Space = «Jugar» en el menú del título
   await page.waitForFunction(() => (window as any).__game?.scene.isActive('TitleScene'));
   await page.keyboard.press('Space');
   await page.waitForFunction(() => (window as any).__game?.scene.isActive('GameScene'));

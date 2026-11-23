@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T13:23:54.150Z
 title: Emitir player:respawned al terminar respawn y zone:changed/room:entered con zona tutorial
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done             # open | in_progress | blocked | done | wontfix
 area: exploration               # combat | movement | world | exploration | character | abilities | items | audio | ui | shared
 refs: [SUP-seba-20261123-102354]
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-vicho-20261123-123651               # hash o HIS-ID al cerrar
 ---
 
 ## Contexto
@@ -25,9 +25,9 @@ Mientras no llegue player:respawned, el overlay de muerte se cierra solo a los 3
 ```
 
 ## Criterio de cierre
-- [ ] Morir y reaparecer emite `player:respawned` exactamente una vez.
-- [ ] Cambiar de zona emite `zone:changed` con `zone1|zone2|boss`.
-- [ ] La sala tutorial emite `room:entered` con `roomId: 'tutorial'`.
+- [x] Morir y reaparecer emite `player:respawned` exactamente una vez.
+- [x] Cambiar de zona emite `zone:changed` con `zone1|zone2|boss`.
+- [x] La sala tutorial emite `room:entered` con `roomId: 'tutorial'`.
 
 ## Notas
 Nadie llama a `this.sound` fuera de `src/audio`: solo emitir eventos.

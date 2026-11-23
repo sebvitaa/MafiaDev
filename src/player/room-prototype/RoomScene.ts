@@ -83,8 +83,8 @@ export class RoomScene extends Phaser.Scene {
     const label = motion.dash.active ? 'DASH' : motion.height > 0 ? 'AIRE' : 'SUELO';
     const swordLabel = this.player.hasSword ? this.player.attack.active ? ' / ATAQUE' : ' / ESPADA' : '';
     const fireball = this.player.fireball;
-    const fireballLabel = fireball.aiming ? ' / APUNTANDO E'
-      : fireball.cooldownRemainingMs > 0 ? ` / E ${Math.ceil(fireball.cooldownRemainingMs / 1000)}s` : ' / E LISTA';
+    const fireballLabel = fireball.aiming ? ' / APUNTANDO ULTI'
+      : fireball.cooldownRemainingMs > 0 ? ` / ULTI ${Math.ceil(fireball.cooldownRemainingMs / 1000)}s` : ' / ULTI LISTA';
     this.status.setText(`${label}${swordLabel}${fireballLabel}  /  ${Math.hypot(motion.velocity.x, motion.velocity.y).toFixed(0)} px/s  /  Z ${motion.height.toFixed(0)}`);
   }
 

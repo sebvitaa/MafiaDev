@@ -35,7 +35,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     readonly stats: CharacterStats,
     readonly abilities: AbilitySlots,
   ) {
-    super(scene, x, y, 'ph-player');
+    super(scene, x, y, scene.textures.exists('rios') ? 'rios' : 'ph-player');
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setCollideWorldBounds(true);

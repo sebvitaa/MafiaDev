@@ -36,6 +36,7 @@ export class RoomPlayer {
   private readonly shift: Phaser.Input.Keyboard.Key;
   private readonly pointer: Phaser.GameObjects.Triangle;
   private readonly eyes: Phaser.GameObjects.Rectangle;
+  private readonly reporter?: Phaser.GameObjects.Image;
   private jumpQueued = false;
   private dashQueued = false;
   private dashDirection?: { x: number; y: number };
@@ -47,6 +48,8 @@ export class RoomPlayer {
     y: number,
     stats: CharacterStats,
     targets: () => readonly (SwordDamageTarget & FireballDamageTarget)[] = () => [],
+    // GameScene pasa los slots del personaje: crear otros duplicaba Teleport (dos papeles y dos TP por clic).
+    abilities?: ReturnType<typeof createAbilitySlots>,
   ) {
     this.motion = new RoomMotion(stats);
     this.health = new Health(playerMaxHp(stats), balance.hurtInvulnerabilityMs);
@@ -54,7 +57,7 @@ export class RoomPlayer {
     this.fireball = new RoomFireball(scene, targets);
     this.input = new Input(scene);
     const keyboard = scene.input.keyboard!;
-    this.abilities = createAbilitySlots(scene, ['teleport']);
+    this.abilities = abilities ?? createAbilitySlots(scene, ['teleport']);
     this.abilityModifier = keyboard.addKey('Q');
     this.abilityKeys = ['Q', 'ONE', 'TWO', 'THREE', 'FOUR'].map((code) => {
       const key = keyboard.addKey(code);
@@ -69,27 +72,26 @@ export class RoomPlayer {
     const attack = (pointer: Phaser.Input.Pointer) => {
       if (pointer.button === 0) this.suppressAttackRelease = this.abilityModifier.isDown || !this.alive;
       if (pointer.button === 0 && !this.suppressAttackRelease && this.hasSword && !this.motion.dash.active && this.hurtMs === 0) {
-        this.attack.beginInput(this.anchor.x, this.anchor.y, this.motion.height, this.motion.facing, this.equippedSword);
+        this.attack.beginInput(this.anchor.x, this.anchor.y, this.motion.height, this.aim(), this.equippedSword);
       }
     };
     const attackRelease = (pointer: Phaser.Input.Pointer) => {
       if (pointer.button === 0 && this.abilityModifier.isDown) this.suppressAttackRelease = true;
       if (pointer.button === 0 && !this.suppressAttackRelease && this.alive) {
-        this.attack.releaseInput(this.anchor.x, this.anchor.y, this.motion.height, this.motion.facing, this.equippedSword);
+        this.attack.releaseInput(this.anchor.x, this.anchor.y, this.motion.height, this.aim(), this.equippedSword);
       }
     };
-    const aimDown = (event: KeyboardEvent) => {
-      if (event.repeat || !this.alive || this.hurtMs > 0) return;
-      const pointer = scene.input.activePointer;
-      this.fireball.beginAim(pointer.worldX, pointer.worldY);
+    // Ulti (bola): mantener clic derecho apunta al cursor, soltar la lanza. Q + derecho es del papel de TP (abilities).
+    const aimDown = (pointer: Phaser.Input.Pointer) => {
+      if (pointer.button !== 2 || this.abilityModifier.isDown || !this.alive || this.hurtMs > 0) return;
+      const p = this.cursor();
+      this.fireball.beginAim(p.x, p.y);
     };
-    const aimUp = () => { this.fireball.releaseAim(); };
-    const aimMove = (pointer: Phaser.Input.Pointer) => this.fireball.aimAt(pointer.worldX, pointer.worldY);
+    const aimUp = (pointer: Phaser.Input.Pointer) => { if (pointer.button === 2) this.fireball.releaseAim(); };
     scene.input.on(Phaser.Input.Events.POINTER_DOWN, attack);
     scene.input.on(Phaser.Input.Events.POINTER_UP, attackRelease);
-    scene.input.on(Phaser.Input.Events.POINTER_MOVE, aimMove);
-    keyboard.on('keydown-E', aimDown);
-    keyboard.on('keyup-E', aimUp);
+    scene.input.on(Phaser.Input.Events.POINTER_DOWN, aimDown);
+    scene.input.on(Phaser.Input.Events.POINTER_UP, aimUp);
     // SUP-basti-20261123-110158: give physical double taps a forgiving 350 ms window.
     const taps = new DoubleTapDash(tuning.roomPrototype.doubleTapWindowMs);
     const tapListeners = (['W', 'A', 'S', 'D', 'UP', 'LEFT', 'DOWN', 'RIGHT'] as TapKey[]).map((key) => {
@@ -124,9 +126,8 @@ export class RoomPlayer {
       scene.game.events.off(Phaser.Core.Events.BLUR, clear);
       scene.input.off(Phaser.Input.Events.POINTER_DOWN, attack);
       scene.input.off(Phaser.Input.Events.POINTER_UP, attackRelease);
-      scene.input.off(Phaser.Input.Events.POINTER_MOVE, aimMove);
-      keyboard.off('keydown-E', aimDown);
-      keyboard.off('keyup-E', aimUp);
+      scene.input.off(Phaser.Input.Events.POINTER_DOWN, aimDown);
+      scene.input.off(Phaser.Input.Events.POINTER_UP, aimUp);
       keyboard.off('keydown-Q', enterAbilityMode);
     });
 
@@ -156,6 +157,11 @@ export class RoomPlayer {
     this.eyes = scene.add.rectangle(0, -30, 7, 2, 0xf9db98);
     this.pointer = scene.add.triangle(0, 0, -4, -3, 5, 0, -4, 3, 0xf9db98);
     this.visual = scene.add.container(x, y, [cloak, belt, hood, face, this.equippedSword, this.eyes, this.pointer]);
+    if (scene.textures.exists('rios')) {
+      for (const part of [cloak, belt, hood, face, this.eyes]) part.setVisible(false);
+      this.reporter = scene.add.image(0, 0, 'rios').setOrigin(0.5, 1).setDisplaySize(22, 40);
+      this.visual.addAt(this.reporter, 4);
+    }
     this.trail = new DashTrail(scene);
     scene.events.on(Phaser.Scenes.Events.POST_UPDATE, this.updateTrail, this);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -171,6 +177,7 @@ export class RoomPlayer {
     this.abilities.update(dtMs);
     if (!this.alive) { this.body.setVelocity(0, 0); return; }
     this.attack.update(dtMs);
+    if (this.fireball.aiming) { const p = this.cursor(); this.fireball.aimAt(p.x, p.y); } // la cámara se mueve aunque el ratón no
     this.fireball.update(dtMs);
     if (this.hurtMs > 0) {
       this.motion.update({ x: 0, y: 0, run: false, jumpHeld: false,
@@ -197,6 +204,18 @@ export class RoomPlayer {
   }
 
   equipSword(): void { this.hasSword = true; }
+
+  /** El golpe va hacia el cursor (no hacia donde se mueve). Recalcula con la cámara actual: worldX queda viejo si la cámara se mueve sin mover el ratón. */
+  private cursor(): Phaser.Math.Vector2 {
+    const scene = this.anchor.scene;
+    return scene.input.activePointer.positionToCamera(scene.cameras.main) as Phaser.Math.Vector2;
+  }
+
+  private aim(): { x: number; y: number } {
+    const p = this.cursor();
+    const dx = p.x - this.anchor.x, dy = p.y - (this.anchor.y - this.motion.height - 17);
+    return Math.hypot(dx, dy) > 1 ? { x: dx, y: dy } : this.motion.facing;
+  }
 
   get alive(): boolean { return this.health.alive; }
   get hp(): number { return this.health.hp; }
@@ -242,9 +261,10 @@ export class RoomPlayer {
       : this.motion.dash.active ? 0.8 : 1);
     this.equippedSword.setVisible(this.hasSword);
     if (this.attack.holdingInput) {
-      this.attack.followChargePose(x, y, height, facing, this.equippedSword);
-      this.equippedSword.setPosition(facing.x * 11 + 7, -19 + facing.y * 5)
-        .setRotation(Math.atan2(facing.y, facing.x));
+      const raw = this.aim(), len = Math.hypot(raw.x, raw.y) || 1, aim = { x: raw.x / len, y: raw.y / len }; // la carga sigue al cursor
+      this.attack.followChargePose(x, y, height, aim, this.equippedSword);
+      this.equippedSword.setPosition(aim.x * 11 + 7, -19 + aim.y * 5)
+        .setRotation(Math.atan2(aim.y, aim.x));
     } else if (!this.attack.active) {
       this.equippedSword.setPosition(facing.x * 11 + 7, -19 + facing.y * 5)
         .setRotation(Math.atan2(facing.y, facing.x));
@@ -252,5 +272,6 @@ export class RoomPlayer {
     this.pointer.setPosition(facing.x * 22, -17 + facing.y * 16)
       .setRotation(Math.atan2(facing.y, facing.x));
     this.eyes.setPosition(facing.x * 3, -30 + facing.y * 3);
+    if (facing.x !== 0) this.reporter?.setFlipX(facing.x < 0);
   }
 }

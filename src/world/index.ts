@@ -1,33 +1,66 @@
-// Dominio: vicho — tilemaps, salas, puertas, cámara, parallax, ambientación.
-// STUB: geometría de prueba hasta que exista el primer mapa de Tiled (public/assets/maps/).
+// Dominio: vicho — mundo abierto cenital (SUP-vicho-20261123-105154): mapa Tiled, cámara, ambientación.
 import Phaser from 'phaser';
-import { installExploration } from '../exploration';
+import { BIOME_TILES_KEY, makeBiomeTiles } from './biomeTiles';
+import { installSurroundings } from './surroundings';
+import { installObstacles } from './obstacles';
+
+export { installCamera, setCombatTier, type CombatTier } from './camera';
+export { installMapViews } from './bigMap';
+export { installAmbience } from './ambience';
+export { installAreaTitles } from './areaTitle';
+export { installEncounters } from './encounters';
+
+export const WORLD_MAP_KEY = 'world';
 
 export interface World {
-  solids: Phaser.Physics.Arcade.StaticGroup;
+  solids: Phaser.Tilemaps.TilemapLayer;
   bounds: Phaser.Geom.Rectangle;
   spawn: { x: number; y: number };
+  map: Phaser.Tilemaps.Tilemap;
+  obstacles: Phaser.Physics.Arcade.StaticGroup;
+}
+
+const MAP_FILES = ['world.json', 'world-2.json', 'world-3.json'];
+const MAP_SAVE_KEY = 'mafiadev.map';
+
+/** Nuevo juego → mapa al azar (se recuerda para "Continuar"); ?map=N lo fuerza (tests). */
+function pickMap(scene: Phaser.Scene): number {
+  const forced = Number(new URLSearchParams(location.search).get('map'));
+  if (forced >= 1 && forced <= MAP_FILES.length) return forced - 1;
+  let stored = NaN;
+  try { stored = Number(localStorage.getItem(MAP_SAVE_KEY)); } catch { /* sin almacenamiento */ }
+  if (!scene.registry.get('newGame') && stored >= 0 && stored < MAP_FILES.length) return stored;
+  const n = Phaser.Math.Between(0, MAP_FILES.length - 1);
+  try { localStorage.setItem(MAP_SAVE_KEY, String(n)); } catch { /* idem */ }
+  return n;
+}
+
+/** Llamar desde GameScene.preload. */
+export function preloadWorld(scene: Phaser.Scene): void {
+  scene.cache.tilemap.remove(WORLD_MAP_KEY); // si no, el loader reusa el mapa de la partida anterior
+  scene.load.tilemapTiledJSON(WORLD_MAP_KEY, `assets/maps/${MAP_FILES[pickMap(scene)]}`);
 }
 
 export function installWorld(scene: Phaser.Scene): World {
-  const W = 960;
-  const H = 270;
-  const bounds = new Phaser.Geom.Rectangle(0, 0, W, H);
-  scene.physics.world.setBounds(0, 0, W, H);
-  scene.cameras.main.setBounds(0, 0, W, H);
+  // SUP-vicho-20261123-105154: vista cenital, sin gravedad de mundo (el salto lo resuelve basti).
+  scene.physics.world.gravity.y = 0;
+  makeBiomeTiles(scene);
 
-  const solids = scene.physics.add.staticGroup();
-  const block = (x: number, y: number, w: number, h: number) => {
-    const r = scene.add.rectangle(x, y, w, h, 0x3a3352).setOrigin(0);
-    scene.physics.add.existing(r, true);
-    solids.add(r);
-  };
-  block(0, H - 16, W, 16); // suelo
-  block(140, 196, 80, 8);
-  block(300, 156, 80, 8);
-  block(470, 196, 120, 8);
-  block(660, 140, 64, 8);
+  const map = scene.make.tilemap({ key: WORLD_MAP_KEY });
+  const tiles = map.addTilesetImage('biomes', BIOME_TILES_KEY)!;
+  map.createLayer('ground', tiles, 0, 0);
+  map.createLayer('deco', tiles, 0, 0);
+  const solids = map.createLayer('walls', tiles, 0, 0) as Phaser.Tilemaps.TilemapLayer; // sin gpu=true: capa clásica con colisión
+  solids.setCollisionByExclusion([-1, 0]);
+  installSurroundings(scene, map, tiles);
+  const obstacles = installObstacles(scene, map);
 
-  installExploration(scene);
-  return { solids, bounds, spawn: { x: 48, y: H - 48 } };
+  const bounds = new Phaser.Geom.Rectangle(0, 0, map.widthInPixels, map.heightInPixels);
+  scene.physics.world.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
+  scene.cameras.main.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
+
+  const spawnObj = map.findObject('objects', (o) => o.type === 'spawn');
+  const spawn = { x: spawnObj?.x ?? 32, y: spawnObj?.y ?? 32 };
+
+  return { solids, bounds, spawn, map, obstacles };
 }

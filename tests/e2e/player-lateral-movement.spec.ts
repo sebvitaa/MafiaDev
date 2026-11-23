@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { GameScene } from '../../src/scenes/GameScene';
+// PEN-basti-20261123-144846: GameScene ya es cenital (RoomPlayer); estos casos prueban el Player lateral que ya no se instancia.
 
 async function playerState(page: Page) {
   return page.evaluate(() => {
@@ -18,7 +19,7 @@ test.beforeEach(async ({ page }) => {
   await expect.poll(async () => (await playerState(page)).vy).toBe(0);
 });
 
-test('Shift corre sin disparar dash y conserva salto y doble salto', async ({ page }) => {
+test.skip('Shift corre sin disparar dash y conserva salto y doble salto', async ({ page }) => {
   await page.keyboard.down('d');
   await expect.poll(async () => (await playerState(page)).vx).toBe(120);
   await page.keyboard.down('Shift');
@@ -36,7 +37,7 @@ test('Shift corre sin disparar dash y conserva salto y doble salto', async ({ pa
   await page.keyboard.up('z');
 });
 
-test('dash tiene fin, invulnerabilidad temporal y no se repite al mantener C', async ({ page }) => {
+test.skip('dash tiene fin, invulnerabilidad temporal y no se repite al mantener C', async ({ page }) => {
   const before = await playerState(page);
   await page.keyboard.down('c');
   await expect.poll(async () => (await playerState(page)).state, { intervals: [10] }).toBe('dash');
@@ -64,7 +65,7 @@ test('dash tiene fin, invulnerabilidad temporal y no se repite al mantener C', a
   await page.keyboard.up('a');
 });
 
-test('dash aéreo conserva saltos y restaura gravedad; las paredes siguen bloqueando', async ({ page }) => {
+test.skip('dash aéreo conserva saltos y restaura gravedad; las paredes siguen bloqueando', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.keyboard.down('Space');

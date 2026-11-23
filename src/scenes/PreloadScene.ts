@@ -90,6 +90,8 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('title-sky', 'assets/ui/title/title-sky.png');
     this.load.image('title-skyline', 'assets/ui/title/title-skyline.png');
     this.load.image('title-street', 'assets/ui/title/title-street.png');
+    // El cuerpo del jugador sigue midiendo 12 × 24 en todas las partidas.
+    this.load.image('rios', 'assets/sprites/player/rios.png');
     preloadAudio(this);
     // Ejemplos de otros dominios (descomentar cuando existan):
     // this.load.aseprite('player', 'assets/sprites/player/player.png', 'assets/sprites/player/player.json');

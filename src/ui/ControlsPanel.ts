@@ -45,19 +45,20 @@ export function showControls(scene: Phaser.Scene): Promise<void> {
       caps(keys, x + nameW, y, right);
     };
 
-    const moveKeys = [...BINDINGS.left, ...BINDINGS.right, ...BINDINGS.up, ...BINDINGS.down];
-    row('MOVERSE', moveKeys, px + 16, py + 34, px + pw - 16);
+    // Controles reales del mundo cenital (RoomPlayer + abilities + exploration), sin teclas duplicadas.
     const leftX = px + 16, rightX = px + pw / 2 + 5;
     const colRight = px + pw / 2 - 10;
-    const rowY = py + 65, step = 28;
-    row('SALTAR', BINDINGS.jump, leftX, rowY, colRight);
-    row('ATACAR', BINDINGS.attack, leftX, rowY + step, colRight);
-    row('DASH', BINDINGS.dash, leftX, rowY + step * 2, colRight);
-    row('PARRY', BINDINGS.parry, rightX, rowY, px + pw - 16);
-    row('HABILIDAD', BINDINGS.ability, rightX, rowY + step, px + pw - 16);
-    row('PAUSA', BINDINGS.pause, rightX, rowY + step * 2, px + pw - 16);
-    row('SILENCIO', ['0'], rightX, rowY + step * 3, px + pw - 16);
-    row('PANTALLA COMPLETA', ['F'], leftX, rowY + step * 3, px + pw - 16);
+    const rowY = py + 32, step = 23;
+    const left: [string, string[]][] = [
+      ['MOVERSE', ['WASD', '←↑↓→']], ['CORRER', ['SHIFT']], ['SALTAR', BINDINGS.jump], ['DASH', ['C', 'K', '2×DIR']],
+      ['ATACAR', ['CLIC IZQ']], ['ULTI', ['CLIC DER']], ['PAPEL TP', ['Q+CLIC DER']],
+    ];
+    const right: [string, string[]][] = [
+      ['IR A PAPEL', ['Q+CLIC IZQ', '1-4']], ['INTERACTUAR', ['E']], ['VIAJAR', ['F']], ['MAPA', ['M', 'N']],
+      ['PAUSA', BINDINGS.pause], ['SILENCIO', ['0']], ['PANT. COMPLETA', ['F (MENÚ)']],
+    ];
+    left.forEach(([name, keys], i) => row(name, keys, leftX, rowY + step * i, colRight));
+    right.forEach(([name, keys], i) => row(name, keys, rightX, rowY + step * i, px + pw - 16));
     add(layer.text(w / 2, py + ph - 19, 'ESC / ENTER PARA VOLVER', {
       depth: 102, width: 220, color: '#8a83a3', align: 'center', fontSize: 11,
     }));

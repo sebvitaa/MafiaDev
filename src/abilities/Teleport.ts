@@ -1,8 +1,8 @@
 // SUP-alejandro-20261123-121806: marcas reutilizables; quinta reemplaza la más antigua.
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 import definitions from '../data/abilities.json';
 import type { Ability } from './index';
-import { MarkStore, findLanding, segmentHit, type Mark, type Point } from './markGeometry';
+import { MarkStore, findLanding, segmentHit, type Mark, type Point, type Rect } from './markGeometry';
 
 type Body = Phaser.Physics.Arcade.Body;
 type Teleportable = Phaser.GameObjects.GameObject & {
@@ -102,7 +102,8 @@ export class Teleport implements Ability {
     }
     const obstacles = [...this.scene.physics.world.staticBodies].filter((solid) => solid.enable);
     const destination = findLanding(desired, body, this.scene.physics.world.bounds,
-      [...obstacles, ...this.enemies()], this.config.landingSearchRadius, this.config.landingSearchStep);
+      [...obstacles, ...this.enemies(), ...this.wallRects(desired, desired, this.config.landingSearchRadius + body.width)],
+      this.config.landingSearchRadius, this.config.landingSearchStep);
     if (!destination) { this.notify('No hay espacio seguro junto a esa marca.'); return false; }
     const from = { x: target.x, y: target.y };
     // Conservar el desplazamiento entre objeto y centro de cuerpo (sprites con offset).
@@ -171,6 +172,10 @@ export class Teleport implements Ability {
       const t = segmentHit(from, to, solid, this.config.projectileRadius);
       if (t !== null && t <= hit) { hit = t; wall = true; }
     }
+    for (const tile of this.wallRects(from, to, this.config.projectileRadius)) {
+      const t = segmentHit(from, to, tile, this.config.projectileRadius);
+      if (t !== null && t <= hit) { hit = t; wall = true; }
+    }
     for (const body of this.enemies()) {
       const t = segmentHit(from, to, body, this.config.projectileRadius);
       if (t !== null && (t < hit || (t === hit && !wall))) { hit = t; enemy = body; wall = false; }
@@ -215,6 +220,20 @@ export class Teleport implements Ability {
   private player(): Teleportable | null {
     const player = this.scene.player;
     return player ? ('anchor' in player ? player.anchor : player) : null;
+  }
+
+  /** Muros de tilemap (capas con colisión) en la caja que cubre a→b: no son cuerpos estáticos, así que el papel los atravesaba. */
+  private wallRects(a: Point, b: Point, pad: number): Rect[] {
+    const x = Math.min(a.x, b.x) - pad, y = Math.min(a.y, b.y) - pad;
+    const w = Math.abs(a.x - b.x) + pad * 2, h = Math.abs(a.y - b.y) + pad * 2;
+    const rects: Rect[] = [];
+    for (const child of this.scene.children.list) {
+      if (!(child instanceof Phaser.Tilemaps.TilemapLayer)) continue;
+      for (const tile of child.getTilesWithinWorldXY(x, y, w, h, { isColliding: true })) {
+        rects.push({ x: tile.pixelX + child.x, y: tile.pixelY + child.y, width: tile.width, height: tile.height });
+      }
+    }
+    return rects;
   }
 
   private enemies(): Body[] {
