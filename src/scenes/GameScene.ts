@@ -1,7 +1,7 @@
 // Dominio: vicho — composition root (SUP-seba-20261123-084249). SIN lógica de juego aquí:
 // cada dominio se engancha con su install*() exportado desde su index.ts.
 import Phaser from 'phaser';
-import { installAmbience, installCamera, installMapViews, installWorld, preloadWorld } from '../world';
+import { installAmbience, installAreaTitles, installCamera, installMapViews, installWorld, preloadWorld } from '../world';
 import { installExploration, stageStart } from '../exploration';
 import { installCharacter } from '../character';
 import type { Player } from '../player';
@@ -61,6 +61,7 @@ export class GameScene extends Phaser.Scene {
     if (start) (hero.anchor.body as Phaser.Physics.Arcade.Body).reset(start.x, start.y);
     const mapCams = installMapViews(this, world.map, hero.anchor, fog);
     installAmbience(this, world.map, hero.anchor, mapCams);
+    installAreaTitles(this, world.map, hero.anchor, mapCams);
     installAudio(this);
     installUi(this);
   }

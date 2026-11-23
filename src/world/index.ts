@@ -5,6 +5,7 @@ import { BIOME_TILES_KEY, makeBiomeTiles } from './biomeTiles';
 export { installCamera, setCombatTier, type CombatTier } from './camera';
 export { installMapViews } from './bigMap';
 export { installAmbience } from './ambience';
+export { installAreaTitles } from './areaTitle';
 
 export const WORLD_MAP_KEY = 'world';
 
