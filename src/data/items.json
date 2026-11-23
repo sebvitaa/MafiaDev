@@ -1,0 +1,6 @@
+[
+  { "id": "pocion_menor", "name": "Poción menor", "rarity": "common", "type": "consumable", "heal": 2 },
+  { "id": "fragmento_corazon", "name": "Fragmento de corazón", "rarity": "rare", "type": "heart", "maxHp": 1 },
+  { "id": "elixir_furia", "name": "Elixir de furia", "rarity": "epic", "type": "buff", "stats": { "atk": 2 }, "durationMs": 10000 },
+  { "id": "hoja_eclipse", "name": "Hoja del eclipse", "rarity": "legendary", "type": "equipment", "slot": "weapon", "stats": { "atk": 4, "speed": 10 } }
+]

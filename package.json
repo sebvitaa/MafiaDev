@@ -1,0 +1,27 @@
+{
+  "name": "mafiadev",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Metroidvania 2D de acción en pixel art (hackatón). Phaser 4 + TypeScript + Vite.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 8080",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "agents:status": "node scripts/agents.mjs status",
+    "agents:new": "node scripts/agents.mjs new"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}

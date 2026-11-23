@@ -1,0 +1,12 @@
+{
+  "luchador": {
+    "name": "Luchador",
+    "stats": { "maxHp": 5, "atk": 2, "def": 1, "speed": 120, "airJumps": 1, "dashCooldownMs": 400 },
+    "abilities": ["time_stop"]
+  },
+  "mago": {
+    "name": "Mago",
+    "stats": { "maxHp": 4, "atk": 1, "def": 0, "speed": 110, "airJumps": 1, "dashCooldownMs": 500 },
+    "abilities": ["soul_bolt"]
+  }
+}

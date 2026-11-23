@@ -1,0 +1,5 @@
+{
+  "time_stop": { "name": "Parar el tiempo", "cooldownMs": 12000, "durationMs": 3000 },
+  "teleport": { "name": "Traspasar", "cooldownMs": 6000, "distance": 64 },
+  "soul_bolt": { "name": "Proyectil de almas", "cooldownMs": 800, "soulCost": 1 }
+}
