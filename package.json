@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "agents:status": "node scripts/agents.mjs status",
-    "agents:new": "node scripts/agents.mjs new"
+    "agents:new": "node scripts/agents.mjs new",
+    "ship": "node scripts/ship.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1"
