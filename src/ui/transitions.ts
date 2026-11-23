@@ -21,3 +21,12 @@ export async function goTo(scene: Phaser.Scene, key: string, data?: object, ms =
   await fadeOut(scene, ms);
   scene.scene.start(key, data);
 }
+
+/** 4.29 — destello blanco + fundido a negro (al empezar a jugar). */
+export async function flashTo(scene: Phaser.Scene, key: string, data?: object, ms = 250): Promise<void> {
+  scene.input.keyboard?.removeAllListeners();
+  scene.cameras.main.flash(160, 255, 255, 255);
+  await new Promise<void>((r) => scene.time.delayedCall(120, () => r()));
+  await fadeOut(scene, ms, 0x000000);
+  scene.scene.start(key, data);
+}

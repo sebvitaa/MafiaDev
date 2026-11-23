@@ -1,32 +1,31 @@
 {
-  "bpm": 120,
-  "swing": 0.16,
+  "bpm": 80,
+  "swing": 0,
   "key": "D",
-  "mode": "minor",
+  "mode": "harmonic",
   "loop": false,
-  "lead": "pulse25",
-  "bassOct": 2,
-  "fx": {"reverb": 0.28, "delay": 0.18, "delayFb": 0.32, "lowpass": 8000},
-  "sections": [
-    {
-      "name": "A",
-      "lead": "pulse25",
-      "lead2": "pulse12",
-      "glide": false,
-      "acc": "pad",
-      "harmOct": 4,
-      "bass": "pedal",
-      "bassIns": "bass",
-      "drums": {
-        "k": "................",
-        "s": "................",
-        "h": "................"
-      },
-      "bars": [
-        {"c": "A7/D", "m": "A5:3 G5:1 E5:2 D5:2 C#5:2 B4:2 A4:4"},
-        {"c": "Dm",   "m": "F5:2 E5:2 D5:12"}
-      ]
-    }
-  ],
+  "fx": { "hall": 0.45 },
+  "sections": [{
+    "name": "A",
+    "lead": "choir",
+    "acc": "pad",
+    "accIns": "strings",
+    "bass": "line",
+    "bassIns": "cello",
+    "kit": "orch",
+    "drums": {
+      "k": "X...............",
+      "s": "................",
+      "h": "................",
+      "o": "x...............",
+      "b": "................",
+      "r": "................"
+    },
+    "bars": [{
+      "c": "Dm(add9)",
+      "m": "D4:16",
+      "b": "D2:16"
+    }]
+  }],
   "order": ["A"]
 }

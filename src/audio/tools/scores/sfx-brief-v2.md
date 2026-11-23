@@ -1,0 +1,22 @@
+Design ALL these sound effects for MafiaDev. Art direction (from the art director's answers): REALISTIC / ORGANIC sound (NOT chiptune: avoid square/pulse/crush; use thump, modal, ks, fm, pink, brown, noise with filters, room). Hits heavy and deep. SFX are the protagonists of the mix. Mono-friendly (keep pan 0). Frequent sounds short (<0.25 s) and non-fatiguing. Use `peak` to balance loudness (UI ~0.5, hits ~0.85).
+Return {"sfx":[...]} with exactly these names:
+- sfx-jump: a soft puff of air (short pink-noise breath with quick bandpass rise) + faint cloth rustle. <0.2 s. (double jump = same sound pitched up in code)
+- sfx-land: soft boot thud on stone, low, only for higher falls. <0.2 s
+- sfx-dash: fast air whoosh (pink noise with resonant bandpass sweep high→low, q 3–6). ~0.3 s
+- sfx-swing-1, sfx-swing-2, sfx-swing-3: blade/fist swoosh through air; 1 and 2 nearly identical (tiny variation), 3 is the same but higher and slightly longer/stronger (combo finisher).
+- sfx-hit-1, sfx-hit-2, sfx-hit-3: heavy, deep, dull flesh impact (thump 140→45 Hz + brown-noise burst + short room); three subtle variations.
+- sfx-parry: HIGH METALLIC BELL CLANG (modal preset bell/anvil, bright, f0 ~900–1400 Hz) with a sharp transient and ~0.8 s ring. Must cut through everything.
+- sfx-hurt: player takes damage: heavy hit + brief distortion/grit (dist 0.5–0.7 on a short noise/thump layer). ~0.35 s
+- sfx-enemy-death: enemy dissolves: a crunchy organic burst of particles (granular-ish: several very short ks/noise ticks spread over 0.4 s with downward pitch) + low thump.
+- sfx-pickup: bright crystalline pickup chime (fm or modal glass, two quick notes up). ~0.35 s (rarity changes pitch in code)
+- sfx-chest: wooden chest creak (ks with slow pitch slide, wood modal knocks) + tiny short fanfare-like glint at the end (two modal glass notes). ~1 s
+- sfx-checkpoint: warm major chord swell (fm/modal soft bell partials on D major triad, soft attack) ~1.2 s with room
+- sfx-timestop: "a clock that stops": 3 clear clock ticks (wood/metal modal clicks, tick-tock alternating pitch) slowing down (gaps 0.18, 0.26, 0.40 s) then a low muffled thump and silence. ~1.2 s
+- sfx-ability-ready: subtle soft ding (single modal glass note, quiet). ~0.4 s
+- sfx-low-hp: heartbeat, two deep soft thumps (lub-dub, 0.12 s apart). ~0.35 s
+- sfx-boss-roar: long deep beast roar ~1.8 s: brown/pink noise through low resonant bandpass sweeping (q 2–4, 180→420→150 Hz) + low FM growl (f0 55–70 Hz, ratio 1.5, index high) with dist 0.4, slow attack 0.15 s, room/reverb.
+- sfx-death: player death: heavy low impact + descending dark swell ~1.2 s
+- sfx-tutorial-ok: small positive "check" (two modal wood/glass notes up a fourth). ~0.3 s
+- sfx-ui-move: TYPEWRITER key click (very short noise tick + small metallic modal click, 30–60 ms). Quiet.
+- sfx-ui-select: typewriter carriage-return BELL (small modal bell ding ~1.8 kHz) + key thunk. ~0.5 s
+- sfx-ui-back: typewriter release/back click, softer and lower than ui-move. <0.1 s

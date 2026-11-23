@@ -1,31 +1,31 @@
 {
-  "bpm": 130,
-  "swing": 0.08,
+  "bpm": 90,
   "key": "D",
-  "mode": "minor",
+  "mode": "harmonic",
   "loop": false,
-  "lead": "pulse25",
-  "bassOct": 2,
-  "fx": {"reverb": 0.26, "delay": 0.12, "delayFb": 0.22, "lowpass": 9500},
-  "sections": [
-    {
-      "name": "Sting",
-      "lead": "pulse12",
-      "glide": false,
-      "acc": "stab",
-      "harmOct": 4,
-      "bass": "root8",
-      "bassIns": "bass",
-      "drums": {
-        "k": "....x...........",
-        "s": "....X...........",
-        "h": "x.x.............",
-        "o": "....o..........."
-      },
-      "bars": [
-        {"c": "Dm9", "m": "A4:1 Bb4:1 C5:1 D5:1 A5:2 r:2 D5:1 r:5 E5:2"}
-      ]
-    }
-  ],
-  "order": ["Sting"]
+  "lead": "sax",
+  "bassOct": 1,
+  "fx": { "hall": 0.3, "reverb": 0.12, "lowpass": 11000 },
+  "sections": [{
+    "name": "A",
+    "lead": "sax",
+    "acc": "pad",
+    "accIns": "piano",
+    "harmOct": 4,
+    "bass": "line",
+    "bassIns": "upright",
+    "kit": "jazz",
+    "drums": {
+      "k": "X...............",
+      "s": "................",
+      "h": "X...............",
+      "r": "................"
+    },
+    "bars": [{
+      "c": "Dm(add9)",
+      "m": "A4:2 D5:2 F5:2 A5:10",
+      "b": "D2:2 r:14"
+    }]
+  }],
+  "order": ["A"]
 }

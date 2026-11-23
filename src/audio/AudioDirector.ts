@@ -11,7 +11,7 @@ interface Fade { snd: Snd; from: number; to: number; t: number; dur: number; sto
 
 interface Track { key: string; snd: Snd; gain: number }
 
-export interface SfxOptions { variant?: number; volume?: number; detune?: number; rate?: number; channel?: Channel }
+export interface SfxOptions { variant?: number; volume?: number; detune?: number; rate?: number; channel?: Channel; /** −1..1 */ pan?: number }
 
 class AudioDirectorImpl {
   private game!: Phaser.Game;
@@ -19,7 +19,9 @@ class AudioDirectorImpl {
   private fades: Fade[] = [];
   private music: Track | null = null;
   private ambient: Track | null = null;
-  private duckFactor = 1;
+  private duckFactor = 1; // pausa
+  private eventDuck = 1; // parry, jefe, loot raro (3.34)
+  private eventDuckTimer: ReturnType<typeof setTimeout> | null = null;
   private slow = false;
   private ready = false;
   private s: Settings = settings.get();
@@ -61,6 +63,7 @@ class AudioDirectorImpl {
       volume: vol,
       detune: (o.detune ?? Phaser.Math.Between(-90, 90)) + (this.slow ? -500 : 0),
       rate: (o.rate ?? 1) * (this.slow ? 0.75 : 1),
+      pan: Math.max(-1, Math.min(1, o.pan ?? 0)),
     });
   }
 
@@ -111,9 +114,31 @@ class AudioDirectorImpl {
     this.fadeTo(snd, this.target('ambient', 1), fadeMs);
   }
 
-  /** Baja música y ambiente (pausa = 0.3). duck(1) restaura. */
+  /** Baja música y ambiente de forma sostenida (pausa = 0.5 con fundido). duck(1) restaura. */
   duck(factor: number, ms = 250): void {
     this.duckFactor = factor;
+    this.refreshDuck(ms);
+  }
+
+  /** Ducking breve por un evento importante: baja a `factor`, mantiene `holdMs` y vuelve en `releaseMs`. */
+  duckFor(factor: number, holdMs: number, attackMs = 60, releaseMs = 600): void {
+    if (!this.ready) return;
+    this.eventDuck = Math.min(this.eventDuck, factor);
+    this.refreshDuck(attackMs);
+    if (this.eventDuckTimer) clearTimeout(this.eventDuckTimer);
+    this.eventDuckTimer = setTimeout(() => {
+      this.eventDuckTimer = null;
+      this.eventDuck = 1;
+      this.refreshDuck(releaseMs);
+    }, attackMs + holdMs);
+  }
+
+  /** 5.45 — micro-silencio de la música (parry perfecto). */
+  microSilence(ms = 50): void {
+    this.duckFor(0, ms, 0, 90);
+  }
+
+  private refreshDuck(ms: number): void {
     if (this.music) this.fadeTo(this.music.snd, this.target('music', this.music.gain), ms);
     if (this.ambient) this.fadeTo(this.ambient.snd, this.target('ambient', 1), ms);
   }
@@ -133,12 +158,13 @@ class AudioDirectorImpl {
     this.music = this.ambient = null;
     this.slow = false;
     this.duckFactor = 1;
+    this.eventDuck = 1;
   }
 
   // ───────────── internos ─────────────
   private target(channel: Channel, gain: number): number {
     const base = channel === 'music' ? MIX.music : channel === 'ambient' ? MIX.ambient : 1;
-    return effectiveVolume(this.s, channel, base * gain) * this.duckFactor;
+    return effectiveVolume(this.s, channel, base * gain) * Math.min(this.duckFactor, this.eventDuck);
   }
 
   private applySlow(snd: Snd, on: boolean): void {
