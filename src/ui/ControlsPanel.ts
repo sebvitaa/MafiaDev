@@ -56,7 +56,7 @@ export function showControls(scene: Phaser.Scene): Promise<void> {
     row('PARRY', BINDINGS.parry, rightX, rowY, px + pw - 16);
     row('HABILIDAD', BINDINGS.ability, rightX, rowY + step, px + pw - 16);
     row('PAUSA', BINDINGS.pause, rightX, rowY + step * 2, px + pw - 16);
-    row('SILENCIO', ['M'], rightX, rowY + step * 3, px + pw - 16);
+    row('SILENCIO', ['0'], rightX, rowY + step * 3, px + pw - 16);
     row('PANTALLA COMPLETA', ['F'], leftX, rowY + step * 3, px + pw - 16);
     add(layer.text(w / 2, py + ph - 19, 'ESC / ENTER PARA VOLVER', {
       depth: 102, width: 220, color: '#8a83a3', align: 'center', fontSize: 11,

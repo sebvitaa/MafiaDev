@@ -1,11 +1,16 @@
-// Dominio: seba. Teclas globales en cualquier escena con UI: M = silencio, F = pantalla completa.
+// Dominio: seba. Teclas globales en cualquier escena con UI: 0 = silencio; en menús también M = silencio y F = pantalla completa.
+// En el juego, M (mapa grande) y F (viaje rápido) son de vicho (src/world/bigMap.ts, src/exploration/checkpoints.ts):
+// si las escuchamos aquí, abrir el mapa silenciaba la música. Por eso en el juego solo queda el 0.
 import Phaser from 'phaser';
 import { AudioDirector, settings } from '../audio';
 import { C, reducedMotion, text } from './theme';
+import { globalKeyCodes } from './globalKeyCodes';
 
-export function installGlobalKeys(scene: Phaser.Scene): void {
+/** `inGame`: la escena es la de juego, donde M y F pertenecen al mundo. */
+export function installGlobalKeys(scene: Phaser.Scene, { inGame = false }: { inGame?: boolean } = {}): void {
   const kb = scene.input.keyboard;
   if (!kb) return;
+  const codes = globalKeyCodes(inGame);
   const onMute = () => {
     if (!scene.scene.isActive()) return;
     const muted = AudioDirector.toggleMute();
@@ -16,11 +21,11 @@ export function installGlobalKeys(scene: Phaser.Scene): void {
     if (scene.scale.isFullscreen) scene.scale.stopFullscreen();
     else scene.scale.startFullscreen();
   };
-  kb.on('keydown-M', onMute);
-  kb.on('keydown-F', onFullscreen);
+  for (const k of codes.mute) kb.on(`keydown-${k}`, onMute);
+  for (const k of codes.fullscreen) kb.on(`keydown-${k}`, onFullscreen);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-    kb.off('keydown-M', onMute);
-    kb.off('keydown-F', onFullscreen);
+    for (const k of codes.mute) kb.off(`keydown-${k}`, onMute);
+    for (const k of codes.fullscreen) kb.off(`keydown-${k}`, onFullscreen);
   });
 }
 
