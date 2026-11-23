@@ -36,10 +36,12 @@ export class GameScene extends Phaser.Scene {
     // su install*() (PEN-basti pendiente). Volver a installPlayer cuando exista.
     const hero = new RoomPlayer(this, world.spawn.x, world.spawn.y, character.stats);
     this.physics.add.collider(hero.anchor, world.solids);
+    this.physics.add.collider(hero.anchor, world.obstacles);
     // Espadas de prueba del lab en los objetos type "sword" del mapa.
     const swords = world.map.filterObjects('objects', (o) => o.type === 'sword')!.map((o) => new SwordPickup(this, o.x!, o.y!));
     const tick = (t: number, dt: number) => {
       hero.update(dt);
+      character.abilities.update(dt);
       if (swords.some((s) => s.update(t, hero.anchor.x, hero.anchor.y))) hero.equipSword();
     };
     // Personaje más pequeño que en el lab (pensado para 960x600); el juego es 480x270 a lo Titan Souls.

@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import { BIOME_TILES_KEY, makeBiomeTiles } from './biomeTiles';
 import { installSurroundings } from './surroundings';
+import { installObstacles } from './obstacles';
 
 export { installCamera, setCombatTier, type CombatTier } from './camera';
 export { installMapViews } from './bigMap';
@@ -15,6 +16,7 @@ export interface World {
   bounds: Phaser.Geom.Rectangle;
   spawn: { x: number; y: number };
   map: Phaser.Tilemaps.Tilemap;
+  obstacles: Phaser.Physics.Arcade.StaticGroup;
 }
 
 /** Llamar desde GameScene.preload. */
@@ -34,6 +36,7 @@ export function installWorld(scene: Phaser.Scene): World {
   const solids = map.createLayer('walls', tiles, 0, 0) as Phaser.Tilemaps.TilemapLayer; // sin gpu=true: capa clásica con colisión
   solids.setCollisionByExclusion([-1, 0]);
   installSurroundings(scene, map, tiles);
+  const obstacles = installObstacles(scene, map);
 
   const bounds = new Phaser.Geom.Rectangle(0, 0, map.widthInPixels, map.heightInPixels);
   scene.physics.world.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
@@ -42,5 +45,5 @@ export function installWorld(scene: Phaser.Scene): World {
   const spawnObj = map.findObject('objects', (o) => o.type === 'spawn');
   const spawn = { x: spawnObj?.x ?? 32, y: spawnObj?.y ?? 32 };
 
-  return { solids, bounds, spawn, map };
+  return { solids, bounds, spawn, map, obstacles };
 }

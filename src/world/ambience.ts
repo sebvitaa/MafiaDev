@@ -14,6 +14,7 @@ const PARTICLES: Record<Biome, Phaser.Types.GameObjects.Particles.ParticleEmitte
   arena: { tint: [0xff6a3d, 0xffb36b], frequency: 50, lifespan: 2600, speedX: { min: -8, max: 8 }, speedY: { min: -40, max: -18 }, alpha: { start: 1, end: 0 }, blendMode: Phaser.BlendModes.ADD },
 };
 const VIGNETTE: Record<Biome, number> = { ruins: 0.35, forest: 0.3, bright: 0.05, arena: 0.35, redforest: 0.3 }; // suave: no tapar la pantalla
+const VEIL: Record<Biome, number> = { ruins: 0x8b8d9b, forest: 0x6eaf66, bright: 0x83eafa, arena: 0xf06a32, redforest: 0xdb5838 };
 
 export function installAmbience(
   scene: Phaser.Scene,
@@ -34,18 +35,28 @@ export function installAmbience(
   for (const c of hiddenFrom) c.ignore(Object.values(emitters));
 
   const vignette = cam.filters.external.addVignette(0.5, 0.5, 0.75, VIGNETTE.ruins);
+  // SUP-vicho-20261123-133345: confirma el cruce sin cortar el control ni esconder el pixel art.
+  const veil = scene.add.rectangle(0, 0, 1, 1, VEIL.ruins, 0).setDepth(1_900_000);
+  for (const c of hiddenFrom) c.ignore(veil);
   let biome: Biome | null = null;
 
   const onUpdate = () => {
     const b = biomeAt(map, player.x, player.y);
     if (b && b !== biome) {
-      if (biome) emitters[biome].stop();
+      const previous = biome;
+      if (previous) emitters[previous].stop();
       emitters[b].start();
       scene.tweens.add({ targets: vignette, strength: VIGNETTE[b], duration: 900 });
+      if (previous) {
+        veil.setFillStyle(VEIL[b]).setAlpha(0);
+        scene.tweens.killTweensOf(veil);
+        scene.tweens.add({ targets: veil, alpha: 0.12, duration: 260, yoyo: true });
+      }
       biome = b;
     }
     // La zona de emisión cubre lo que ve la cámara (en coordenadas de mundo).
     view.setTo(cam.worldView.x, cam.worldView.y, cam.worldView.width, cam.worldView.height);
+    veil.setPosition(view.centerX, view.centerY).setDisplaySize(view.width, view.height);
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate));
