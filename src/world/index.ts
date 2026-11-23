@@ -19,9 +19,25 @@ export interface World {
   obstacles: Phaser.Physics.Arcade.StaticGroup;
 }
 
+const MAP_FILES = ['world.json', 'world-2.json', 'world-3.json'];
+const MAP_SAVE_KEY = 'mafiadev.map';
+
+/** Nuevo juego → mapa al azar (se recuerda para "Continuar"); ?map=N lo fuerza (tests). */
+function pickMap(scene: Phaser.Scene): number {
+  const forced = Number(new URLSearchParams(location.search).get('map'));
+  if (forced >= 1 && forced <= MAP_FILES.length) return forced - 1;
+  let stored = NaN;
+  try { stored = Number(localStorage.getItem(MAP_SAVE_KEY)); } catch { /* sin almacenamiento */ }
+  if (!scene.registry.get('newGame') && stored >= 0 && stored < MAP_FILES.length) return stored;
+  const n = Phaser.Math.Between(0, MAP_FILES.length - 1);
+  try { localStorage.setItem(MAP_SAVE_KEY, String(n)); } catch { /* idem */ }
+  return n;
+}
+
 /** Llamar desde GameScene.preload. */
 export function preloadWorld(scene: Phaser.Scene): void {
-  scene.load.tilemapTiledJSON(WORLD_MAP_KEY, 'assets/maps/world.json');
+  scene.cache.tilemap.remove(WORLD_MAP_KEY); // si no, el loader reusa el mapa de la partida anterior
+  scene.load.tilemapTiledJSON(WORLD_MAP_KEY, `assets/maps/${MAP_FILES[pickMap(scene)]}`);
 }
 
 export function installWorld(scene: Phaser.Scene): World {

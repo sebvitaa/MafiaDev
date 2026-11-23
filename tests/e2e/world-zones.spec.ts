@@ -9,10 +9,10 @@ const pos = (page: Page) =>
   page.evaluate(() => { const p = (window as any).__game.scene.getScene('GameScene').player; return { x: p.x, y: p.y }; });
 const events = (page: Page) => page.evaluate(() => (window as any).__ev as [string, any][]);
 
-test('cruzar zonas emite zone:changed; descansar y morir reaparece en la hoguera', async ({ page }) => {
-  await page.goto('/?skipIntro=1');
+for (const m of [1, 2, 3]) test(`cruzar zonas emite zone:changed; descansar y morir reaparece en la hoguera (mapa ${m})`, async ({ page }) => {
+  await page.goto(`/?skipIntro=1&map=${m}`);
   await page.evaluate(() => localStorage.clear());
-  await page.goto('/?skipIntro=1');
+  await page.goto(`/?skipIntro=1&map=${m}`);
   await page.waitForFunction(() => (window as any).__game?.scene.isActive('TitleScene'));
   await page.evaluate(async (path) => {
     const { bus } = await import(/* @vite-ignore */ path);

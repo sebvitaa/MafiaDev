@@ -14,11 +14,11 @@ const texts = (page: Page) =>
   page.evaluate(() => (window as any).__game.scene.getScene('GameScene').children.list.filter((o: any) => o.type === 'Text').map((o: any) => o.text as string) as string[]);
 const press = async (page: Page, key: string) => { await page.keyboard.press(key); await page.waitForTimeout(150); };
 
-test('pared ilusoria, atajo, coleccionable y viaje rápido', async ({ page }) => {
+for (const m of [1, 2, 3]) test(`pared ilusoria, atajo, coleccionable y viaje rápido (mapa ${m})`, async ({ page }) => {
   test.setTimeout(60_000);
-  await page.goto('/?skipIntro=1');
+  await page.goto(`/?skipIntro=1&map=${m}`);
   await page.evaluate(() => localStorage.clear());
-  await page.goto('/?skipIntro=1');
+  await page.goto(`/?skipIntro=1&map=${m}`);
   await page.waitForFunction(() => (window as any).__game?.scene.isActive('TitleScene'));
   await page.keyboard.press('Space');
   await page.waitForFunction(() => (window as any).__game?.scene.isActive('GameScene'));

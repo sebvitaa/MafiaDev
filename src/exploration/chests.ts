@@ -7,25 +7,26 @@ import { prop } from './tiled';
 
 const CLOSED = 'chest-closed';
 const OPEN = 'chest-open';
-const REACH = 22;
+const REACH = 26;
 
-// shortcut: cofre dibujado pixel a pixel (16x14); cambiar por sprite real cuando haya arte.
+// shortcut: cofre dibujado pixel a pixel (22x19); cambiar por sprite real cuando haya arte.
 function makeChestTextures(scene: Phaser.Scene): void {
   if (scene.textures.exists(CLOSED)) return;
   for (const [key, open] of [[CLOSED, false], [OPEN, true]] as const) {
     const g = scene.add.graphics();
-    g.fillStyle(0x3a2414).fillRect(1, 5, 14, 9); // cuerpo
-    g.fillStyle(0x6b4423).fillRect(2, 6, 12, 7);
-    g.fillStyle(0xc9a227).fillRect(1, 8, 14, 1).fillRect(7, 6, 2, 4); // banda y cerradura
+    g.fillStyle(0x3a2414).fillRect(1, 7, 20, 12); // cuerpo
+    g.fillStyle(0x6b4423).fillRect(2, 8, 18, 10);
+    g.fillStyle(0xc9a227).fillRect(1, 11, 20, 2).fillRect(9, 8, 4, 6); // banda y cerradura
+    g.fillStyle(0x3a2414).fillRect(10, 10, 2, 2);
     if (open) {
-      g.fillStyle(0x140c08).fillRect(2, 3, 12, 3); // interior
-      g.fillStyle(0xffd75e).fillRect(5, 4, 6, 1);
-      g.fillStyle(0x6b4423).fillRect(1, 0, 14, 3); // tapa abierta
+      g.fillStyle(0x140c08).fillRect(2, 4, 18, 4); // interior
+      g.fillStyle(0xffd75e).fillRect(6, 5, 10, 2);
+      g.fillStyle(0x6b4423).fillRect(1, 0, 20, 4); // tapa abierta
     } else {
-      g.fillStyle(0x8a5a2e).fillRect(1, 1, 14, 5); // tapa
-      g.fillStyle(0xc9a227).fillRect(1, 1, 14, 1);
+      g.fillStyle(0x8a5a2e).fillRect(1, 1, 20, 7); // tapa
+      g.fillStyle(0xc9a227).fillRect(1, 1, 20, 1);
     }
-    g.generateTexture(key, 16, 14);
+    g.generateTexture(key, 22, 19);
     g.destroy();
   }
 }
@@ -51,7 +52,7 @@ export function installChests(scene: Phaser.Scene, map: Phaser.Tilemaps.Tilemap,
     pressed = false;
     hint.setVisible(!!near);
     if (!near) return;
-    hint.setPosition(near.sprite.x, near.sprite.y - 16);
+    hint.setPosition(near.sprite.x, near.sprite.y - 22);
     if (!wantsOpen) return;
     near.open = true;
     near.sprite.setTexture(OPEN);
@@ -60,7 +61,7 @@ export function installChests(scene: Phaser.Scene, map: Phaser.Tilemaps.Tilemap,
     if (!item) return;
     // shortcut: el item se "recoge" directo con aviso flotante; el drop físico es de alejandro (A4).
     bus.emit('item:picked', { itemId: item.id, rarity: item.rarity });
-    const label = scene.add.text(near.sprite.x, near.sprite.y - 18, item.name, {
+    const label = scene.add.text(near.sprite.x, near.sprite.y - 24, item.name, {
       fontFamily: 'monospace', fontSize: '8px', color: `#${RARITY_COLOR[item.rarity].toString(16).padStart(6, '0')}`,
     }).setOrigin(0.5, 1).setDepth(1e5);
     scene.tweens.add({ targets: label, y: label.y - 14, alpha: 0, duration: 1600, onComplete: () => label.destroy() });

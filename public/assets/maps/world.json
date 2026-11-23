@@ -130238,12 +130238,252 @@
               "value": "east"
             }
           ]
+        },
+        {
+          "id": 43,
+          "name": "ob1",
+          "type": "obstacle",
+          "x": 408,
+          "y": 616,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "forest"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "tree"
+            }
+          ]
+        },
+        {
+          "id": 44,
+          "name": "ob2",
+          "type": "obstacle",
+          "x": 1864,
+          "y": 472,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "forest"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "rock"
+            }
+          ]
+        },
+        {
+          "id": 45,
+          "name": "ob3",
+          "type": "obstacle",
+          "x": 936,
+          "y": 1352,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "ruins"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "tomb"
+            }
+          ]
+        },
+        {
+          "id": 46,
+          "name": "ob4",
+          "type": "obstacle",
+          "x": 1224,
+          "y": 2120,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "ruins"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "rubble"
+            }
+          ]
+        },
+        {
+          "id": 47,
+          "name": "ob5",
+          "type": "obstacle",
+          "x": 3144,
+          "y": 392,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "bright"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "crystalC"
+            }
+          ]
+        },
+        {
+          "id": 48,
+          "name": "ob6",
+          "type": "obstacle",
+          "x": 3416,
+          "y": 504,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "bright"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "geode"
+            }
+          ]
+        },
+        {
+          "id": 49,
+          "name": "ob7",
+          "type": "obstacle",
+          "x": 3160,
+          "y": 2328,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "arena"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "lavaPool"
+            }
+          ]
+        },
+        {
+          "id": 50,
+          "name": "ob8",
+          "type": "obstacle",
+          "x": 3384,
+          "y": 2504,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "arena"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "basalt"
+            }
+          ]
+        },
+        {
+          "id": 51,
+          "name": "ob9",
+          "type": "obstacle",
+          "x": 456,
+          "y": 2136,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "redforest"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "emberlog"
+            }
+          ]
+        },
+        {
+          "id": 52,
+          "name": "ob10",
+          "type": "obstacle",
+          "x": 3304,
+          "y": 1352,
+          "width": 0,
+          "height": 0,
+          "point": true,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "biome",
+              "type": "string",
+              "value": "redforest"
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "rtree"
+            }
+          ]
         }
       ]
     }
   ],
   "nextlayerid": 5,
-  "nextobjectid": 43,
+  "nextobjectid": 53,
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.10.2",
