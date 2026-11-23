@@ -23,5 +23,43 @@
     "attackRange": 64, "halfAngleDeg": 55, "radius": 24, "lungeSpeed": 55,
     "armored": true, "color": 14242859, "loot": "miniboss"
   },
-  "miniboss": { "hp": 30, "dmg": 2, "speed": 70, "windupMs": 500, "loot": "miniboss" }
+  "miniboss": { "hp": 30, "dmg": 2, "speed": 70, "windupMs": 500, "loot": "miniboss" },
+  "bodoque": {
+    "hp": 600,
+    "radius": 28,
+    "idleMs": 420,
+    "phaseThresholds": [0.66, 0.33],
+    "heart": { "hp": 100, "openingMs": 1200, "defeatMs": 1600, "criticalHp": 23 },
+    "bounds": { "left": 56, "right": 904, "top": 104, "bottom": 544 },
+    "attacks": {
+      "microphoneMallet": {
+        "windupMs": 500,
+        "activeMs": 180,
+        "recoveryMs": 470,
+        "damage": 12,
+        "range": 92,
+        "halfAngleDeg": 42,
+        "parryable": true
+      },
+      "cameraFlash": {
+        "windupMs": 760,
+        "activeMs": 100,
+        "recoveryMs": 540,
+        "damage": 18,
+        "range": 190,
+        "halfAngleDeg": 42,
+        "parryable": false
+      },
+      "lastHour": {
+        "windupMs": 680,
+        "activeMs": 280,
+        "recoveryMs": 620,
+        "damage": 22,
+        "range": 250,
+        "halfWidth": 25,
+        "distance": 230,
+        "parryable": false
+      }
+    }
+  }
 }

@@ -41,7 +41,7 @@ export class TitleScene extends Phaser.Scene {
     this.menu = null;
     this.menuMotion = [];
     this.events.off(Phaser.Scenes.Events.POST_UPDATE, this.syncMenuMotion);
-    const last = Number(this.registry.get('stage') ?? 1);
+    const last = Number(this.registry.get('stage') ?? new URLSearchParams(location.search).get('stage') ?? 1);
     this.stageIdx = Math.max(0, STAGES.findIndex((s) => s.id === last));
     document.title = 'MafiaDev · Metroidvania';
     installGlobalKeys(this);
