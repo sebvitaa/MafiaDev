@@ -14,15 +14,15 @@ import { C, RARITY_COLOR, text } from './theme';
 import { TutorialOverlay } from './tutorial/TutorialOverlay';
 import { presentLaNotaArrival } from './laNotaArrival';
 
-const isBoss = (s: string) => /boss/i.test(s);
-const BOSS_HP = (enemies as Record<string, { hp?: number }>).boss?.hp ?? 30; // jefe final (src/world/boss.ts)
+const isBoss = (s: string) => s === 'bodoque' || /boss/i.test(s);
+const BOSS_HP = enemies.bodoque.hp;
 
 export class HudScene extends Phaser.Scene {
   private hearts!: Phaser.GameObjects.Container;
   private hp = 5;
   private maxHp = 5;
   private vignette!: Phaser.GameObjects.Image;
-  private boss!: { root: Phaser.GameObjects.Container; fill: Phaser.GameObjects.Rectangle; ghost: Phaser.GameObjects.Rectangle; hp: number; max: number };
+  private boss!: { name: Phaser.GameObjects.Text; root: Phaser.GameObjects.Container; fill: Phaser.GameObjects.Rectangle; ghost: Phaser.GameObjects.Rectangle; hp: number; max: number };
   private ability!: { fill: Phaser.GameObjects.Rectangle; frame: Phaser.GameObjects.Rectangle; tween: Phaser.Tweens.Tween | null };
   private toastY = 0;
 
@@ -59,7 +59,7 @@ export class HudScene extends Phaser.Scene {
 
     const startTutorial = () => {
       const tutorial = new TutorialOverlay(this);
-      if (this.registry.get('newGame') === true && !settings.get().tutorialDone) this.time.delayedCall(800, () => tutorial.start());
+      if (this.registry.get('newGame') === true && this.registry.get('stage') !== 3 && !settings.get().tutorialDone) this.time.delayedCall(800, () => tutorial.start());
     };
     presentLaNotaArrival(this, startTutorial);
   }
@@ -102,14 +102,15 @@ export class HudScene extends Phaser.Scene {
     const back = this.add.rectangle(0, 0, bw + 4, 8, C.bg).setStrokeStyle(1, C.panel);
     const ghost = this.add.rectangle(-bw / 2, 0, bw, 4, C.text).setOrigin(0, 0.5);
     const fill = this.add.rectangle(-bw / 2, 0, bw, 4, C.danger).setOrigin(0, 0.5);
-    const name = text(this, 0, -12, 'EL PADRINO', { color: C.accent, align: 'center', stroke: true }).setOrigin(0.5);
+    const name = text(this, 0, -12, 'JUAN CARLOS BODOQUE', { color: C.accent, align: 'center', stroke: true }).setOrigin(0.5);
     root.add([back, ghost, fill, name]);
-    this.boss = { root, fill, ghost, hp: BOSS_HP, max: BOSS_HP };
+    this.boss = { root, fill, ghost, name, hp: BOSS_HP, max: BOSS_HP };
   }
 
   private showBoss(): void {
     const b = this.boss;
     b.hp = b.max;
+    b.name.setText('JUAN CARLOS BODOQUE');
     b.fill.width = b.ghost.width = 220;
     b.root.setVisible(true).setAlpha(0).setY(this.scale.height - 10);
     this.tweens.add({ targets: b.root, alpha: 1, y: this.scale.height - 22, duration: 500, delay: 1200, ease: 'Back.Out' });
@@ -119,6 +120,7 @@ export class HudScene extends Phaser.Scene {
     const b = this.boss;
     if (!b.root.visible) return;
     b.hp = Math.max(0, b.hp - dmg);
+    if (b.hp <= enemies.bodoque.heart.hp) b.name.setText(b.hp <= enemies.bodoque.heart.criticalHp ? 'CORAZÓN CODEX · ERROR 23' : 'CORAZÓN CODEX');
     const wTarget = 220 * (b.hp / b.max);
     b.fill.width = wTarget;
     this.tweens.killTweensOf(b.ghost);

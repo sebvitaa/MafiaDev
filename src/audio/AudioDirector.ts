@@ -79,13 +79,13 @@ class AudioDirectorImpl {
   get currentMusic(): string | null { return this.music?.key ?? null; }
 
   /** Crossfade a otra pista en bucle. Misma pista = no hace nada. */
-  playMusic(key: MusicKey, fadeMs = 800, { loop = true, gain = 1 } = {}): void {
+  playMusic(key: MusicKey, fadeMs = 800, { loop = true, gain = 1, seek = 0 } = {}): void {
     if (!this.ready) return;
     if (this.music?.key === key && this.music.snd.isPlaying) return;
     this.fadeOutTrack(this.music, fadeMs);
     this.music = null;
     if (!this.has(key)) return; // pista diferida aún sin cargar: silencio en vez de error
-    const snd = this.sound.add(key, { loop, volume: 0 }) as Snd;
+    const snd = this.sound.add(key, { loop, volume: 0, seek }) as Snd;
     snd.play();
     if (this.slow) this.applySlow(snd, true);
     this.music = { key, snd, gain };

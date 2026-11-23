@@ -12,9 +12,9 @@ export const SFX_KEYS: SfxKey[] = [
   'sfx-title-sting', 'sfx-boss-roar', 'sfx-death', 'sfx-ability-ready', 'sfx-low-hp', 'sfx-tutorial-ok', 'sfx-fanfare',
 ];
 /** Se cargan en Preload: título y menús necesitan sonar en cuanto se pulsa una tecla. */
-export const MUSIC_EAGER: MusicKey[] = ['music-title', 'music-zone1', 'music-gameover'];
+export const MUSIC_EAGER: MusicKey[] = ['music-title', 'music-zone1', 'music-gameover', 'music-boss'];
 /** Carga diferida (en segundo plano al entrar al juego) para no alargar la pantalla de carga. */
-export const MUSIC_LAZY: MusicKey[] = ['music-zone2', 'music-boss'];
+export const MUSIC_LAZY: MusicKey[] = ['music-zone2'];
 export const AMBIENT_KEYS: AmbientKey[] = ['amb-zone1', 'amb-zone2'];
 export const VOICE_KEYS: VoiceKey[] = ['vo-title', 'vo-gameover'];
 
