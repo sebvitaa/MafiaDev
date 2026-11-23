@@ -105,11 +105,21 @@ test('marca sigue al knight y TP numérico llega a su lado sin atacarlo', async 
     const mark = (await snapshot(page)).marks[0];
     return !!mark && mark.x > 520 && mark.rotation === 0;
   }).toBe(true);
-  await page.evaluate(() => {
+  const follow = await page.evaluate(() => new Promise<{ enemyDelta: number; markDelta: number }>((resolve) => {
     const scene = window.__game!.scene.getScene('RoomPrototype') as any;
-    scene.enemies.enemies.find((enemy: any) => enemy.kind === 'knight').body.reset(650, 400);
-  });
-  await expect.poll(async () => (await snapshot(page)).marks[0]?.x).toBeGreaterThan(610);
+    const enemy = scene.enemies.enemies.find((target: any) => target.kind === 'knight');
+    const mark = scene.children.list.find((child: any) => child.name?.startsWith('teleport-mark-'));
+    // Medir ambos desplazamientos en postupdate evita perder una coordenada fugaz
+    // mientras la IA sigue persiguiendo al jugador entre consultas del test.
+    enemy.brain.fsm.set('recovery', true);
+    scene.events.once('postupdate', () => {
+      const enemyX = enemy.x, markX = mark.x;
+      enemy.body.reset(650, 400);
+      scene.events.once('postupdate', () => resolve({ enemyDelta: enemy.x - enemyX, markDelta: mark.x - markX }));
+    });
+  }));
+  expect(follow.enemyDelta).toBeGreaterThan(40);
+  expect(follow.markDelta).toBeCloseTo(follow.enemyDelta, 1);
   await page.keyboard.press('1');
   await expect.poll(async () => (await snapshot(page)).x).toBeGreaterThan(590);
   const s = await snapshot(page), knight = s.enemies[2];
