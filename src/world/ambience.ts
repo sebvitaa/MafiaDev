@@ -9,10 +9,11 @@ const DOT = 'amb-dot';
 const PARTICLES: Record<Biome, Phaser.Types.GameObjects.Particles.ParticleEmitterConfig> = {
   ruins: { tint: 0x9a97ad, frequency: 140, lifespan: 5000, speedX: { min: -6, max: 6 }, speedY: { min: -4, max: 4 }, alpha: { start: 0.5, end: 0 } },
   forest: { tint: [0xd8ff7a, 0xfff3a0], frequency: 200, lifespan: 3500, speedX: { min: -12, max: 12 }, speedY: { min: -12, max: 12 }, alpha: { start: 1, end: 0 }, blendMode: Phaser.BlendModes.ADD },
-  bright: { tint: [0xff7eb6, 0xffd75e, 0xffffff], frequency: 90, lifespan: 4500, speedX: { min: 8, max: 22 }, speedY: { min: 4, max: 14 }, rotate: { min: 0, max: 360 }, alpha: { start: 0.9, end: 0.2 } },
+  bright: { tint: [0x7ff0ff, 0xff8af0, 0xffffff], frequency: 70, lifespan: 4000, speedX: { min: -6, max: 6 }, speedY: { min: -14, max: -4 }, alpha: { start: 1, end: 0 }, blendMode: Phaser.BlendModes.ADD },
+  redforest: { tint: [0xd9662b, 0xf2a03d, 0xa8321f], frequency: 110, lifespan: 5000, speedX: { min: 6, max: 18 }, speedY: { min: 8, max: 18 }, rotate: { min: 0, max: 360 }, alpha: { start: 0.9, end: 0.3 } },
   arena: { tint: [0xff6a3d, 0xffb36b], frequency: 50, lifespan: 2600, speedX: { min: -8, max: 8 }, speedY: { min: -40, max: -18 }, alpha: { start: 1, end: 0 }, blendMode: Phaser.BlendModes.ADD },
 };
-const VIGNETTE: Record<Biome, number> = { ruins: 0.3, forest: 0.35, bright: 0.08, arena: 0.4 }; // suave: no tapar la pantalla
+const VIGNETTE: Record<Biome, number> = { ruins: 0.35, forest: 0.3, bright: 0.05, arena: 0.35, redforest: 0.3 }; // suave: no tapar la pantalla
 
 export function installAmbience(
   scene: Phaser.Scene,

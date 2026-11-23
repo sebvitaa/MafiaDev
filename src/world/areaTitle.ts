@@ -4,10 +4,11 @@ import Phaser from 'phaser';
 import { biomeAt, type Biome } from './biomeTiles';
 
 const NAMES: Record<Biome, string> = {
-  ruins: 'LAS RUINAS DEL MUELLE',
-  forest: 'EL BOSQUE INVERTIDO',
-  bright: 'EL CLARO DE LA ÚLTIMA LUZ',
-  arena: 'LA RECTA FINAL',
+  ruins: 'LA TIERRA MUERTA',
+  forest: 'EL BOSQUE FRONDOSO',
+  bright: 'LA CUEVA DE CRISTAL',
+  arena: 'EL CORAZÓN VOLCÁNICO',
+  redforest: 'EL BOSQUE CARMESÍ',
 };
 
 export function installAreaTitles(scene: Phaser.Scene, map: Phaser.Tilemaps.Tilemap, player: { x: number; y: number }, hiddenFrom: Phaser.Cameras.Scene2D.Camera[]): void {
