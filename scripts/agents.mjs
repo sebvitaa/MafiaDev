@@ -98,7 +98,7 @@ function readEntries(type) {
   const dir = path.join(ROOT, DIR[type]);
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => {
-    const txt = fs.readFileSync(path.join(dir, f), 'utf8');
+    const txt = fs.readFileSync(path.join(dir, f), 'utf8').replace(/\r\n/g, '\n');
     const fm = {};
     const m = txt.match(/^---\n([\s\S]*?)\n---/);
     if (m) for (const line of m[1].split('\n')) {

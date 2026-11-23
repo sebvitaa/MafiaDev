@@ -58,3 +58,15 @@ test('map cameras draw only the overview, fog and markers, hiding newly added wo
   })).toBeLessThanOrEqual(6);
   expect(errors).toEqual([]);
 });
+
+
+test('restarting a scene twice cleans the physics group without double destruction',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/src/player/room-prototype/?enemies=1');
+ await page.waitForFunction(()=>(window.__game?.scene.getScene('RoomPrototype') as any)?.enemies?.enemies.length===3);
+ for(let i=0;i<2;i++)await page.evaluate(()=>new Promise<void>(resolve=>{
+  const s=window.__game!.scene.getScene('RoomPrototype');s.events.once('create',()=>resolve());s.scene.restart();
+ }));
+ expect(errors).toEqual([]);
+ expect(await page.evaluate(()=>(window.__game!.scene.getScene('RoomPrototype') as any).enemies.enemies.length)).toBe(3);
+});

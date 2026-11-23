@@ -54,7 +54,7 @@ describe('BodoqueBrain', () => {
     expect(brain.maxHp).toBe(600);
     expect(brain.takeDamage(204).preparedPhases).toEqual([2]);
     expect(brain.takeDamage(198).preparedPhases).toEqual([3]);
-    expect(brain.phase).toBe(1);
+    expect(brain.phase).toBe(3);
     expect(brain.takeDamage(198)).toMatchObject({ applied: 98, defeated: false });
     expect(brain.state).toBe('opening');
     expect(brain.phase).toBe(3);

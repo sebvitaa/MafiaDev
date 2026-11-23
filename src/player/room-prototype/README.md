@@ -1,11 +1,5 @@
 # Laboratorio Isaac + Hades
 
-## Enemigos y TP integrados
-
-Abrir `/src/player/room-prototype/?enemies=1` para combatir contra slime (50 HP), Cobrador ágil (100) y knight resistente (150). El Luchador tiene 125 HP y espada 25/30/40. Tras recibir daño obtiene 600 ms de protección. R restaura vida/enemigos/marcas. La entrada sin el parámetro conserva el muñeco y la práctica de movimiento.
-
-Mantener Q + derecho lanza marcas, Q + izquierdo hace TP bajo el cursor y 1–4 hacen TP directo. Los clics destinados a TP no inician ni liberan una carga de espada. Hay cuatro marcas reutilizables y 500 ms de recarga compartida. Los enemigos aceptan marcas, conservan colisiones y pierden sus marcas al morir. Ver `src/enemies/README.md` para configuración y contratos.
-
 Prototipo independiente de movilidad de Basti. Una sala rectangular, cámara superior fija y profundidad visual 3/4 en Phaser 4 + TypeScript. No sustituye la entrada principal ni el Player lateral.
 
 ## Ejecutar
@@ -29,10 +23,10 @@ Abrir http://localhost:8080/src/player/room-prototype/. El juego lateral contin�
 | Pasar sobre la espada flotante al lado derecho | Recogerla y equiparla visiblemente |
 | Click izquierdo corto | Combo de espada de hasta tres golpes (solo con espada) |
 | Mantener click izquierdo | Carga desde 350 ms; soltar para cortar (máximo a 1,2 s) |
-| Mantener clic derecho y mover el mouse | Apuntar la lluvia italiana con área violeta |
-| Soltar clic derecho | Lanzar 7–10 completos (caída final a 600 ms; radio 55; daño total 2×; cooldown 7 s) |
+| Mantener R y mover el mouse | Apuntar la lluvia italiana con área violeta |
+| Soltar R | Lanzar 7–10 completos (caída final a 600 ms; radio 55; daño total 100; cooldown 20 s) |
 | Ataque de espada antes de 800 ms tras un dash | Eco morado que repite una vez el golpe con 120 ms de retraso y 35 % de daño |
-| R | Reiniciar sala |
+| T | Reiniciar sala |
 
 Caminar: **150 px/s**; correr: **247,5 px/s**, un 25 % más que antes. Aceleración 2400 px/s² (unos 63 ms hasta caminar), frenada y giro rápido a 3000 px/s². Las velocidades diagonales se normalizan. No se cambian valores del jugador lateral.
 
@@ -48,7 +42,7 @@ Recoge la espada del lado derecho y acércate al muñeco, ubicado delante de ell
 
 Los valores del combo, carga, daño y recuperación del muñeco se configuran en `src/data/tuning.json` bajo `roomPrototype`.
 
-La habilidad local **Lluvia Italiana** conserva el área y las reglas de bola de fuego: el clic derecho muestra una mira rúnica morada con acentos verde, blanco y rojo; al soltar, completos dibujados con pan, vienesa, palta, tomate y mayo caen en oleadas desde alturas y ángulos variables. Cada uno deja una salpicadura visual, pero el área aplica un único daño total de 2× al final de los 600 ms. Las migas y runas decorativas desaparecen en 2,8 s y no causan daño. El HUD conserva el cooldown de 7 segundos.
+La habilidad local **Lluvia Italiana** conserva el área y las reglas de bola de fuego: R muestra una mira rúnica morada con acentos verde, blanco y rojo; al soltar, completos dibujados con pan, vienesa, palta, tomate y mayo caen en oleadas desde alturas y ángulos variables. Cada uno deja una salpicadura visual, pero el área aplica un único daño total de 100 al final de los 600 ms. Las migas y runas decorativas desaparecen en 2,8 s y no causan daño. El HUD conserva el cooldown de 20 segundos.
 
 El **Eco del Reverso** aparece en el inicio del dash por 800 ms. El siguiente golpe de espada iniciado durante esa ventana se repite una vez tras 120 ms con el mismo tipo, dirección y geometría del hitbox, pero con 35 % de daño. Las **marcas de deuda** se muestran sobre el muñeco: cada impacto de espada añade una hasta tres; cada una dura 4 s. La siguiente bola de fuego que alcance al objetivo las consume y suma 10 de daño por marca, con una detonación morada visual. Las mecánicas usan adaptadores locales (`addDebtMark`, `consumeDebtMarks`, `onDebtDetonated`) y no alteran contratos compartidos.
 

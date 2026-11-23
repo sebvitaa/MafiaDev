@@ -3,11 +3,13 @@ import { Health } from '../combat/Health';
 import { bus } from '../core/EventBus';
 import { registerTeleportTarget } from '../abilities';
 import { EnemyBrain, type EnemyDefinition } from './EnemyBrain';
-import { lineClear, nextWaypoint } from './navigation';
+import { nextWaypoint } from './navigation';
 import { intersectsSector, type SwordDamageTarget, type SwordDirection } from '../player/room-prototype/SwordCombat';
 import type { FireballDamageTarget } from '../player/room-prototype/FireballCombat';
 import type { Point, Rect } from '../abilities/markGeometry';
 import tuning from '../data/tuning.json';
+import { DebtMarkLedger } from '../player/room-prototype/EchoDebtCombat';
+import { combatLineClear } from '../combat/visibility';
 
 export interface EnemyPlayer {
   anchor: Phaser.GameObjects.Rectangle;
@@ -33,6 +35,7 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
   private knockbackMs = 0;
   private knockback: Point = { x: 0, y: 0 };
   private destroyed = false;
+  private readonly debt = new DebtMarkLedger(tuning.roomPrototype.debtMarkMax, tuning.roomPrototype.debtMarkDurationMs);
   private awake = true;
   private drawnShape = '';
   private drawnHp = -1;
@@ -84,14 +87,16 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
   }
 
   update(dtMs: number): void {
+    this.debt.update(dtMs);
     if (!this.alive || !this.awake) return;
+    if (Number(this.scene.registry.get('timeStopRemaining')??0)>0) {this.body.stop();return;}
     this.flashMs = Math.max(0, this.flashMs - dtMs);
     this.knockbackMs = Math.max(0, this.knockbackMs - dtMs);
     this.thinkMs -= dtMs;
     const target = this.player.alive ? this.player.anchor : null;
     // Visibility matters only within striking range. Distant idle enemies do no geometry work.
     const inRange = target && Math.hypot(target.x - this.x, target.y - this.y) <= this.definition.attackRange;
-    this.brain.update(dtMs, this.anchor, target, !!inRange && lineClear(this.anchor, target!, this.obstacles()));
+    this.brain.update(dtMs, this.anchor, target, !!inRange && combatLineClear(this.scene, this.anchor, target!));
     let velocity: Point = { x: 0, y: 0 };
     if (this.knockbackMs > 0) velocity = this.knockback;
     else if (this.state === 'chase' && target) {
@@ -111,11 +116,11 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
 
   /** Después de física: resolver la ventana sobre posiciones reales, no las del dibujo. */
   postUpdate(): void {
-    if (!this.alive || !this.awake) return;
+    if (!this.alive || !this.awake || Number(this.scene.registry.get('timeStopRemaining')??0)>0) return;
     if (this.brain.canStrike && this.player.alive
       && intersectsSector(this.anchor, this.brain.facing, { x: this.player.anchor.x, y: this.player.anchor.y, radius: this.player.radius },
         this.definition.attackRange, this.definition.halfAngleDeg)
-      && lineClear(this.anchor, this.player.anchor, this.obstacles())) {
+      && combatLineClear(this.scene, this.anchor, this.player.anchor)) {
       this.brain.consumeHit();
       this.player.takeEnemyDamage(this.definition.dmg, this.brain.facing);
     }
@@ -147,6 +152,11 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
     }
   }
 
+  addDebtMark(): void { if (this.alive) this.debt.add(this.id); }
+  consumeDebtMarks(): number { return this.debt.consume(this.id); }
+  get debtMarkCount(): number { return this.debt.count(this.id); }
+  onDebtDetonated(): void { this.flashMs = 260; }
+
   takeFireDamage(damage: number, direction: SwordDirection): void { this.takeSwordDamage(damage, direction); }
 
   private draw(): void {
@@ -154,7 +164,7 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
     const color = this.flashMs > 0 ? 0xffffff : this.definition.color;
     const angle = Math.atan2(this.brain.facing.y, this.brain.facing.x);
     const direction = Math.round(angle * 8 / Math.PI);
-    const shapeKey = `${color}:${this.state === 'windup'}:${direction}`;
+    const shapeKey = `${color}:${this.state === 'windup'}:${direction}:${this.debtMarkCount}`;
     if (shapeKey !== this.drawnShape) {
       this.drawnShape = shapeKey;
       const g = this.shape.clear();
@@ -170,6 +180,7 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
           .lineBetween(r * 0.6, -r, r * 1.5, -r * 2.1);
         if (this.definition.armored) g.fillStyle(0x567192).fillRect(-r * 1.1, -r * 1.4, r * 0.6, r);
       }
+      for(let i=0;i<this.debtMarkCount;i++)g.fillStyle(0xd779ff).fillCircle((i-1)*7,-r*3.8,2.5);
       g.fillStyle(0xffeea2).fillCircle(Math.cos(direction * Math.PI / 8) * r * 0.45,
         -r * 1.2 + Math.sin(direction * Math.PI / 8) * r * 0.25, 2);
     }

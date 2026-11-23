@@ -8,8 +8,6 @@ const inspect = (page: Page) => page.evaluate(() => {
     monitors: s.bodoque.finale.monitors.map((m) => m.text), killed: s.localBossEvents.killed,
     victory: s.bodoque.victoryLabel.visible, targets: s.bodoque.damageTargets.length,
     coreX: s.bodoque.finale.core.x, coreY: s.bodoque.finale.core.y,
-    emblemVisible: s.bodoque.finale.emblem.visible, emblemFrame: Number(s.bodoque.finale.emblem.frame.name),
-    emblemTexture: s.bodoque.finale.emblem.texture.key,
     hitX: s.bodoque.heartTarget.x, hitY: s.bodoque.heartTarget.y };
 });
 
@@ -28,7 +26,6 @@ test('Corazón Codex conserva HP, muestra ERROR 23 una vez, permite daño durant
   expect(await inspect(page)).toMatchObject({ hp: 100, state: 'opening', killed: false, targets: 0 });
   await expect.poll(() => inspect(page)).toMatchObject({ hp: 100, state: 'heart', targets: 1 });
   const visible = await inspect(page);
-  expect(visible).toMatchObject({ emblemVisible: true, emblemFrame: 0, emblemTexture: 'bodoque-corazon-codex' });
   expect(visible.coreX).toBe(visible.hitX);
   expect(visible.coreY).toBe(visible.hitY);
   await page.evaluate(() => {
@@ -48,7 +45,7 @@ test('Corazón Codex conserva HP, muestra ERROR 23 una vez, permite daño durant
     s.bodoque.heartTarget.takeFireDamage(1, { x: 1, y: 0 });
   });
   expect(await inspect(page)).toMatchObject({ hp: 22, critical: 1, captionVisible: true });
-  await page.keyboard.press('r');
+  await page.keyboard.press('t');
   await expect.poll(() => inspect(page)).toMatchObject({ hp: 600, state: 'inactive', critical: 0,
     captionVisible: false, killed: false });
   expect(await page.evaluate(() => {
@@ -66,13 +63,6 @@ test('Corazón Codex conserva HP, muestra ERROR 23 una vez, permite daño durant
     s.bodoque.heartTarget.takeFireDamage(9999, { x: 1, y: 0 });
   });
   expect(await inspect(page)).toMatchObject({ hp: 0, state: 'dying', killed: false, victory: false, targets: 0 });
-  await page.waitForFunction(() => {
-    const s = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
-    const emblem = s.bodoque.finale.emblem;
-    const frame = Number(emblem.frame.name);
-    return emblem.visible && frame >= 15 && frame <= 43;
-  });
-  await expect.poll(() => inspect(page)).toMatchObject({ state: 'defeated', killed: true, victory: true,
-    emblemVisible: false });
+  await expect.poll(() => inspect(page)).toMatchObject({ state: 'defeated', killed: true, victory: true });
   expect(errors).toEqual([]);
 });

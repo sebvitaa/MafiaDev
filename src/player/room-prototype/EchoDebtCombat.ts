@@ -36,6 +36,8 @@ export class EchoReplayWindow {
     private readonly damageMultiplier: number,
   ) {}
 
+  clear(): void { this.pendingSwing = undefined; this.dashOrigin = undefined; this.lifeRemainingMs = 0; this.used = false; }
+
   get visible(): boolean { return this.lifeRemainingMs > 0; }
   get remainingMs(): number { return Math.max(0, this.lifeRemainingMs); }
   get replayPending(): boolean { return this.pendingSwing !== undefined; }

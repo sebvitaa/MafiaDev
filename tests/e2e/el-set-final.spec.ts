@@ -51,11 +51,7 @@ test('El Set conecta espada, música, corazón y desenlace antes de los crédito
     const scene = window.__game!.scene.getScene('GameScene') as GameScene;
     scene.boss!.targets[0].takeFireDamage(77, { x: 1, y: 0 });
   });
-  await page.waitForFunction(() => {
-    const scene = window.__game!.scene.getScene('GameScene');
-    const set = scene.children.getByName('set-broadcast') as Phaser.GameObjects.Container;
-    return (set.getByName('room-codex-caption') as Phaser.GameObjects.Text).visible;
-  });
+  await expect(page.getByText('ERROR 23\nBODOQUE: ¡Queda una pura...!', {exact:true})).toBeVisible();
   await page.screenshot({ path: 'test-results/el-set-corazon.png' });
   await page.evaluate(() => {
     const scene = window.__game!.scene.getScene('GameScene') as GameScene;

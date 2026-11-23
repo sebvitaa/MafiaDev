@@ -1,5 +1,9 @@
 {
-  "time_stop": { "name": "Parar el tiempo", "cooldownMs": 12000, "durationMs": 3000 },
+  "time_stop": {
+    "name": "Parar el tiempo",
+    "cooldownMs": 12000,
+    "durationMs": 3000
+  },
   "teleport": {
     "name": "Red de marcas",
     "cooldownMs": 500,
@@ -13,5 +17,20 @@
     "feedbackMs": 1200,
     "flashMs": 180
   },
-  "soul_bolt": { "name": "Proyectil de almas", "cooldownMs": 800, "soulCost": 1 }
+  "soul_bolt": {
+    "name": "Proyectil de almas",
+    "cooldownMs": 800,
+    "soulCost": 1,
+    "startingSouls": 3,
+    "damage": 25,
+    "burst": 3,
+    "burstDelayMs": 90,
+    "speed": 380,
+    "lifetimeMs": 750
+  },
+  "italian_rain": {
+    "name": "Lluvia Italiana",
+    "cooldownMs": 20000,
+    "damage": 100
+  }
 }

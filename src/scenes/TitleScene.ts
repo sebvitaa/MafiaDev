@@ -129,9 +129,12 @@ export class TitleScene extends Phaser.Scene {
         onAdjust: (dir) => { this.stageIdx = (this.stageIdx + dir + STAGES.length) % STAGES.length; AudioDirector.ui('sfx-ui-move'); },
         onSelect: () => void this.chooseStage(STAGES[this.stageIdx].id),
       },
-      { label: () => 'OPCIONES', onSelect: () => this.open('OptionsScene') },
+      { label: () => 'CLASE: ' + (this.registry.get('classId') === 'mago' ? 'MAGO' : 'LUCHADOR'),
+          onSelect: () => {this.registry.set('classId', this.registry.get('classId') === 'mago' ? 'luchador' : 'mago');this.menu?.refresh(false);},
+          onAdjust: () => {this.registry.set('classId', this.registry.get('classId') === 'mago' ? 'luchador' : 'mago');this.menu?.refresh(false);} },
+        { label: () => 'OPCIONES', onSelect: () => this.open('OptionsScene') },
       { label: () => 'CRÉDITOS', onSelect: () => this.open('CreditsScene') },
-    ], instant, hasSave ? 4 : 3);
+    ], instant, hasSave ? 5 : 4);
     // al volver de Opciones/Créditos
     this.events.off(Phaser.Scenes.Events.RESUME);
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.menu?.setActive(true));

@@ -3,6 +3,8 @@ import type Phaser from 'phaser';
 import { bus } from '../core/EventBus';
 import type { AbilitySlots } from '../types/character';
 import { Teleport } from './Teleport';
+import { TimeStop } from './TimeStop';
+import { SoulBolt } from './SoulBolt';
 export { registerTeleportTarget } from './TeleportTarget';
 
 export interface Ability {
@@ -15,7 +17,7 @@ export interface Ability {
   destroy?(): void;
 }
 
-const factories: Record<string, () => Ability> = { teleport: () => new Teleport() };
+const factories: Record<string, () => Ability> = { teleport: () => new Teleport(), time_stop:()=>new TimeStop(), soul_bolt:()=>new SoulBolt() };
 
 export function createAbilitySlots(scene: Phaser.Scene, ids: readonly string[]): AbilitySlots {
   const slots = ids.map((id) => factories[id]?.() ?? null);

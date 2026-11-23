@@ -31,7 +31,7 @@ export function installCamera(scene: Phaser.Scene, target: Target): void {
     ox = approach(ox, goal.x, dt, C.lookaheadMs);
     oy = approach(oy, goal.y, dt, C.lookaheadMs);
     cam.setFollowOffset(-ox, -oy); // Phaser resta el offset: negativo = la cámara se adelanta
-    cam.setZoom(approach(cam.zoom, C.zoom[tier], dt, C.zoomMs));
+    cam.setZoom(approach(cam.zoom, Number(scene.registry.get('heartCameraUntil')??0)>scene.time.now ? 1.05 : C.zoom[tier], dt, C.zoomMs));
   };
   // Hasta que basti llame setCombatTier: el jefe aleja la cámara y salir de su zona la restaura.
   const onBoss = () => { tier = 'boss'; };

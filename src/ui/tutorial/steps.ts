@@ -17,16 +17,16 @@ export interface TutorialStep {
 }
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
-  { id: 'move', text: '{left}{right} Moverte', actions: ['left', 'right'], event: null, holdMs: 500 },
+  { id: 'move', text: '{up}{left}{down}{right} Moverte', actions: ['left', 'right', 'up', 'down'], event: null, holdMs: 500 },
   {
     id: 'jump', text: '{jump} Saltar · otra vez en el aire', actions: ['jump'], event: 'player:jump', times: 2,
     // primero un salto desde el suelo, después uno en el aire
     match: (p, n) => (p as GameEvents['player:jump']).air === (n === 1),
   },
-  { id: 'attack', text: '{attack} Atacar · encadena 3 golpes', actions: ['attack'], event: 'player:attack', match: (p) => (p as GameEvents['player:attack']).combo === 3 },
+  { id: 'attack', text: '[CLIC IZQUIERDO] Atacar · encadena 3 golpes', actions: [], event: 'player:attack', match: (p) => (p as GameEvents['player:attack']).combo === 3 },
   { id: 'dash', text: '{dash} Esquivar', actions: ['dash'], event: 'player:dash' },
-  { id: 'parry', text: '{parry} Bloquea justo a tiempo', actions: ['parry'], event: 'player:parry', match: (p) => (p as GameEvents['player:parry']).success },
-  { id: 'ability', text: '{ability} Parar el tiempo', actions: ['ability'], event: 'ability:used' },
+  { id: 'rain', text: '[R] Mantén, apunta y suelta Lluvia Italiana', actions: [], event: 'ability:used', match: p => (p as GameEvents['ability:used']).id === 'italian_rain' },
+  { id: 'ability', text: '[I] Usa tu habilidad de clase', actions: [], event: 'ability:used', match: p => ['time_stop','soul_bolt'].includes((p as GameEvents['ability:used']).id) },
 ];
 
 export type TutorialStatus = 'idle' | 'running' | 'done';

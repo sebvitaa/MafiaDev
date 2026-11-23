@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import tuning from '../../data/tuning.json';
+import { combatLineClear } from '../../combat/visibility';
+import { selectEchoDirection } from './echoTarget';
 import { EchoReplayWindow, type EchoSwordReplay, type EchoableSwordSwing } from './EchoDebtCombat';
-import { SwordHitTracker, type SwordDamageTarget } from './SwordCombat';
+import { SwordHitTracker, intersectsSector, type SwordDamageTarget } from './SwordCombat';
 
 /** Phaser presentation and local hitbox adapter for the room-only Reversal Echo. */
 export class RoomEcho {
@@ -17,8 +19,9 @@ export class RoomEcho {
   private readonly hitTracker = new SwordHitTracker();
   private replay?: EchoSwordReplay;
   private replayElapsedMs = 0;
+  private previousTargetId?: string;
 
-  constructor(scene: Phaser.Scene, private readonly targets: () => readonly SwordDamageTarget[]) {
+  constructor(private readonly scene: Phaser.Scene, private readonly targets: () => readonly SwordDamageTarget[]) {
     this.ghostShape = scene.add.graphics();
     this.drawGhost();
     this.ghost = scene.add.container(0, 0, [this.ghostShape])
@@ -41,6 +44,10 @@ export class RoomEcho {
   }
 
   recordSwing(swing: EchoableSwordSwing): boolean {
+    const candidates = this.targets().filter(t => intersectsSector(swing.origin, swing.direction, t, swing.range, swing.halfAngleDeg)
+      && combatLineClear(this.scene, swing.origin, t));
+    candidates.sort((a,b) => Math.hypot(a.x-swing.origin.x,a.y-swing.origin.y)-Math.hypot(b.x-swing.origin.x,b.y-swing.origin.y));
+    if (candidates[0]) this.previousTargetId = candidates[0].id;
     return this.replayWindow.recordSwing(swing);
   }
 
@@ -72,12 +79,19 @@ export class RoomEcho {
     }
   }
 
+  cancel(): void {
+    this.replayWindow.clear(); this.replay = undefined;
+    this.ghost.setVisible(false); this.slash.setVisible(false);
+  }
+
   destroy(): void {
     this.ghost.destroy(true);
     this.slash.destroy(true);
   }
 
   private beginReplay(replay: EchoSwordReplay): void {
+    replay.direction = selectEchoDirection(replay.origin, this.targets(), replay.range, this.previousTargetId,
+      replay.direction, (from, to) => combatLineClear(this.scene, from, to));
     this.replay = replay;
     this.replayElapsedMs = 0;
     this.hitTracker.beginSwing();
@@ -98,7 +112,7 @@ export class RoomEcho {
       y: this.replay.origin.y + this.replay.direction.y * travel,
     };
     this.hitTracker.apply(
-      origin, this.replay.direction, this.targets(), this.replay.range,
+      origin, this.replay.direction, this.targets().filter(target => combatLineClear(this.scene, origin, target)), this.replay.range,
       this.replay.halfAngleDeg, this.replay.damage, this.replay.knockback,
     );
   }

@@ -35,21 +35,35 @@
     "swordChargeDurationMs": 480,
     "swordChargeHitWindowMs": 190,
     "swordChargeHalfAngleDeg": 46,
-    "swordComboDurationsMs": [220, 280, 400],
+    "swordComboDurationsMs": [
+      220,
+      280,
+      400
+    ],
     "swordComboWindowMs": 500,
     "swordAttackBufferMs": 150,
     "swordDashCancelAfterMs": 90,
-    "swordAttackHitWindowsMs": [90, 120, 170],
-    "swordAttackRanges": [72, 80, 90],
-    "swordAttackHalfAnglesDeg": [32, 54, 40],
-    "swordAttackDamageMultipliers": [1, 1.2, 1.6],
+    "swordAttackHitWindowsMs": [
+      90,
+      120,
+      170
+    ],
+    "swordAttackRanges": [
+      72,
+      80,
+      90
+    ],
+    "swordAttackHalfAnglesDeg": [
+      32,
+      54,
+      40
+    ],
+    "swordAttackDamageMultipliers": [
+      1,
+      1.2,
+      1.6
+    ],
     "swordFinisherKnockback": 20,
-    "echoLifetimeMs": 800,
-    "echoDelayMs": 120,
-    "echoDamageMultiplier": 0.35,
-    "debtMarkMax": 3,
-    "debtMarkDurationMs": 4000,
-    "debtBonusDamagePerMark": 10,
     "trainingDummyHp": 100,
     "trainingDummyRadius": 18,
     "trainingDummyRespawnMs": 2000,
@@ -58,13 +72,20 @@
     "fireballExplosionRadius": 55,
     "fireballExplosionDurationMs": 300,
     "fireballDamageMultiplier": 2,
-    "fireballCooldownMs": 7000,
+    "fireballCooldownMs": 20000,
     "fireballResidueDurationMs": 2800,
+    "echoLifetimeMs": 800,
+    "echoDelayMs": 150,
+    "echoDamageMultiplier": 0.35,
+    "debtMarkMax": 3,
+    "debtMarkDurationMs": 4000,
+    "debtBonusDamagePerMark": 10,
     "italianRainMinCount": 7,
     "italianRainMaxCount": 10,
     "italianRainFallHeight": 240,
     "italianRainImpactFlashMs": 300,
-    "bodoquePlayerHp": 100
+    "bodoquePlayerHp": 100,
+    "fireballBaseDamage": 100
   },
   "combat": {
     "balance": {

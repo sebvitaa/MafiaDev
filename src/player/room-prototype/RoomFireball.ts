@@ -122,6 +122,15 @@ export class RoomFireball {
     return true;
   }
 
+  cancelAll(): void {
+    this.timeline.cancelCast();this.pattern=[];this.residueRemainingMs=0;
+    this.aimMarker.setVisible(false);this.explosion.setVisible(false);this.burnMark.setVisible(false);
+    for(const visual of this.rainVisuals){
+      visual.path=undefined;visual.burstRemainingMs=0;visual.residueRemainingMs=0;
+      visual.actor.setVisible(false);visual.shadow.setVisible(false);visual.splash.setVisible(false);visual.residue.setVisible(false);
+    }
+  }
+
   update(dtMs: number): void {
     const elapsed = Math.max(0, dtMs);
     this.visualTimeMs += elapsed;
@@ -250,7 +259,7 @@ export class RoomFireball {
       this.target,
       this.targets(),
       tuning.roomPrototype.fireballExplosionRadius,
-      tuning.roomPrototype.swordAttackDamage * tuning.roomPrototype.fireballDamageMultiplier,
+      tuning.roomPrototype.fireballBaseDamage,
       tuning.roomPrototype.debtBonusDamagePerMark,
     );
   }

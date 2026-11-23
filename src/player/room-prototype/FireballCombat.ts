@@ -52,6 +52,11 @@ export class FireballTimeline {
     return true;
   }
 
+  /** Death cancels pending impacts, but never refunds a cast cooldown. */
+  cancelCast(): void {
+    this.phase='idle';this.fallElapsedMs=0;this.explosionElapsedMs=0;
+  }
+
   /** Returns true once, on the frame the projectile lands. */
   update(dtMs: number): boolean {
     const elapsed = Math.max(0, dtMs);

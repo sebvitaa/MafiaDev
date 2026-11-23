@@ -1,11 +1,10 @@
 import Phaser from 'phaser';
-import { preloadCodexHeart } from '../../enemies/codexHeart';
 import classes from '../../data/classes.json';
+import { preloadCodexHeart } from '../../enemies/codexHeart';
 import { RoomPlayer } from './RoomPlayer';
 import { SwordPickup } from './SwordPickup';
 import { TrainingDummy } from './TrainingDummy';
-import { BodoqueBoss, EnemySystem } from '../../enemies';
-import tuning from '../../data/tuning.json';
+import { EnemySystem, BodoqueBoss } from '../../enemies';
 
 export const ROOM = { width: 960, height: 600, left: 56, top: 104, right: 904, bottom: 544 };
 
@@ -15,19 +14,18 @@ export class RoomScene extends Phaser.Scene {
   swordPickup!: SwordPickup;
   trainingDummy!: TrainingDummy;
   enemies?: EnemySystem;
-  private healthLabel!: Phaser.GameObjects.Text;
   bodoque!: BodoqueBoss;
-  playerHp = tuning.roomPrototype.bodoquePlayerHp;
-  readonly playerMaxHp = tuning.roomPrototype.bodoquePlayerHp;
-  readonly localBossEvents: { phases: number[]; hits: number; killed: boolean } = { phases: [], hits: 0, killed: false };
+  readonly localBossEvents = { phases: [] as number[], hits: 0, killed: false };
   obstacles: Phaser.GameObjects.Container[] = [];
   private status!: Phaser.GameObjects.Text;
-  private playerHealthLabel!: Phaser.GameObjects.Text;
-  private playerHealthBar!: Phaser.GameObjects.Graphics;
+  private healthLabel!: Phaser.GameObjects.Text;
 
   constructor() { super('RoomPrototype'); }
 
-  preload(): void { preloadCodexHeart(this); }
+  preload(): void {
+    preloadCodexHeart(this);
+    for(const pose of ['reportero','mazo','impacto'])this.load.image('bodoque-'+pose, import.meta.env.BASE_URL+'assets/sprites/enemies/bodoque-'+pose+'.png');
+  }
 
   create(): void {
     this.enemies = undefined;
@@ -39,19 +37,17 @@ export class RoomScene extends Phaser.Scene {
     this.block(solids, 640, 270, 96, 40, 68);
     this.block(solids, 480, 170, 112, 32, 42);
     this.block(solids, 700, 450, 80, 40, 34);
-    this.trainingDummy = new TrainingDummy(this, 820, 400);
+    this.localBossEvents.phases.length = 0; this.localBossEvents.hits = 0; this.localBossEvents.killed = false;
     this.bodoque = new BodoqueBoss(this, 780, 232, {
-      onPhase: ({ phase }) => this.localBossEvents.phases.push(phase),
-      onHit: () => { this.localBossEvents.hits++; },
-      onKilled: () => { this.localBossEvents.killed = true; },
-      onPlayerHit: (damage) => this.damagePlayer(damage),
+      onPhase: ({phase}) => this.localBossEvents.phases.push(phase),
+      onHit: () => { this.localBossEvents.hits++; }, onKilled: () => { this.localBossEvents.killed = true; },
+      onPlayerHit: damage => { this.player.takeEnemyDamage(damage, {x:0,y:1}); },
     });
-    this.playerHp = this.playerMaxHp;
-    this.localBossEvents.phases.length = 0;
-    this.localBossEvents.hits = 0;
-    this.localBossEvents.killed = false;
+    const activate = () => this.bodoque.activate(); this.input.keyboard!.on('keydown-B', activate);
+    this.events.once('shutdown', () => this.input.keyboard?.off('keydown-B', activate));
+    this.trainingDummy = new TrainingDummy(this, 820, 400);
     this.player = new RoomPlayer(this, 480, 400, { ...classes.luchador.stats },
-      () => [this.trainingDummy, ...this.bodoque.damageTargets, ...(this.enemies?.targets ?? [])]);
+      () => [this.trainingDummy, ...(this.enemies?.targets ?? []), ...this.bodoque.damageTargets]);
     const combatEnabled = new URLSearchParams(window.location.search).get('enemies') === '1';
     if (combatEnabled) {
       this.enemies = new EnemySystem(this, this.player, solids);
@@ -62,11 +58,6 @@ export class RoomScene extends Phaser.Scene {
     // SUP-basti-20261123-112350: place pickup on the open right side, away from spawn and pillars.
     this.swordPickup = new SwordPickup(this, 760, 400);
     this.physics.add.collider(this.player.anchor, solids);
-    this.playerHealthBar = this.add.graphics().setScrollFactor(0).setDepth(11_000).setName('room-player-health-bar');
-    this.playerHealthLabel = this.add.text(18, 13, '', {
-      fontFamily: 'monospace', fontSize: '10px', color: '#bde4dc', stroke: '#0a0f18', strokeThickness: 2,
-    }).setScrollFactor(0).setDepth(11_001).setName('room-player-health-label');
-    this.drawPlayerHealth();
 
     // Isaac-style room framing: no target, scrolling, camera rotation, or 3D projection.
     this.cameras.main.stopFollow().setScroll(0, 0).setZoom(1).setRotation(0);
@@ -80,13 +71,10 @@ export class RoomScene extends Phaser.Scene {
     this.status = this.add.text(896, 565, '', {
       fontFamily: 'monospace', fontSize: '12px', color: '#9fb5b5',
     }).setOrigin(1, 0).setDepth(10_000);
-    this.add.text(64, 565, 'CAMARA FIJA  /  R REINICIA', {
+    this.add.text(64, 565, 'CAMARA FIJA  /  T REINICIA', {
       fontFamily: 'monospace', fontSize: '12px', color: '#9fb5b5',
     }).setDepth(10_000);
-    this.input.keyboard!.once('keydown-R', () => this.scene.restart());
-    const activateBodoque = () => this.bodoque.activate();
-    this.input.keyboard!.on('keydown-B', activateBodoque);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown-B', activateBodoque));
+    this.input.keyboard!.once('keydown-T', () => this.scene.restart());
     const sync = () => this.player.sync();
     this.events.on(Phaser.Scenes.Events.POST_UPDATE, sync);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.POST_UPDATE, sync));
@@ -96,7 +84,7 @@ export class RoomScene extends Phaser.Scene {
     this.trainingDummy.update(dtMs);
     this.player.update(dtMs);
     this.enemies?.update(dtMs);
-    this.bodoque.update(dtMs, { x: this.player.anchor.x, y: this.player.anchor.y }, this.player.motion.height);
+    if (this.player.alive) this.bodoque.update(dtMs, this.player.anchor, this.player.motion.height);
     if (this.swordPickup.update(this.time.now, this.player.anchor.x, this.player.anchor.y)) {
       this.player.equipSword();
     }
@@ -107,31 +95,14 @@ export class RoomScene extends Phaser.Scene {
     this.trainingDummy.defeatedLabel.setDepth(this.trainingDummy.visual.y + 23);
     this.healthLabel.setColor(this.player.alive ? '#a3f3c8' : '#ff8290').setText(this.player.alive
       ? `VIDA ${this.player.hp}/${this.player.maxHp}${this.enemies ? ` | ENEMIGOS ${this.enemies.targets.length}` : ''}`
-      : 'DERROTADO / R PARA REINICIAR');
+      : 'DERROTADO / T PARA REINICIAR');
     const { motion } = this.player;
     const label = motion.dash.active ? 'DASH' : motion.height > 0 ? 'AIRE' : 'SUELO';
     const swordLabel = this.player.hasSword ? this.player.attack.active ? ' / ATAQUE' : ' / ESPADA' : '';
     const fireball = this.player.fireball;
     const fireballLabel = fireball.aiming ? ' / APUNTANDO ULTI'
       : fireball.cooldownRemainingMs > 0 ? ` / ULTI ${Math.ceil(fireball.cooldownRemainingMs / 1000)}s` : ' / ULTI LISTA';
-    this.status.setText(`${label}${swordLabel}${fireballLabel}  /  B ${this.bodoque.active ? 'JEFE' : 'BODOQUE'}  /  ${Math.hypot(motion.velocity.x, motion.velocity.y).toFixed(0)} px/s  /  Z ${motion.height.toFixed(0)}`);
-  }
-
-  private damagePlayer(damage: number): void {
-    this.playerHp = Math.max(0, this.playerHp - damage);
-    this.drawPlayerHealth();
-    this.tweens.killTweensOf(this.player.visual);
-    this.player.visual.setAlpha(0.42);
-    this.tweens.add({ targets: this.player.visual, alpha: 1, duration: 230, ease: 'Quad.Out' });
-  }
-
-  private drawPlayerHealth(): void {
-    const ratio = this.playerMaxHp > 0 ? this.playerHp / this.playerMaxHp : 0;
-    this.playerHealthBar.clear()
-      .fillStyle(0x11151c, 0.85).fillRoundedRect(16, 30, 134, 7, 3)
-      .fillStyle(0x315b58, 1).fillRoundedRect(17, 31, 132, 5, 2)
-      .fillStyle(0x65c5a6, 1).fillRoundedRect(17, 31, 132 * ratio, 5, 2);
-    this.playerHealthLabel.setText(`RÍOS  ${this.playerHp} / ${this.playerMaxHp}`);
+    this.status.setText(`${label}${swordLabel}${fireballLabel}  /  ${Math.hypot(motion.velocity.x, motion.velocity.y).toFixed(0)} px/s  /  Z ${motion.height.toFixed(0)}`);
   }
 
   private drawRoom(): void {

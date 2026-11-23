@@ -1,4 +1,4 @@
-export type BodoqueAttackId = 'microphoneMallet' | 'cameraFlash' | 'lastHour';
+export type BodoqueAttackId = 'microphoneMallet' | 'cameraFlash' | 'lastHour' | 'spectralRace' | 'betTickets' | 'collectors' | 'timeTheft' | 'monitorShift' | 'cableSweep';
 export type BodoqueState = 'inactive' | 'idle' | 'telegraph' | 'active' | 'recovery' | 'opening' | 'heart' | 'dying' | 'defeated';
 
 export interface BodoqueAttackConfig {
@@ -11,16 +11,17 @@ export interface BodoqueAttackConfig {
   halfWidth?: number;
   distance?: number;
   parryable: boolean;
+  jumpAvoidHeight?: number;
 }
 
 export interface BodoqueConfig {
   hp: number;
   radius: number;
   idleMs: number;
-  phaseThresholds: [number, number];
+  phaseThresholds: number[];
   heart: { hp: number; openingMs: number; defeatMs: number; criticalHp: number };
   bounds?: { left: number; right: number; top: number; bottom: number };
-  attacks: Record<BodoqueAttackId, BodoqueAttackConfig>;
+  attacks: Record<string, BodoqueAttackConfig>;
 }
 
 export interface BodoquePoint { x: number; y: number }
@@ -31,6 +32,7 @@ export interface BodoqueAttackIntent {
   origin: BodoquePoint;
   direction: BodoquePoint;
   destination: BodoquePoint;
+  aimPoint: BodoquePoint;
   parryable: boolean;
 }
 
@@ -125,6 +127,7 @@ export class BodoqueBrain {
       if (!this.prepared.has(phase) && ratio <= threshold) {
         this.prepared.add(phase);
         preparedPhases.push(phase);
+        this.phase = phase;
       }
     });
     let criticalTriggered = false;
@@ -184,10 +187,14 @@ export class BodoqueBrain {
   }
 
   private beginAttack(player: BodoquePoint, boss: BodoquePoint): void {
-    const ids = Object.keys(this.config.attacks) as BodoqueAttackId[];
+    const patterns: BodoqueAttackId[][] = [
+      ['microphoneMallet','cameraFlash','lastHour'], ['spectralRace','betTickets','collectors'],
+      ['timeTheft','monitorShift','cableSweep'],
+    ];
+    const ids = patterns[this.phase - 1];
     this.attackIndex = (this.attackIndex + 1) % ids.length;
     const id = ids[this.attackIndex];
-    const config = this.config.attacks[id];
+    const config = this.config.attacks[id] ?? this.config.attacks.microphoneMallet;
     const dx = player.x - boss.x;
     const dy = player.y - boss.y;
     const distance = Math.hypot(dx, dy) || 1;
@@ -201,6 +208,7 @@ export class BodoqueBrain {
     this.intent = {
       id,
       config,
+      aimPoint: { ...player },
       origin: { ...boss },
       direction,
       destination,

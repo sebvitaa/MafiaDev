@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { bus } from '../core/EventBus';
 import { installGlobalKeys } from './globalKeys';
 import { fadeIn } from './transitions';
+import { hdLayer } from './hd/HdLayer';
 
 export { HudScene } from './HudScene';
 export { OptionsScene } from './scenes/OptionsScene';
@@ -36,20 +37,14 @@ export function installUi(scene: Phaser.Scene): void {
   scene.game.events.on(Phaser.Core.Events.BLUR, onBlur);
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
   bus.on('player:died', () => scene.scene.launch('GameOverScene', { from: scene.scene.key }), ctx);
-  let ending = false;
-  bus.on('enemy:killed', ({ id, kind }) => {
-    if (ending || !/boss/i.test(kind)) return;
-    if (id !== 'bodoque') {
-      scene.time.delayedCall(4500, () => {
-        if (!scene.scene.isActive() || ending) return;
-        scene.scene.pause();
-        scene.scene.launch('CreditsScene', { from: scene.scene.key });
-      });
-      return;
-    }
-    ending = true;
-    scene.scene.stop('HudScene');
+  let endingStarted = false;
+  // 6.28 — fin de la demo: al caer el jefe, tras la fanfarria, «gracias por jugar» + créditos
+  bus.on('enemy:killed', ({ kind }) => {
+    if (kind !== 'boss' || endingStarted) return;
+    endingStarted = true;
     scene.scene.pause();
+    scene.scene.pause('HudScene');
+    hdLayer(scene).remove();hdLayer(scene.scene.get('HudScene')).remove();
     scene.scene.launch('CinematicScene', { stage: 'ending' });
   }, ctx);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {

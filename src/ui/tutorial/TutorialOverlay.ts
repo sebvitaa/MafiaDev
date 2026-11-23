@@ -25,10 +25,11 @@ export class TutorialOverlay {
     this.hint = text(scene, w / 2, 44, '[T] SALTAR TUTORIAL', { color: C.dim, align: 'center' }).setOrigin(0.5).setAlpha(0);
     this.box = scene.add.container(w / 2, -30, [this.bg, this.label]).setDepth(500);
     const kb = scene.input.keyboard;
-    if (kb) for (const a of ['left', 'right'] as Action[]) this.keys.set(a, BINDINGS[a].map((k) => kb.addKey(k, false)));
+    if (kb) for (const a of ['left', 'right', 'up', 'down'] as Action[]) this.keys.set(a, BINDINGS[a].map((k) => kb.addKey(k, false)));
 
     for (const ev of WATCHED) bus.on(ev, (p: unknown) => this.onEvent(ev, p), this);
     bus.on('room:entered', ({ roomId }) => { if (roomId === 'tutorial' && this.tut.status !== 'running') this.start(); }, this);
+    bus.on('boss:phase', () => this.skip(), this);
     kb?.on('keydown-T', () => this.skip());
     scene.events.on(Phaser.Scenes.Events.UPDATE, (_t: number, dt: number) => this.update(dt));
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => bus.offContext(this));

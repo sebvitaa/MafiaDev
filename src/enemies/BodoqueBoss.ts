@@ -1,8 +1,11 @@
 import Phaser from 'phaser';
 import enemyData from '../data/enemies.json';
 import tuning from '../data/tuning.json';
+import { hdLayer } from '../ui/hd/HdLayer';
 import type { GameEvents } from '../types/events';
+import { combatLineClear } from '../combat/visibility';
 import { BodoqueFinale } from './BodoqueFinale';
+import { patternZones, hitsPattern } from './BodoquePatterns';
 import type { SwordDamageTarget } from '../player/room-prototype/SwordCombat';
 import type { FireballDamageTarget } from '../player/room-prototype/FireballCombat';
 import {
@@ -23,6 +26,11 @@ export interface BodoqueBossHooks {
   onPhase?: (event: GameEvents['boss:phase']) => void;
   onHit?: (event: GameEvents['enemy:hit']) => void;
   onKilled?: (event: GameEvents['enemy:killed']) => void;
+  onSummon?: (position: BodoquePoint) => void;
+  onTimeTheft?: () => void;
+  onCritical?: () => void;
+  onDying?: () => void;
+  onOpening?: () => void;
   onPlayerHit?: (damage: number, attack: BodoqueAttackId) => void;
 }
 
@@ -41,26 +49,30 @@ export class BodoqueBoss {
   readonly debtMarksVisual: Phaser.GameObjects.Graphics;
   readonly finale: BodoqueFinale;
   readonly heartTarget: SwordDamageTarget & FireballDamageTarget;
-  private reporter?: Phaser.GameObjects.Image;
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly body: Phaser.GameObjects.Container;
+  private reporter?: Phaser.GameObjects.Image;
   private readonly damageLabel: Phaser.GameObjects.Text;
   private readonly hitFlash: Phaser.GameObjects.Graphics;
   private readonly marksRemaining: number[] = [];
   private damageLabelRemainingMs = 0;
+  private healthSignature = '';
   private debtBurstRemainingMs = 0;
   private readonly hooks: BodoqueBossHooks;
+  private readonly worldMonitors: Phaser.GameObjects.Graphics;
+  private readonly screenTexts: HTMLDivElement[] = [];
 
   constructor(
     private readonly scene: Phaser.Scene,
     x: number,
     y: number,
     hooks: BodoqueBossHooks = {},
-    private readonly arenaBounds?: BodoqueConfig['bounds'],
+    options: { overlay?: Phaser.Scene; bounds?: BodoqueConfig['bounds'] } = {},
   ) {
     this.hooks = hooks;
-    this.brain = new BodoqueBrain({ ...config, bounds: arenaBounds ?? config.bounds });
-    this.finale = new BodoqueFinale(scene, arenaBounds ? { x, y } : undefined);
+    this.worldMonitors=scene.add.graphics().setName('bodoque-world-monitors');
+    this.brain = new BodoqueBrain({ ...config, bounds: options.bounds ?? config.bounds });
+    this.finale = new BodoqueFinale(scene, options.overlay);
     const boss = this;
     // Stable ID across body/core keeps an ongoing hit tracker from hitting both on transition.
     this.heartTarget = {
@@ -89,22 +101,31 @@ export class BodoqueBoss {
     }).setOrigin(0.5).setDepth(y + 50).setName('room-bodoque-attack-label').setVisible(false);
     this.debtMarksVisual = scene.add.graphics().setName('room-bodoque-debt-marks').setVisible(false);
 
-    const hud = scene.add.container(0, 0).setScrollFactor(0).setDepth(12_000)
+    const screen = options.overlay ?? scene;
+    const hud = screen.add.container(0, 0).setScale(screen.scale.width / 960, screen.scale.height / 600).setScrollFactor(0).setDepth(12_000)
       .setName('room-bodoque-hud').setVisible(false);
-    this.nameLabel = scene.add.text(480, 10, 'JUAN CARLOS BODOQUE', {
+    this.nameLabel = screen.add.text(480, 10, 'JUAN CARLOS BODOQUE', {
       fontFamily: 'monospace', fontSize: '14px', color: '#f0dfc7', stroke: '#0a0f18', strokeThickness: 3,
     }).setOrigin(0.5, 0).setName('room-bodoque-name');
-    this.healthText = scene.add.text(480, 30, 'EL ÚLTIMO TITULAR  ·  FASE 1: LA NOTA', {
+    this.healthText = screen.add.text(480, 30, 'EL ÚLTIMO TITULAR  ·  FASE 1: LA NOTA', {
       fontFamily: 'monospace', fontSize: '9px', color: '#c6a0ba', stroke: '#0a0f18', strokeThickness: 2,
     }).setOrigin(0.5, 0).setName('room-bodoque-health-text');
-    this.healthBar = scene.add.graphics().setName('room-bodoque-health-bar');
+    this.healthBar = screen.add.graphics().setName('room-bodoque-health-bar');
     this.healthBar.setPosition(180, 44);
     hud.add([this.nameLabel, this.healthText, this.healthBar]);
-    this.victoryLabel = scene.add.text(480, 128, 'VICTORIA\nBODOQUE DERROTADO', {
+    this.victoryLabel = screen.add.text(480, 128, 'VICTORIA\nBODOQUE DERROTADO', {
       fontFamily: 'monospace', fontSize: '21px', color: '#f4d9a2', align: 'center',
       stroke: '#11131c', strokeThickness: 5,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(12_010).setName('room-bodoque-victory').setVisible(false);
 
+    hud.add(this.victoryLabel);
+    if(options.overlay) {
+      this.nameLabel.setVisible(false);this.healthText.setVisible(false);
+      this.healthBar.setY(80);
+      const layer=hdLayer(screen);
+      this.screenTexts.push(layer.text(screen.scale.width/2,7,'JUAN CARLOS BODOQUE',{width:280,align:'center',fontSize:11,depth:80,color:'#f0dfc7'}),
+        layer.text(screen.scale.width/2,23,'',{width:300,align:'center',fontSize:8,depth:80,color:'#efbbdc'}));
+    }
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
   }
 
@@ -127,7 +148,7 @@ export class BodoqueBoss {
     this.visual.setVisible(true);
     this.shadow.setVisible(true);
     this.telegraph.setVisible(false);
-    this.nameLabel.parentContainer?.setVisible(!this.arenaBounds);
+    this.nameLabel.parentContainer?.setVisible(true);
     this.victoryLabel.setVisible(false);
     this.drawHealth();
     this.hooks.onPhase?.({ phase: 1 });
@@ -138,6 +159,11 @@ export class BodoqueBoss {
     this.updateDebtMarks(dtMs);
     this.updateDamageLabel(dtMs);
     if (!this.active) return;
+    this.worldMonitors.clear().setVisible(this.brain.phase===3);
+    if(this.brain.phase===3){const b=this.brain.config.bounds!;this.worldMonitors.setDepth((b.top+b.bottom)/2-1);
+      for(const mx of [b.left+48,b.right-48])this.worldMonitors.fillStyle(0x0d0a1c).fillRect(mx-24,(b.top+b.bottom)/2-50,48,50)
+        .lineStyle(3,0x9169ac).strokeRect(mx-24,(b.top+b.bottom)/2-50,48,50)
+        .lineStyle(1,0xce84cf,0.5).lineBetween(mx-20,(b.top+b.bottom)/2-15,mx+20,(b.top+b.bottom)/2-15);}
 
     const previousState = this.brain.state;
     this.brain.update(dtMs, player, { x: this.x, y: this.y });
@@ -145,18 +171,13 @@ export class BodoqueBoss {
     if (['opening', 'heart', 'dying', 'defeated'].includes(this.state)) {
       this.telegraph.setVisible(false);
       this.attackLabel.setVisible(false);
-      if (this.state === 'opening') this.body.setRotation(Math.sin(this.brain.finalProgress * 30) * 0.12);
+      if (this.state === 'opening') this.body.setRotation(Math.sin(this.brain.finalProgress * 30) * 0.12).setScale(1,1-this.brain.finalProgress*0.3).setY(this.brain.finalProgress*8);
       else this.body.setRotation(0);
       if (this.state === 'dying' || this.defeated) {
         const progress = this.defeated ? 1 : this.brain.finalProgress;
-        if (this.arenaBounds) {
-          // Keep the reporter behind the breaking seal until the film takes the close-up.
-          this.body.setScale(1, 1 - 0.18 * progress).setY(3 * progress).setAlpha(1);
-        } else {
-          this.body.setScale(1, 0.62).setY(8 - Math.max(0, progress - 0.4) * 110).setAlpha(1 - progress);
-        }
+        this.body.setScale(1, 0.62).setY(8 - Math.max(0, progress - 0.4) * 110).setAlpha(1 - progress);
         if (this.brain.consumeVictory()) {
-          this.victoryLabel.setVisible(!this.arenaBounds);
+          this.victoryLabel.setVisible(true);
           this.hooks.onKilled?.({ id: this.id, kind: 'boss', x: this.x, y: this.y });
         }
       }
@@ -164,15 +185,25 @@ export class BodoqueBoss {
       return;
     }
     const intent = this.brain.currentAttack;
+    if (intent && this.state === 'active' && previousState === 'telegraph') {
+      if (intent.id === 'collectors') this.hooks.onSummon?.(this);
+      if (intent.id === 'monitorShift') {
+        const bounds = this.brain.config.bounds!;
+        this.visual.setPosition(this.x < (bounds.left+bounds.right)/2 ? bounds.right-48 : bounds.left+48,
+          (bounds.top+bounds.bottom)/2);
+        intent.origin = {x:this.x,y:this.y};
+        const dx=player.x-this.x,dy=player.y-this.y,len=Math.hypot(dx,dy)||1;
+        intent.direction={x:dx/len,y:dy/len};
+      }
+    }
     if (intent?.id === 'lastHour') {
       if (this.brain.state === 'active') {
         const t = this.brain.attackProgress;
-        this.visual.setPosition(
-          intent.origin.x + (intent.destination.x - intent.origin.x) * t,
-          intent.origin.y + (intent.destination.y - intent.origin.y) * t,
-        );
+        const next={x:intent.origin.x+(intent.destination.x-intent.origin.x)*t,y:intent.origin.y+(intent.destination.y-intent.origin.y)*t};
+        if(combatLineClear(this.scene,this,next))this.visual.setPosition(next.x,next.y);
+        else intent.destination={x:this.x,y:this.y};
       } else if (this.brain.state === 'recovery') {
-        this.visual.setPosition(intent.destination.x, intent.destination.y);
+        if(combatLineClear(this.scene,this,intent.destination))this.visual.setPosition(intent.destination.x, intent.destination.y);
       } else if (this.brain.state === 'telegraph' && previousState === 'recovery') {
         this.visual.setPosition(intent.origin.x, intent.origin.y);
       }
@@ -184,11 +215,13 @@ export class BodoqueBoss {
       this.reporter.setTexture('bodoque-' + pose).setFlipX(player.x < this.x);
     }
     this.updatePresentation();
-    if (this.brain.state !== 'active' || !intent || playerHeight > 18) return;
+    if (this.brain.state !== 'active' || !intent || playerHeight > (intent.config.jumpAvoidHeight??Infinity)) return;
     const currentEnd = intent.id === 'lastHour' ? { x: this.x, y: this.y } : intent.destination;
-    if (isPointInBodoqueAttack(
-      intent.id, player, 8, intent.config, intent.origin, intent.direction, currentEnd,
-    ) && this.brain.consumePlayerHit()) {
+    const zones = patternZones(intent);
+    const collides = zones.length ? hitsPattern(player, 8, zones)
+      : intent.id !== 'collectors' && isPointInBodoqueAttack(intent.id, player, 8, intent.config, intent.origin, intent.direction, currentEnd);
+    if (collides && combatLineClear(this.scene, intent.origin, player) && this.brain.consumePlayerHit()) {
+      if(intent.id==='timeTheft')this.hooks.onTimeTheft?.();
       this.hooks.onPlayerHit?.(intent.config.damage, intent.id);
     }
   }
@@ -239,8 +272,10 @@ export class BodoqueBoss {
     this.scene.tweens.add({ targets: this.body, scale: 1, alpha: 1, rotation: 0, duration: 150, ease: 'Quad.Out' });
     this.hooks.onHit?.({ id: this.id, dmg: result.applied, x: this.x, y: this.y });
     result.preparedPhases.forEach((phase) => this.hooks.onPhase?.({ phase }));
-    if (result.criticalTriggered) this.finale.startCritical();
+    if (result.criticalTriggered) { this.finale.startCritical(); this.hooks.onCritical?.(); }
+    if (this.state === 'dying') this.hooks.onDying?.();
     if (this.state === 'opening') {
+      this.hooks.onOpening?.();
       this.scene.tweens.killTweensOf(this.body);
       this.body.setAlpha(1).setScale(1);
       this.telegraph.setVisible(false);
@@ -266,7 +301,21 @@ export class BodoqueBoss {
     const isMallet = intent.id === 'microphoneMallet';
     const color = intent.id === 'cameraFlash' ? 0xc457ff : isMallet ? 0xffbd66 : 0xf0646e;
     this.telegraph.clear().setPosition(intent.origin.x, intent.origin.y).setDepth(intent.origin.y + 0.1);
-    if (intent.id === 'lastHour') {
+    const zones = patternZones(intent);
+    if (zones.length) {
+      this.telegraph.setPosition(0,0);
+      for (const z of zones) {
+        this.telegraph.fillStyle(color, isTell ? 0.16 : 0.55).lineStyle(2, color, 0.9);
+        if(z.circle) this.telegraph.fillCircle(z.x+z.width/2,z.y+z.height/2,z.width/2).strokeCircle(z.x+z.width/2,z.y+z.height/2,z.width/2);
+        else {
+          this.telegraph.fillRect(z.x,z.y,z.width,z.height).strokeRect(z.x,z.y,z.width,z.height);
+          if(!isTell) {
+            const hx=z.x+z.width*this.brain.attackProgress;
+            this.telegraph.fillStyle(0xbcb2ff,0.85).fillEllipse(hx,z.y+15,36,20).fillRect(hx-10,z.y+12,5,22).fillRect(hx+7,z.y+12,5,22);
+          }
+        }
+      }
+    } else if (intent.id === 'lastHour') {
       const length = Math.hypot(intent.destination.x - intent.origin.x, intent.destination.y - intent.origin.y);
       this.telegraph.lineStyle(isTell ? 3 : 9, color, isTell ? 0.82 : 0.42)
         .lineBetween(0, 0, intent.direction.x * length, intent.direction.y * length)
@@ -291,15 +340,20 @@ export class BodoqueBoss {
       }
     }
     this.telegraph.setVisible(true);
-    const label = intent.id === 'microphoneMallet' ? 'MICRÓFONO-MAZO · PARRYABLE'
+    const label = intent.id === 'microphoneMallet' ? 'MICRÓFONO-MAZO · ESQUIVA EL ARCO'
       : intent.id === 'cameraFlash' ? 'FLASH DE CÁMARA · SAL DE LA ZONA'
         : 'ÚLTIMA HORA · TRAYECTORIA ANUNCIADA';
-    this.attackLabel.setText(isTell ? label : intent.id === 'lastHour' ? '¡ÚLTIMA HORA!' : '¡IMPACTO!')
+    const phaseLabels: Record<string,string> = {spectralRace:'CARRERA · CARRIL SUPERIOR SEGURO',betTickets:'BOLETOS · SAL DE LOS CÍRCULOS',collectors:'COBRADORES · REFUERZOS',timeTheft:'ROBO DE TIEMPO',monitorShift:'TRASPASAR · MONITORES',cableSweep:'CABLE-LÁTIGO · SALTA'};
+    this.attackLabel.setText(isTell ? (phaseLabels[intent.id] ?? label) : intent.id === 'lastHour' ? '¡ÚLTIMA HORA!' : '¡IMPACTO!')
       .setPosition(this.x, this.y - 70).setDepth(this.y + 50).setVisible(true)
       .setColor(isTell ? '#ffdc9c' : '#fff1d5');
   }
 
   private drawHealth(): void {
+    const signature=this.hp+':'+this.brain.phase+':'+this.brain.state+':'+this.brain.critical;
+    if(this.healthSignature===signature)return;
+    this.healthSignature=signature;
+    if(this.screenTexts[1])this.screenTexts[1].textContent = this.brain.phase===3&&this.hp<=config.heart.hp ? 'CORAZÓN CODEX — '+this.hp+' HP'+(this.brain.critical?' · ERROR 23':'') : ['LA NOTA','LA APUESTA','SIN SEÑAL'][this.brain.phase-1]+' · '+this.hp+'/'+this.maxHp;
     const ratio = Math.max(0, this.hp / this.maxHp);
     this.healthBar.clear()
       .fillStyle(0x160f1a, 0.92).fillRoundedRect(0, 0, 600, 13, 5)
@@ -308,7 +362,7 @@ export class BodoqueBoss {
       .lineStyle(1, 0xe5c38e, 0.9).strokeRoundedRect(0, 0, 600, 13, 5);
     this.healthText.setText(this.brain.phase === 3 && this.hp <= config.heart.hp
       ? `CORAZÓN CODEX · ${this.hp} / ${this.maxHp}${this.brain.critical ? ' · ERROR 23' : ''}`
-      : `EL ÚLTIMO TITULAR  ·  FASE 1: LA NOTA  ·  ${this.hp} / ${this.maxHp}`);
+      : `EL ÚLTIMO TITULAR  ·  FASE ${this.brain.phase}: ${['LA NOTA','LA APUESTA','SIN SEÑAL'][this.brain.phase-1]}  ·  ${this.hp} / ${this.maxHp}`);
   }
 
   private drawDebtMarks(): void {
@@ -375,8 +429,10 @@ export class BodoqueBoss {
     return this.scene.add.container(0, 0, [g, badge]);
   }
 
-  private destroy(): void {
-    this.finale.destroy();
+  destroy(): void {
+    this.scene.events.off(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
+    this.finale.destroy();this.worldMonitors.destroy();
+    this.screenTexts.forEach(node=>node.remove());
     this.scene.tweens.killTweensOf(this.body);
     this.scene.tweens.killTweensOf(this.hitFlash);
     this.shadow.destroy();

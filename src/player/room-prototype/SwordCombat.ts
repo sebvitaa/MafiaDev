@@ -9,6 +9,7 @@ export interface SwordDamageTarget {
   readonly x: number;
   readonly y: number;
   readonly radius: number;
+  addDebtMark?(): void;
   takeSwordDamage(damage: number, direction: SwordDirection, knockback?: number): void;
   /** Optional prototype-local status adapter; real enemies may implement it later. */
   addDebtMark?(): void;
