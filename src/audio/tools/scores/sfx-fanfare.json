@@ -1,0 +1,49 @@
+{
+  "bpm": 150,
+  "swing": 0.06,
+  "key": "C",
+  "mode": "major",
+  "loop": false,
+  "lead": "pulse50",
+  "bassOct": 2,
+  "fx": {"reverb": 0.2, "delay": 0.0, "delayFb": 0.0, "lowpass": 12000},
+  "sections": [
+    {
+      "name": "A",
+      "lead": "pulse50",
+      "lead2": "pulse12",
+      "glide": false,
+      "acc": "stab",
+      "harmOct": 4,
+      "bass": "octave",
+      "bassIns": "bass",
+      "drums": {
+        "k": "x.......x.......",
+        "s": "................",
+        "h": "x.x.x.x.x.x.x.x."
+      },
+      "bars": [
+        {"c": "C", "m": "C5:4 E5:4 G5:4 C6:4", "m2": "r:8 C4:8", "b": "C2:4 C3:4 C2:4 C3:4"}
+      ]
+    },
+    {
+      "name": "B",
+      "lead": "pulse50",
+      "lead2": "pulse12",
+      "glide": false,
+      "acc": "pad",
+      "harmOct": 4,
+      "bass": "octave",
+      "bassIns": "bass",
+      "drums": {
+        "k": "x...............",
+        "s": "........gggggggX",
+        "h": "................"
+      },
+      "bars": [
+        {"c": "C", "m": "G5:4 E5:4 C5:8", "m2": "r:8 C4:8", "b": "C2:8 C3:8"}
+      ]
+    }
+  ],
+  "order": ["A", "B"]
+}

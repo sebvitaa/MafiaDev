@@ -1,0 +1,64 @@
+{
+  "bpm": 146,
+  "swing": 0,
+  "key": "C",
+  "mode": "harmonic",
+  "loop": true,
+  "lead": "pulse50",
+  "bassOct": 2,
+  "fx": {"reverb": 0.18, "delay": 0.14, "delayFb": 0.32, "lowpass": 9200},
+  "sections": [
+    {
+      "name": "A",
+      "lead": "pulse50",
+      "lead2": "pulse12",
+      "glide": false,
+      "acc": "arp16",
+      "harmOct": 4,
+      "bass": "octave",
+      "bassIns": "bass",
+      "drums": {
+        "k": "x.......x.......",
+        "s": "....x.......x...",
+        "h": "x.x.x.x.x.x.x.x."
+      },
+      "bars": [
+        {"c": "Cm",  "m": "G5:4 Eb5:2 C5:2 G5:4 Eb5:4"},
+        {"c": "Cm",  "m": "G5:4 Ab5:2 G5:2 C6:2 B5:2 C6:2 G5:2"},
+        {"c": "Ab",  "m": "C5:4 Eb5:4 Ab5:4 G5:4", "m2": "r:8 Eb4:8"},
+        {"c": "G7",  "m": "D5:4 F5:2 G5:2 B5:4 C6:4", "m2": "r:8 D4:8"},
+        {"c": "Fm",  "m": "C5:4 Ab4:2 F4:2 C5:4 Eb5:4"},
+        {"c": "Ab",  "m": "Eb5:4 C5:4 Ab5:4 G5:4"},
+        {"c": "G7",  "m": "D5:2 F5:2 G5:4 B5:4 C6:2 G5:2", "m2": "r:4 B4:4 D5:4 r:4"},
+        {"c": "Cm",  "m": "C6:4 G5:4 Eb5:4 r:2 G5:2"}
+      ]
+    },
+    {
+      "name": "B",
+      "lead": "pulse50",
+      "lead2": "pulse12",
+      "glide": false,
+      "acc": "arp16",
+      "harmOct": 4,
+      "bass": "octave",
+      "bassIns": "bass",
+      "drums": {
+        "k": "x.......x.......",
+        "s": "....x.......x...",
+        "h": "xxxxxxxxxxxxxxxx"
+      },
+      "bars": [
+        {"c": "Cm",     "m": "C5:2 Eb5:2 G5:4 G5:2 B5:2 C6:4", "m2": "r:8 G4:8"},
+        {"c": "Dm7b5",  "m": "F5:4 Ab5:2 C6:2 F5:4 Ab5:2 C6:2"},
+        {"c": "Eb",     "m": "G5:4 Eb5:4 G5:2 Ab5:2 C6:2 G5:2", "m2": "r:8 C5:4 G4:4"},
+        {"c": "Fm",     "m": "Ab5:4 C6:2 F5:2 Ab5:4 G5:2 F5:2"},
+        {"c": "G7",     "m": "D5:2 F5:2 G5:4 B5:4 C6:4", "m2": "r:4 D5:4 B4:4 r:4"},
+        {"c": "Ab",     "m": "Eb5:2 Ab5:2 C6:4 Ab5:4 C6:2 Eb5:2"},
+        {"c": "Bdim7",  "m": "D5:2 F5:2 Ab5:4 B5:4 C6:4", "m2": "r:8 F5:4 Ab4:4"},
+        {"c": "G7",     "m": "G5:2 B5:2 D5:4 F5:2 G5:4 r:2"}
+      ]
+    }
+  ],
+  "order": ["A", "B", "A"],
+  "title": "music-boss"
+}
