@@ -1,0 +1,1 @@
+Game: "MafiaDev", a 2D pixel-art metroidvania (Phaser) with a neon-noir mafia setting: a rainy city at night in magenta and turquoise neon, back alleys, speakeasies, and catacombs below the city. Protagonist can stop time. Tone: stylish, mysterious, a bit playful (hackathon game). Music must be chiptune (NES-like voices) with a noir-jazz flavor where it fits.

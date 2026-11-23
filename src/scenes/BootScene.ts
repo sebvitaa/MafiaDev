@@ -1,5 +1,7 @@
-// Dominio: seba. Carga mínima (fuente/logo de la barra) y pasa a Preload.
+// Dominio: seba. Carga la fuente pixel y las texturas generadas de UI; luego Preload (apertura + carga).
 import Phaser from 'phaser';
+import { loadFonts } from '../ui/fonts';
+import { makeUiTextures } from '../ui/theme';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -7,6 +9,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.scene.start('PreloadScene');
+    makeUiTextures(this);
+    void loadFonts().then(() => this.scene.start('PreloadScene'));
   }
 }
