@@ -25,3 +25,4 @@ MoSCoW: COULD. Vista cenital, mundo abierto (no por salas).
 - [ ] Zona oscura iluminada solo cerca del jugador
 
 ## Notas
+- 2026-11-23 (vicho): Encaja con la ambientación oscura: luz alrededor del jugador y de los checkpoints (hogueras).

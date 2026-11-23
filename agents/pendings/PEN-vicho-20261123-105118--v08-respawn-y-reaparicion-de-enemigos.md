@@ -25,3 +25,4 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 - [ ] Morir reaparece en checkpoint, enemigos reaparecen, player:respawned se emite exactamente una vez
 
 ## Notas
+- 2026-11-23 (vicho): Reaparición de enemigos también al DESCANSAR en checkpoint (regla souls), no solo al morir.

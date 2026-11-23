@@ -25,3 +25,4 @@ MoSCoW: COULD. Vista cenital, mundo abierto (no por salas).
 - [ ] Mapa visible al pausar
 
 ## Notas
+- 2026-11-23 (vicho): Relación con V14: el minimapa se puede ocultar; este es el mapa grande.

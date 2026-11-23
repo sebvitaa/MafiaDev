@@ -25,3 +25,4 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 - [ ] Imagen o ASCII del mapa en el cuerpo de este PEN con zonas, checkpoints, cofres y arena del jefe marcados
 
 ## Notas
+- 2026-11-23 (vicho): Mundo MÁS GRANDE: varios minutos de gameplay (subir de ~120x80 a ~200x150 tiles o más, a ajustar jugando). Ambientación souls oscura pero llamativa; UNA sola zona muy luminosa y colorida (contraste).

@@ -25,3 +25,4 @@ MoSCoW: SHOULD. Vista cenital, mundo abierto (no por salas).
 - [ ] Ambas zonas con arte definitivo
 
 ## Notas
+- 2026-11-23 (vicho): Paleta: todas las zonas oscuras pero llamativas (acentos saturados) salvo una zona luminosa y colorida. Perspectiva Titan Souls.

@@ -25,3 +25,4 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 - [ ] Test Vitest del cálculo de offset; a simple vista el jugador queda casi centrado y la cámara se adelanta al moverse
 
 ## Notas
+- 2026-11-23 (vicho): Aprobado: lookahead ~40 px con suavizado; constantes en src/world/config.json (dominio vicho). Ajustar jugando.

@@ -23,7 +23,7 @@ Vicho (humano) decide: el juego es de vista cenital (top-down, cámara como The 
 Preferencia de diseño del dueño del mundo (vicho).
 
 ## Impacto si se rechaza
-Si se acepta: src/main.ts (shared) necesita gravity y=0; basti rehace movimiento (sin saltar/doble salto/coyote → mover en 8 direcciones, dash); README y AGENTS dicen "scroll lateral". Si se rechaza: vicho vuelve a mundo lateral y los PEN V01-V24 se ajustan.
+Si se acepta: src/main.ts (shared) necesita gravity y=0; basti adapta movimiento a 8 direcciones; el salto y doble salto se mantienen (basti ya tiene versión cenital con salto, no subida); README y AGENTS dicen "scroll lateral". Si se rechaza: vicho vuelve a mundo lateral y los PEN V01-V24 se ajustan.
 
 ## Resolución
 <!-- humano: quién, cuándo, cita textual de su respuesta -->

@@ -25,3 +25,4 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 - [ ] Recargar la página reaparece en el último checkpoint
 
 ## Notas
+- 2026-11-23 (vicho): Checkpoints estilo souls (hoguera DS / banca HK / linterna BB): se activan INTERACTUANDO, no al tocar. Descansar = guarda punto, cura y reaparecen los enemigos (world reset). Necesita acción 'interact' en src/core/Input.ts (shared) → avisar al equipo; mientras, tecla E local en dominio vicho + SUP.

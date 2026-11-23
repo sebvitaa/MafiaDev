@@ -25,3 +25,4 @@ MoSCoW: SHOULD. Vista cenital, mundo abierto (no por salas).
 - [ ] Minimapa visible con la silueta, posición correcta del jugador y parpadeo del "> _"
 
 ## Notas
+- 2026-11-23 (vicho): Ubicación: arriba a la derecha. Tecla/botón para mostrar u ocultar. Forma de logo de Codex: POSPUESTA por ahora (primero minimapa rectangular funcional).

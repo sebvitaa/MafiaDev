@@ -25,3 +25,4 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 - [ ] public/assets/maps/world.json y tileset en public/assets/tilesets/ abren en Tiled y cargan sin error
 
 ## Notas
+- 2026-11-23 (vicho): Perspectiva estilo Titan Souls: cenital 3/4 en pixel art, muros con cara frontal visible, arenas amplias. Packs de referencia: Cainos Pixel Art Top Down Basic, Pix-Quest 16x16.

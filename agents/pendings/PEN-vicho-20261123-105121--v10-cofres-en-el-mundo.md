@@ -25,3 +25,4 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 - [ ] Abrir suelta un item; recargar mantiene el cofre abierto
 
 ## Notas
+- 2026-11-23 (vicho): Cofres se abren INTERACTUANDO (misma acción que checkpoints).
