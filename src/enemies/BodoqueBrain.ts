@@ -18,7 +18,7 @@ export interface BodoqueConfig {
   radius: number;
   idleMs: number;
   phaseThresholds: [number, number];
-  heart: { hp: number; openingMs: number; defeatMs: number; criticalHp: number };
+  heart: { hp: number; openingMs: number; defeatMs: number; criticalHp: number; captionMs: number };
   bounds?: { left: number; right: number; top: number; bottom: number };
   attacks: Record<BodoqueAttackId, BodoqueAttackConfig>;
 }
@@ -48,6 +48,8 @@ export class BodoqueBrain {
   hp: number;
   critical = false;
   private elapsedMs = 0;
+  private captionRemainingMs = 0;
+  private defeatDurationMs: number;
   private attackIndex = -1;
   private attackHitSpent = false;
   private victoryConsumed = false;
@@ -56,14 +58,18 @@ export class BodoqueBrain {
 
   constructor(readonly config: BodoqueConfig) {
     this.hp = config.hp;
+    this.defeatDurationMs = config.heart.defeatMs;
   }
 
   get maxHp(): number { return this.config.hp; }
   get active(): boolean { return this.state !== 'inactive' && this.state !== 'defeated'; }
   get currentAttack(): BodoqueAttackIntent | undefined { return this.intent; }
+  get captionVisible(): boolean { return this.captionRemainingMs > 0; }
+  private get finalDurationMs(): number {
+    return this.state === 'opening' ? this.config.heart.openingMs : this.defeatDurationMs;
+  }
   get finalProgress(): number {
-    const duration = this.state === 'opening' ? this.config.heart.openingMs : this.config.heart.defeatMs;
-    return Math.min(1, this.elapsedMs / duration);
+    return Math.min(1, this.elapsedMs / this.finalDurationMs);
   }
   get attackProgress(): number {
     const intent = this.intent;
@@ -82,17 +88,18 @@ export class BodoqueBrain {
 
   /** Advances every state boundary while retaining any frame time left over. */
   update(dtMs: number, player: BodoquePoint, boss: BodoquePoint): void {
+    const delta = Math.max(0, dtMs);
+    this.captionRemainingMs = Math.max(0, this.captionRemainingMs - delta);
     if (this.state === 'opening' || this.state === 'dying') {
-      this.elapsedMs += Math.max(0, dtMs);
-      const duration = this.state === 'opening' ? this.config.heart.openingMs : this.config.heart.defeatMs;
-      if (this.elapsedMs >= duration) {
+      this.elapsedMs += delta;
+      if (this.elapsedMs >= this.finalDurationMs) {
         this.state = this.state === 'opening' ? 'heart' : 'defeated';
         this.elapsedMs = 0;
       }
       return;
     }
     if (this.state === 'heart') return;
-    let remaining = Math.max(0, dtMs);
+    let remaining = delta;
     let transitions = 0;
     while (this.active && transitions++ < 12) {
       const duration = this.durationForState();
@@ -136,9 +143,14 @@ export class BodoqueBrain {
     } else if (this.state === 'heart') {
       if (this.hp <= this.config.heart.criticalHp && !this.critical) {
         this.critical = true;
+        this.captionRemainingMs = this.config.heart.captionMs;
         criticalTriggered = true;
       }
-      if (this.hp === 0) this.state = 'dying';
+      if (this.hp === 0) {
+        this.state = 'dying';
+        // SUP-basti-20261123-161421: finish reading over the animated rupture before cutting to film.
+        this.defeatDurationMs = Math.max(this.config.heart.defeatMs, this.captionRemainingMs);
+      }
       this.elapsedMs = 0;
     }
     return { applied, defeated: false, preparedPhases, criticalTriggered };

@@ -631,7 +631,8 @@ test('Bodoque se activa sin reemplazar al muñeco y recibe espada, eco y lluvia 
     const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
     scene.bodoque.heartTarget.takeSwordDamage(100, { x: 1, y: 0 });
   });
-  await expect.poll(async () => bossState()).toMatchObject({ hp: 0, active: false, defeated: true,
+  // A lethal hit can start the entire 5.5-second final line before victory.
+  await expect.poll(bossState, { timeout: 12_000 }).toMatchObject({ hp: 0, active: false, defeated: true,
     visible: true, victory: true, killed: true, dummyHp: 100, dummyVisible: true });
 });
 
