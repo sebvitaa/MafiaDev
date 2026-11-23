@@ -7,6 +7,7 @@ import { Enemy, type EnemyPlayer } from '../enemies';
 import type { EnemyDefinition } from '../enemies/EnemyBrain';
 import definitions from '../data/enemies.json';
 import { hdLayer } from '../ui/hd/HdLayer';
+import { ObstacleSnapshot } from '../enemies/ObstacleSnapshot';
 
 const BOSS = definitions.boss as EnemyDefinition; // stats en src/data/enemies.json
 
@@ -19,12 +20,13 @@ export function installBoss(
   const arena = world.map.findObject('objects', (o) => o.type === 'boss_arena');
   let boss: Enemy | null = null;
   let phase = 1;
+  const obstacles = new ObstacleSnapshot();
 
   const spawn = () => {
     if (boss || !arena) return;
     const x = arena.x! + arena.width! / 2, y = arena.y! + arena.height! / 2;
     boss = new Enemy(scene, 'boss-bodoque', 'knight', BOSS, x, y, player,
-      () => [...scene.physics.world.staticBodies].filter((body) => body.enable));
+      () => obstacles.read(scene.physics.world.staticBodies));
     boss.visual.setScale(0.9);
     scene.physics.add.collider(boss.anchor, world.solids);
     scene.physics.add.collider(boss.anchor, world.obstacles);
