@@ -1,5 +1,6 @@
 {
   "gravity": 900,
+  "performance": { "enemyWakePadding": 160, "enemySleepMargin": 128 },
   "player": {
     "jumpVelocity": 300,
     "airJumpMultiplier": 0.85,

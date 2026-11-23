@@ -33,6 +33,10 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
   private knockbackMs = 0;
   private knockback: Point = { x: 0, y: 0 };
   private destroyed = false;
+  private awake = true;
+  private drawnShape = '';
+  private drawnHp = -1;
+  private drawnWarning = '';
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -67,25 +71,37 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
   get hp(): number { return this.health.hp; }
   get alive(): boolean { return this.health.alive; }
   get state(): string { return this.brain.state; }
+  get simulating(): boolean { return this.awake; }
+
+  setSimulating(value: boolean): void {
+    if (!this.alive || value === this.awake) return;
+    this.awake = value;
+    this.body.stop();
+    this.body.enable = value;
+    this.visual.setVisible(value);
+    this.warning.setVisible(value);
+    if (value) { this.waypoint = null; this.thinkMs = 0; }
+  }
 
   update(dtMs: number): void {
-    if (!this.alive) return;
-    const solids = this.obstacles();
+    if (!this.alive || !this.awake) return;
     this.flashMs = Math.max(0, this.flashMs - dtMs);
     this.knockbackMs = Math.max(0, this.knockbackMs - dtMs);
     this.thinkMs -= dtMs;
     const target = this.player.alive ? this.player.anchor : null;
-    this.brain.update(dtMs, this.anchor, target, target ? lineClear(this.anchor, target, solids) : false);
+    // Visibility matters only within striking range. Distant idle enemies do no geometry work.
+    const inRange = target && Math.hypot(target.x - this.x, target.y - this.y) <= this.definition.attackRange;
+    this.brain.update(dtMs, this.anchor, target, !!inRange && lineClear(this.anchor, target!, this.obstacles()));
     let velocity: Point = { x: 0, y: 0 };
     if (this.knockbackMs > 0) velocity = this.knockback;
     else if (this.state === 'chase' && target) {
-      if (this.thinkMs <= 0 || !this.waypoint || Math.hypot(this.x - this.waypoint.x, this.y - this.waypoint.y) < 5) {
-        this.waypoint = nextWaypoint(this.anchor, target, solids, this.scene.physics.world.bounds, this.radius);
+      if (this.thinkMs <= 0) {
+        this.waypoint = nextWaypoint(this.anchor, target, this.obstacles(), this.scene.physics.world.bounds, this.radius);
         this.thinkMs = tuning.combat.balance.navigationIntervalMs;
       }
       if (this.waypoint) {
         const dx = this.waypoint.x - this.x, dy = this.waypoint.y - this.y, length = Math.hypot(dx, dy);
-        if (length > 0) velocity = { x: dx / length * this.definition.speed, y: dy / length * this.definition.speed };
+        if (length > 3) velocity = { x: dx / length * this.definition.speed, y: dy / length * this.definition.speed };
       }
     } else if (this.state === 'attack') {
       velocity = { x: this.brain.facing.x * this.definition.lungeSpeed, y: this.brain.facing.y * this.definition.lungeSpeed };
@@ -95,7 +111,7 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
 
   /** Después de física: resolver la ventana sobre posiciones reales, no las del dibujo. */
   postUpdate(): void {
-    if (!this.alive) return;
+    if (!this.alive || !this.awake) return;
     if (this.brain.canStrike && this.player.alive
       && intersectsSector(this.anchor, this.brain.facing, { x: this.player.anchor.x, y: this.player.anchor.y, radius: this.player.radius },
         this.definition.attackRange, this.definition.halfAngleDeg)
@@ -136,30 +152,46 @@ export class Enemy implements SwordDamageTarget, FireballDamageTarget {
   private draw(): void {
     const r = this.radius;
     const color = this.flashMs > 0 ? 0xffffff : this.definition.color;
-    const g = this.shape.clear();
-    if (this.kind === 'slime') {
-      const pulse = this.state === 'windup' ? 0.65 : 1;
-      g.fillStyle(color).fillEllipse(0, -r * 0.5, r * 2, r * 1.5 * pulse);
-      g.fillStyle(0x9bffe1, 0.8).fillEllipse(-r * 0.3, -r * 0.7, r * 0.5, r * 0.3);
-    } else {
-      g.fillStyle(color).fillRoundedRect(-r * 0.75, -r * 2.1, r * 1.5, r * 2, 4);
-      g.fillStyle(this.definition.armored ? 0x9cafc9 : 0xdab977).fillRect(-r * 0.7, -r * 2.3, r * 1.4, r * 0.65);
-      g.fillStyle(0x112033).fillRect(-r * 0.45, -r * 2.1, r * 0.9, 3);
-      g.lineStyle(this.definition.armored ? 5 : 3, 0xe7d8a8)
-        .lineBetween(r * 0.6, -r, r * 1.5, -r * 2.1);
-      if (this.definition.armored) g.fillStyle(0x567192).fillRect(-r * 1.1, -r * 1.4, r * 0.6, r);
+    const angle = Math.atan2(this.brain.facing.y, this.brain.facing.x);
+    const direction = Math.round(angle * 8 / Math.PI);
+    const shapeKey = `${color}:${this.state === 'windup'}:${direction}`;
+    if (shapeKey !== this.drawnShape) {
+      this.drawnShape = shapeKey;
+      const g = this.shape.clear();
+      if (this.kind === 'slime') {
+        const pulse = this.state === 'windup' ? 0.65 : 1;
+        g.fillStyle(color).fillEllipse(0, -r * 0.5, r * 2, r * 1.5 * pulse);
+        g.fillStyle(0x9bffe1, 0.8).fillEllipse(-r * 0.3, -r * 0.7, r * 0.5, r * 0.3);
+      } else {
+        g.fillStyle(color).fillRoundedRect(-r * 0.75, -r * 2.1, r * 1.5, r * 2, 4);
+        g.fillStyle(this.definition.armored ? 0x9cafc9 : 0xdab977).fillRect(-r * 0.7, -r * 2.3, r * 1.4, r * 0.65);
+        g.fillStyle(0x112033).fillRect(-r * 0.45, -r * 2.1, r * 0.9, 3);
+        g.lineStyle(this.definition.armored ? 5 : 3, 0xe7d8a8)
+          .lineBetween(r * 0.6, -r, r * 1.5, -r * 2.1);
+        if (this.definition.armored) g.fillStyle(0x567192).fillRect(-r * 1.1, -r * 1.4, r * 0.6, r);
+      }
+      g.fillStyle(0xffeea2).fillCircle(Math.cos(direction * Math.PI / 8) * r * 0.45,
+        -r * 1.2 + Math.sin(direction * Math.PI / 8) * r * 0.25, 2);
     }
-    g.fillStyle(0xffeea2).fillCircle(this.brain.facing.x * r * 0.45, -r * 1.2 + this.brain.facing.y * r * 0.25, 2);
-    this.bar.clear().fillStyle(0x10151d).fillRect(-r, -r * 2.7, r * 2, 4)
-      .fillStyle(0xe87575).fillRect(-r, -r * 2.7, r * 2 * this.hp / this.health.maxHp, 4);
-    this.label.setText(`${this.definition.name} ${this.hp}/${this.health.maxHp}`);
-    this.visual.setPosition(this.x, this.y).setDepth(this.y);
-    this.warning.clear().setDepth(this.y - 0.5);
+    if (this.hp !== this.drawnHp) {
+      this.drawnHp = this.hp;
+      this.bar.clear().fillStyle(0x10151d).fillRect(-r, -r * 2.7, r * 2, 4)
+        .fillStyle(0xe87575).fillRect(-r, -r * 2.7, r * 2 * this.hp / this.health.maxHp, 4);
+      this.label.setText(`${this.definition.name} ${this.hp}/${this.health.maxHp}`);
+    }
+    this.visual.setPosition(this.x, this.y);
+    if (this.visual.depth !== this.y) this.visual.setDepth(this.y);
+    this.warning.setPosition(this.x, this.y);
+    if (this.warning.depth !== this.y - 0.5) this.warning.setDepth(this.y - 0.5);
+    const warningKey = this.state === 'windup' || this.state === 'attack' ? `${this.state}:${angle}` : '';
+    if (warningKey === this.drawnWarning) return;
+    this.drawnWarning = warningKey;
+    this.warning.clear();
     if (this.state === 'windup' || this.state === 'attack') {
       const a = Math.atan2(this.brain.facing.y, this.brain.facing.x);
       const half = this.definition.halfAngleDeg * Math.PI / 180;
       this.warning.fillStyle(this.state === 'attack' ? 0xff4d63 : 0xffc765, this.state === 'attack' ? 0.55 : 0.3)
-        .slice(this.x, this.y, this.definition.attackRange, a - half, a + half, false).fillPath();
+        .slice(0, 0, this.definition.attackRange, a - half, a + half, false).fillPath();
     }
   }
 

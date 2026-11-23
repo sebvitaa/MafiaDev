@@ -24,7 +24,7 @@ export function installEncounters(
   world: { map: Phaser.Tilemaps.Tilemap; solids: Phaser.Tilemaps.TilemapLayer; obstacles: Phaser.Physics.Arcade.StaticGroup },
 ): EnemySystem | undefined {
   if (new URLSearchParams(location.search).get('noEnemies') === '1') return undefined;
-  const enemies = new EnemySystem(scene, hero, world.solids as unknown as Phaser.Physics.Arcade.StaticGroup);
+  const enemies = new EnemySystem(scene, hero, world.solids, world.obstacles);
   const pending = enemySpawns(world.map);
   const spawned = new Set<number>();
   const activate = () => {
@@ -33,7 +33,6 @@ export function installEncounters(
       if (spawned.has(spawn.id) || Phaser.Math.Distance.Between(camera.worldView.centerX, camera.worldView.centerY, spawn.x, spawn.y) > ACTIVATE_DISTANCE) continue;
       const enemy = enemies.spawn(spawn.kind, spawn.x, spawn.y);
       enemy.visual.setScale(ENEMY_SCALE);
-      scene.physics.add.collider(enemy.anchor, world.obstacles);
       spawned.add(spawn.id);
     }
   };
