@@ -1,3 +1,3 @@
-// Dominio: basti — Health, Hitbox, Hurtbox, Knockback, DamageSystem, hitstop/shake.
-// Vacío a propósito: ver «Código base» en investigacion-stack.html (combo, Juice).
-export {};
+// Dominio: basti — vida y conversión explícita de stats a puntos de combate.
+export { Health } from './Health';
+export { balance, playerMaxHp, playerSwordDamage } from './balance';

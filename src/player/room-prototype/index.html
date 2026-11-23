@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
+  <title>MafiaDev · Laboratorio Isaac + Hades</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0b141e; color: #dedccb; font: 15px/1.6 system-ui, sans-serif; }
+    main { max-width: 1056px; margin: 24px auto; padding: 0 24px; }
+    header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+    h1 { font-size: 22px; font-weight: 600; margin: 0; }
+    .tag { font: 12px monospace; color: #70c6b8; letter-spacing: .08em; }
+    #room-prototype { width: 100%; aspect-ratio: 8 / 5; margin: 16px 0; outline: 1px solid #41545d; }
+    canvas { display: block; image-rendering: pixelated; }
+    p { margin: 8px 0; color: #9cafb1; }
+    kbd { color: #e0c392; font: inherit; font-weight: 600; }
+    footer { padding-bottom: 24px; }
+    nav { display: flex; gap: 16px; margin-top: 8px; }
+    a { color: #f7d48d; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><h1>MafiaDev / Laboratorio de movilidad</h1><span class="tag">ISAAC + HADES · SALA FIJA</span></header>
+    <nav><a href="?enemies=1">Combatir slime, Cobrador y knight</a><a href="./">Practicar movimiento y muñeco</a></nav>
+    <div id="room-prototype" role="application" aria-label="Sala de prueba con cámara fija y movilidad en ocho direcciones"></div>
+    <footer>
+      <p><kbd>Mantener Q + derecho</kbd> lanzar marca · <kbd>Q + izquierdo</kbd> TP con mouse · <kbd>1 / 2 / 3 / 4</kbd> TP directo. Hasta cuatro marcas y 0,5 s de recarga.</p>
+      <p>Combate: vida 125, espada 25/30/40; slime 50 de vida, Cobrador 100, knight 150. Golpes enemigos de 25/25/50. La zona amarilla avisa el ataque y la roja indica impacto. Tras recibir daño tienes 0,6 s de protección. R reinicia enemigos, vida y marcas.</p>
+      <p><kbd>WASD / Flechas</kbd> mover · <kbd>Shift</kbd> correr · <kbd>Doble WASD / Flechas</kbd> dash · <kbd>C / K</kbd> dash alternativo · <kbd>Espacio / Z</kbd> salto doble · <kbd>Click corto</kbd> combo · <kbd>Mantener click</kbd> carga · <kbd>E + mover mouse</kbd> apuntar · <kbd>Soltar E</kbd> bola de fuego · <kbd>R</kbd> reiniciar</p>
+      <p>Para esquivar, pulsa y suelta la misma tecla WASD dos veces en menos de 350 ms. Deslizamiento de 150 ms con 650 ms de recuperación.</p>
+      <p>La sombra marca el suelo. Rodea los pilares por delante y por detrás para evaluar profundidad. Los obstáculos bloquean también durante salto y dash.</p>
+      <p>Recoge la espada brillante a la derecha. Click corto encadena corte rápido, corte amplio y remate; pulsa durante la ventana del golpe o dentro de 500 ms al terminar.</p>
+      <p>Mantén el click más de 350 ms y suelta para un corte cargado; llega a 200 % de daño y 150 % de alcance tras 1,2 s. El brillo indica la carga. El dash cancela la carga. Si derrotas al muñeco, vuelve con vida completa en 2 segundos.</p>
+      <p>Mantén E y apunta con el mouse; suelta para hacer caer una bola de fuego. Explota en 600 ms, daña en 55 px por 2× daño y tarda 7 segundos en recargarse.</p>
+    </footer>
+  </main>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

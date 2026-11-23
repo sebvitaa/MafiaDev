@@ -48,7 +48,12 @@ test.beforeEach(async ({ page }) => {
 test('1–4 hacen TP directo con números estables y comparten recarga con Q + clic', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  const ready = () => expect.poll(async () => (await state(page)).status).toContain('| TP LISTO');
+  const ready = async () => {
+    await page.evaluate(() => new Promise<void>((resolve) => {
+      window.__game!.scene.getScene('RoomPrototype').events.once('postupdate', () => resolve());
+    }));
+    await expect.poll(async () => (await state(page)).status).toContain('| TP LISTO');
+  };
   await page.keyboard.press('1');
   expect((await state(page)).x).toBeCloseTo(480);
   await expect.poll(async () => (await state(page)).status).toContain('No hay una marca');
