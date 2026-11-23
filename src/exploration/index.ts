@@ -4,14 +4,16 @@ import { bus } from '../core/EventBus';
 import { installChests } from './chests';
 import { installCheckpoints } from './checkpoints';
 import { installFog } from './fog';
+import { installPassages } from './passages';
+import { installSigns } from './signs';
+import { installCollectibles } from './collectibles';
+import { prop } from './tiled';
 import { roomAt, zoneAt, type ZoneRect } from './zones';
 
 type Ground = Phaser.GameObjects.GameObject & { x: number; y: number };
 
 /** V06: emite zone:changed y room:entered al cruzar los rectángulos type "zone" de Tiled. */
 function installZones(scene: Phaser.Scene, map: Phaser.Tilemaps.Tilemap, player: Ground): void {
-  const prop = (o: Phaser.Types.Tilemaps.TiledObject, k: string) =>
-    (o.properties as { name: string; value: string }[] | undefined)?.find((p) => p.name === k)?.value;
   const zones: ZoneRect[] = map.filterObjects('objects', (o) => o.type === 'zone')!.map((o) => ({
     name: o.name, zone: prop(o, 'zone') ?? 'zone1', roomId: prop(o, 'roomId'),
     x: o.x!, y: o.y!, width: o.width!, height: o.height!,
@@ -32,10 +34,16 @@ function installZones(scene: Phaser.Scene, map: Phaser.Tilemaps.Tilemap, player:
 
 /** Llamar desde GameScene después de crear el jugador. Devuelve la niebla para las vistas de mapa. */
 export function installExploration(
-  scene: Phaser.Scene, map: Phaser.Tilemaps.Tilemap, player: Ground, spawn: { x: number; y: number },
+  scene: Phaser.Scene,
+  world: { map: Phaser.Tilemaps.Tilemap; solids: Phaser.Tilemaps.TilemapLayer; spawn: { x: number; y: number } },
+  player: Ground,
 ): { fog: Phaser.GameObjects.Graphics } {
+  const { map, spawn } = world;
   installChests(scene, map, player);
   installCheckpoints(scene, map, player, spawn);
   installZones(scene, map, player);
+  installPassages(scene, map, world.solids, player);
+  installSigns(scene, map, player);
+  installCollectibles(scene, map, player);
   return { fog: installFog(scene, map, player) };
 }

@@ -45,7 +45,7 @@ export class GameScene extends Phaser.Scene {
     // shortcut: tipado como Player lateral para no romper el typecheck de tests de basti; en runtime es el punto de suelo (x/y). Quitar al integrar.
     this.player = hero.anchor as unknown as Player;
     installCamera(this, hero.anchor); // sigue el punto de suelo, no el sprite que sube al saltar
-    const { fog } = installExploration(this, world.map, hero.anchor, world.spawn);
+    const { fog } = installExploration(this, world, hero.anchor);
     const mapCams = installMapViews(this, world.map, hero.anchor, fog);
     installAmbience(this, world.map, hero.anchor, mapCams);
     installAudio(this);
