@@ -3,178 +3,48 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const W = 240, H = 180, TILE = 16;
-const here = dirname(fileURLToPath(import.meta.url));
-const output = resolve(here, '../../../public/assets/maps/world.json');
-let seed = 0x4d616669;
-const rand = () => ((seed = (seed + 0x6D2B79F5) | 0), ((seed = Math.imul(seed ^ seed >>> 15, seed | 1)) ^ seed + Math.imul(seed ^ seed >>> 7, seed | 61)) >>> 0) / 4294967296;
-const hash = (x, y, salt = 0) => { let n = (Math.imul(x + 37, 374761393) ^ Math.imul(y + 71, 668265263) ^ salt) >>> 0; n = Math.imul(n ^ n >>> 13, 1274126177); return (n ^ n >>> 16) >>> 0; };
-const idx = (x, y) => y * W + x;
-const inside = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+const output = resolve(dirname(fileURLToPath(import.meta.url)), '../../../public/assets/maps/world.json');
+const idx = (x, y) => y * W + x, inside = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+const hash = (x, y, s = 0) => { let n = (Math.imul(x + 37, 374761393) ^ Math.imul(y + 71, 668265263) ^ s) >>> 0; n = Math.imul(n ^ n >>> 13, 1274126177); return (n ^ n >>> 16) >>> 0; };
 const ground = Array(W * H).fill(0), deco = Array(W * H).fill(0), walls = Array(W * H).fill(0), biome = Array(W * H).fill('');
+const bases = { ruins: 1, forest: 9, bright: 17, arena: 25 }, wallGids = { ruins: [33, 34], forest: [35, 36], bright: [37, 38], arena: [39, 40] };
 const regions = [
-  ['start', 'ruins', 42, 88, 15, 12], ['hub', 'ruins', 112, 88, 19, 15],
-  ['forestWest', 'forest', 63, 43, 17, 13], ['forestNorth', 'forest', 121, 42, 18, 13],
-  ['forestSouth', 'forest', 49, 133, 17, 14], ['ruinsSouth', 'ruins', 91, 126, 15, 14],
-  ['ruinsEast', 'ruins', 165, 82, 16, 14], ['ruinsSouthEast', 'ruins', 163, 130, 16, 14],
-  ['bright', 'bright', 207, 30, 25, 21], ['forestEast', 'forest', 205, 104, 14, 13],
-  ['arena', 'arena', 199, 153, 21, 17],
-].map(([name, kind, cx, cy, rx, ry]) => ({ name, kind, cx, cy, rx, ry, minX: cx - rx, minY: cy - ry, maxX: cx + rx, maxY: cy + ry }));
-const byName = Object.fromEntries(regions.map(r => [r.name, r]));
-const bases = { ruins: 1, forest: 9, bright: 17, arena: 25 };
-const wallGids = { ruins: [33, 34], forest: [35, 36], bright: [37, 38], arena: [39, 40] };
-
-function paint(x, y, kind) { if (inside(x, y)) biome[idx(x, y)] = kind; }
-for (const r of regions) {
-  for (let y = r.minY; y <= r.maxY; y++) for (let x = r.minX; x <= r.maxX; x++) {
-    const dx = (x - r.cx) / r.rx, dy = (y - r.cy) / r.ry;
-    const edge = 1 + ((hash(x, y, r.cx) % 100) / 100 - .5) * .28 + Math.sin(x * .7 + y * .31) * .06;
-    if (dx * dx + dy * dy < edge) paint(x, y, r.kind);
-  }
+  ['start','ruins','rect',18,80,16,12], ['hub','ruins','columns',55,76,30,24], ['forestWest','forest','blob',18,30,28,22], ['northRuins','ruins','octagon',72,21,28,20], ['forestNorth','forest','blob',108,22,25,19], ['treasureNook','ruins','L',126,49,20,16], ['bright','bright','blob',184,13,40,31], ['forestSouth','forest','blob',18,125,25,20], ['ruinsSouth','ruins','plus',51,120,31,27], ['pitHall','ruins','pit',94,112,35,29], ['ruinsEast','ruins','twoLevel',143,72,38,30], ['forestEast','forest','blob',194,76,25,22], ['vault','ruins','rect',147,36,20,17], ['forestDeadEnd','forest','blob',101,151,18,14], ['arena','arena','octagon',184,132,40,33],
+].map(([name,kind,shape,x,y,w,h]) => ({ name,kind,shape,x,y,w,h,minX:x,minY:y,maxX:x+w-1,maxY:y+h-1,cx:x+Math.floor(w/2),cy:y+Math.floor(h/2) }));
+const byName = Object.fromEntries(regions.map(r => [r.name,r]));
+const paint = (x,y,k) => { if (inside(x,y)) biome[idx(x,y)] = k; };
+const rectPaint = (r,x=r.x,y=r.y,w=r.w,h=r.h) => { for(let py=y;py<y+h;py++) for(let px=x;px<x+w;px++) paint(px,py,r.kind); };
+function room(r) {
+  if (r.shape === 'rect' || r.shape === 'columns') rectPaint(r);
+  else if (r.shape === 'octagon') for(let y=r.y;y<=r.maxY;y++) for(let x=r.x;x<=r.maxX;x++) { const cut=Math.min(Math.floor(r.w/6),Math.floor(r.h/5)), dx=Math.min(x-r.x,r.maxX-x),dy=Math.min(y-r.y,r.maxY-y); if(dx+dy>=cut) paint(x,y,r.kind); }
+  else if (r.shape === 'plus') { rectPaint(r,r.x+10,r.y,11,r.h); rectPaint(r,r.x,r.y+9,r.w,10); }
+  else if (r.shape === 'L') { rectPaint(r,r.x,r.y,9,r.h); rectPaint(r,r.x,r.y+8,r.w,r.h-8); }
+  else if (r.shape === 'twoLevel') { rectPaint(r,r.x,r.y,r.w,11); rectPaint(r,r.x+8,r.y+18,r.w-8,12); rectPaint(r,r.x+14,r.y+10,7,9); }
+  else for(let y=r.y-1;y<=r.maxY+1;y++) for(let x=r.x-1;x<=r.maxX+1;x++) { const e=1+((hash(Math.floor(x/5),Math.floor(y/5),r.x)%100)/100-.5)*.22; if(((x-r.cx)/(r.w/2))**2+((y-r.cy)/(r.h/2))**2<e) paint(x,y,r.kind); }
 }
-
-function corridor(from, to, kind, width = 4, bend = 0) {
-  const points = bend ? [from, { x: Math.round((from.x + to.x) / 2) + bend, y: from.y }, { x: Math.round((from.x + to.x) / 2) + bend, y: to.y }, to] : [from, { x: to.x, y: from.y }, to];
-  for (let p = 0; p < points.length - 1; p++) {
-    const a = points[p], b = points[p + 1], steps = Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-    for (let s = 0; s <= steps; s++) {
-      const x = Math.round(a.x + (b.x - a.x) * s / steps), y = Math.round(a.y + (b.y - a.y) * s / steps);
-      for (let oy = -Math.floor(width / 2); oy <= Math.floor((width - 1) / 2); oy++) for (let ox = -Math.floor(width / 2); ox <= Math.floor((width - 1) / 2); ox++) paint(x + ox, y + oy, kind);
-    }
-  }
-}
-const c = name => ({ x: byName[name].cx, y: byName[name].cy });
-const links = [
-  ['start', 'hub', 4, 5], ['hub', 'forestWest', 4, -6], ['forestWest', 'forestNorth', 4, 4], ['forestNorth', 'hub', 4, -5],
-  ['hub', 'ruinsSouth', 5, -8], ['ruinsSouth', 'forestSouth', 4, 4], ['forestSouth', 'start', 4, -5],
-  ['hub', 'ruinsEast', 4, 5], ['ruinsSouth', 'ruinsSouthEast', 4, 6], ['ruinsEast', 'ruinsSouthEast', 4, -4], ['ruinsEast', 'bright', 3, 4],
-  ['ruinsSouthEast', 'forestEast', 4, 3],
-];
-for (const [a, b, width, bend] of links) corridor(c(a), c(b), byName[a].kind, width, bend);
-// A direct but locked shortcut from the northern forest to the bright zone.
-const shortcut = { x: 160, y: 30, width: 1, height: 3, from: 'east' };
-corridor(c('forestNorth'), { x: shortcut.x, y: shortcut.y + 1 }, 'forest', 3);
-corridor({ x: shortcut.x, y: shortcut.y + 1 }, c('bright'), 'forest', 3);
-// The arena is intentionally gated through one tile after its long three-tile tunnel.
-const arena = byName.arena;
-for (let y = arena.minY - 1; y <= arena.maxY + 1; y++) for (let x = arena.minX - 1; x <= arena.maxX + 1; x++) if (x < arena.minX || x > arena.maxX || y < arena.minY || y > arena.maxY) biome[idx(x, y)] = '';
-corridor(c('forestEast'), { x: arena.minX - 8, y: arena.cy }, 'forest', 3, -35);
-corridor({ x: arena.minX - 8, y: arena.cy }, { x: arena.minX - 1, y: arena.cy }, 'forest', 1);
-paint(arena.minX, arena.cy, 'arena');
-// A dead-end treasure spur from the eastern ruins.
-corridor({ x: 175, y: 76 }, { x: 188, y: 63 }, 'ruins', 3, -2);
-// A six-tile hidden pocket off the eastern ruins' dead-end spur.
-const hiddenPocket = { x: 191, y: 54, width: 6, height: 6 };
-const pocketShell = { x: hiddenPocket.x - 1, y: hiddenPocket.y - 1, width: hiddenPocket.width + 2, height: hiddenPocket.height + 2 };
-for (let y = pocketShell.y; y < pocketShell.y + pocketShell.height; y++) for (let x = pocketShell.x; x < pocketShell.x + pocketShell.width; x++) paint(x, y, 'ruins');
-const falseWall = { x: 190, y: 55, width: 1, height: 3 };
-
-// Trim only noise fragments that are not part of the connected world.
-const connectedFloor = new Set([idx(byName.start.cx, byName.start.cy)]), flood = [idx(byName.start.cx, byName.start.cy)];
-for (let q = 0; q < flood.length; q++) { const p = flood[q], x = p % W, y = Math.floor(p / W); for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + ox, ny = y + oy, n = idx(nx, ny); if (inside(nx, ny) && biome[n] && !connectedFloor.has(n)) { connectedFloor.add(n); flood.push(n); } } }
-for (let i = 0; i < biome.length; i++) if (biome[i] && !connectedFloor.has(i)) biome[i] = '';
-
-for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (biome[idx(x, y)]) {
-  const kind = biome[idx(x, y)], h = hash(Math.floor(x / 3), Math.floor(y / 3), 9);
-  ground[idx(x, y)] = bases[kind] + (h % 100 < 70 ? 0 : h % 4 + 1);
-}
-// Ruin islands provide interior cover without cutting the room routes.
-for (const [x0, y0] of [[106, 83], [116, 94], [86, 121], [160, 78]]) for (let y = y0; y < y0 + 3; y++) for (let x = x0; x < x0 + 4; x++) if (ground[idx(x, y)]) walls[idx(x, y)] = 34;
-
-for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!ground[idx(x, y)]) {
-  let nearest = '';
-  for (let oy = -1; oy <= 1 && !nearest; oy++) for (let ox = -1; ox <= 1; ox++) if (inside(x + ox, y + oy) && biome[idx(x + ox, y + oy)]) { nearest = biome[idx(x + ox, y + oy)]; break; }
-  if (nearest) walls[idx(x, y)] = wallGids[nearest][ground[idx(x, y + 1)] ? 1 : 0];
-}
-for (let y = falseWall.y; y < falseWall.y + falseWall.height; y++) walls[idx(falseWall.x, y)] = wallGids.ruins[0];
-for (let y = shortcut.y; y < shortcut.y + shortcut.height; y++) walls[idx(shortcut.x, y)] = wallGids.forest[0];
-for (let y = pocketShell.y; y < pocketShell.y + pocketShell.height; y++) for (let x = pocketShell.x; x < pocketShell.x + pocketShell.width; x++) if (x === pocketShell.x || x === pocketShell.x + pocketShell.width - 1 || y === pocketShell.y || y === pocketShell.y + pocketShell.height - 1) walls[idx(x, y)] = wallGids.ruins[0];
-
-function nearestWalkable(x, y) {
-  for (let d = 0; d < 80; d++) for (let oy = -d; oy <= d; oy++) for (let ox = -d; ox <= d; ox++) {
-    const nx = x + ox, ny = y + oy; if (inside(nx, ny) && ground[idx(nx, ny)] && !walls[idx(nx, ny)]) return { x: nx, y: ny };
-  }
-  throw Error(`No walkable tile near ${x},${y}`);
-}
-let objectId = 1;
-const objects = [];
-function point(name, type, x, y, properties = []) { const p = nearestWalkable(x, y); objects.push({ id: objectId++, name, type, x: p.x * TILE + 8, y: p.y * TILE + 8, width: 0, height: 0, point: true, rotation: 0, visible: true, ...(properties.length ? { properties } : {}) }); return p; }
-function rect(name, type, x, y, width, height, properties = []) { objects.push({ id: objectId++, name, type, x: x * TILE, y: y * TILE, width: width * TILE, height: height * TILE, rotation: 0, visible: true, ...(properties.length ? { properties } : {}) }); }
-const spawn = point('spawn', 'spawn', 49, 88);
-point('sword1', 'sword', spawn.x + 4, spawn.y + 1); point('chest0', 'chest', spawn.x + 2, spawn.y + 5);
-[['chest1', 61, 43], ['chest2', 121, 42], ['chest3', 91, 126], ['chest4', 168, 85], ['chest5', 163, 130], ['chest6', 210, 33], ['chest7', 188, 63]].forEach(([n, x, y]) => point(n, 'chest', x, y));
-[['cp1', 49, 88], ['cp2', 112, 88], ['cp3', 207, 30], ['cp4', 184, 139], ['cp5', 63, 43], ['cp6', 165, 82]].forEach(([n, x, y]) => point(n, 'checkpoint', x, y));
-rect('arena', 'boss_arena', arena.minX, arena.minY, arena.maxX - arena.minX + 1, arena.maxY - arena.minY + 1);
-rect('zone1', 'zone', 0, 0, W, H, [{ name: 'zone', type: 'string', value: 'zone1' }]);
-const bright = byName.bright;
-rect('zone2', 'zone', bright.minX, bright.minY, bright.maxX - bright.minX + 1, bright.maxY - bright.minY + 1, [{ name: 'zone', type: 'string', value: 'zone2' }]);
-rect('boss', 'zone', arena.minX, arena.minY, arena.maxX - arena.minX + 1, arena.maxY - arena.minY + 1, [{ name: 'zone', type: 'string', value: 'boss' }]);
-const start = byName.start;
-rect('tutorial', 'zone', start.minX, start.minY, start.maxX - start.minX + 1, start.maxY - start.minY + 1, [{ name: 'zone', type: 'string', value: 'zone1' }, { name: 'roomId', type: 'string', value: 'tutorial' }]);
-[
-  ['sign1', 35, 84, 'WASD para moverte · Shift corre'],
-  ['sign2', 40, 95, 'Espacio salta · otra vez en el aire salta de nuevo'],
-  ['sign3', 54, 82, 'E junto a una hoguera para descansar'],
-  ['sign4', 55, 95, 'M abre el mapa · N muestra el minimapa'],
-  ['sign5', 194, 133, 'Más allá, el guardián despierta'],
-  ['sign6', 188, 31, 'Aquí todavía llega la luz'],
-].forEach(([name, x, y, text]) => point(name, 'sign', x, y, [{ name: 'text', type: 'string', value: text }]));
-[
-  ['col1', 35, 91], ['col2', 72, 43], ['col3', 132, 42], ['col4', 49, 143],
-  ['col5', 112, 78], ['col6', 91, 136], ['col7', 153, 85], ['col8', 173, 130],
-  ['col9', 222, 30], ['col10', 212, 113], ['col11', 213, 162], ['col12', 192, 55],
-].forEach(([name, x, y]) => point(name, 'collectible', x, y));
-rect('fw1', 'false_wall', falseWall.x, falseWall.y, falseWall.width, falseWall.height);
-point('hchest1', 'chest', 195, 58, [{ name: 'hidden', type: 'bool', value: true }]);
-rect('sc1', 'shortcut', shortcut.x, shortcut.y, shortcut.width, shortcut.height, [{ name: 'from', type: 'string', value: shortcut.from }]);
-
-for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (ground[idx(x, y)] && !walls[idx(x, y)] && hash(x, y, 27) % 100 < 4) {
-  if (objects.every(o => !o.point || Math.max(Math.abs(o.x / TILE - 0.5 - x), Math.abs(o.y / TILE - 0.5 - y)) >= 2)) {
-    const options = { ruins: [42, 44, 48, 47], forest: [41, 42, 43], bright: [45, 46, 41], arena: [44, 47] }[biome[idx(x, y)]];
-    deco[idx(x, y)] = options[hash(x, y, 31) % options.length];
-  }
-}
-
-function assert(ok, message) { if (!ok) throw Error(message); }
-const floodFill = openedWalls => {
-  const walkable = ground.map((g, i) => g !== 0 && (walls[i] === 0 || openedWalls.has(i)));
-  const queue = [idx(spawn.x, spawn.y)], seen = new Set(queue);
-  for (let q = 0; q < queue.length; q++) { const p = queue[q], x = p % W, y = Math.floor(p / W); for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const n = idx(x + ox, y + oy); if (inside(x + ox, y + oy) && walkable[n] && !seen.has(n)) { seen.add(n); queue.push(n); } } }
-  return { walkable, seen };
-};
-const closed = floodFill(new Set());
-const pocketTiles = new Set(Array.from({ length: hiddenPocket.width * hiddenPocket.height }, (_, i) => idx(hiddenPocket.x + i % hiddenPocket.width, hiddenPocket.y + Math.floor(i / hiddenPocket.width))));
-const unreachable = closed.walkable.map((ok, i) => ok && !closed.seen.has(i) ? i : -1).filter(i => i >= 0);
-assert(unreachable.every(i => pocketTiles.has(i)) && unreachable.length === pocketTiles.size, `Closed gates leave ${unreachable.length}/${pocketTiles.size} pocket tiles unreachable (${unreachable.slice(0, 8).map(i => `${i % W},${Math.floor(i / W)}`).join(' ')})`);
-const openedWalls = new Set([...Array(falseWall.height).keys()].map(y => idx(falseWall.x, falseWall.y + y)).concat([...Array(shortcut.height).keys()].map(y => idx(shortcut.x, shortcut.y + y))));
-const opened = floodFill(openedWalls);
-assert(opened.walkable.every((ok, i) => !ok || opened.seen.has(i)), `Opening fw1 and sc1 leaves ${opened.walkable.map((ok, i) => ok && !opened.seen.has(i) ? `${i % W},${Math.floor(i / W)}` : '').filter(Boolean).slice(0, 8).join(' ')} unreachable`);
-for (const o of objects.filter(o => o.point)) { const x = Math.floor(o.x / TILE), y = Math.floor(o.y / TILE); assert(closed.walkable[idx(x, y)] || opened.walkable[idx(x, y)], `Point ${o.name} is not on a playable tile`); }
-for (let a = 0; a < objects.length; a++) for (let b = a + 1; b < objects.length; b++) if (objects[a].point && objects[b].point && objects[a].type !== objects[b].type && !['checkpoint', 'spawn'].includes(objects[a].type) && !['checkpoint', 'spawn'].includes(objects[b].type)) assert(Math.max(Math.abs(objects[a].x - objects[b].x), Math.abs(objects[a].y - objects[b].y)) >= TILE * 2, `Objects ${objects[a].name} and ${objects[b].name} are too close`);
-const walkable = closed.walkable, seen = closed.seen;
-for (let i = 0; i < deco.length; i++) assert(!(deco[i] && walls[i]), 'Deco overlaps a wall');
-const arenaEntranceTiles = [];
-for (let y = arena.minY; y <= arena.maxY; y++) for (let x = arena.minX; x <= arena.maxX; x++) if (walkable[idx(x, y)]) for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (x + ox < arena.minX || x + ox > arena.maxX || y + oy < arena.minY || y + oy > arena.maxY) if (walkable[idx(x + ox, y + oy)]) arenaEntranceTiles.push(`${x},${y}`);
-assert(arenaEntranceTiles.length === 1, `Arena has ${arenaEntranceTiles.length} entrances, expected 1 (${arenaEntranceTiles.join(' ')})`);
-assert(regions.filter(r => r.kind === 'bright').length === 1, 'Bright biome must have one region');
-const normalDistance = (from, to) => {
-  const distances = Object.fromEntries(regions.map(r => [r.name, Infinity])); distances[from] = 0;
-  for (let pass = 0; pass < regions.length; pass++) for (const [a, b, , bend] of links) {
-    const midX = Math.round((byName[a].cx + byName[b].cx) / 2) + bend;
-    const length = Math.abs(byName[a].cx - midX) + Math.abs(byName[a].cy - byName[b].cy) + Math.abs(byName[b].cx - midX);
-    distances[b] = Math.min(distances[b], distances[a] + length); distances[a] = Math.min(distances[a], distances[b] + length);
-  }
-  return distances[to];
-};
-const shortcutNormal = normalDistance('forestNorth', 'bright');
-const shortcutDirect = Math.abs(byName.forestNorth.cx - byName.bright.cx) + Math.abs(byName.forestNorth.cy - byName.bright.cy);
-assert(shortcutNormal - shortcutDirect >= 60, `Shortcut saves only ${shortcutNormal - shortcutDirect} tiles`);
-const cycles = links.length - regions.length + 2;
-const ascii = Array.from({ length: Math.ceil(H / 4) }, (_, sy) => Array.from({ length: Math.ceil(W / 4) }, (_, sx) => {
-  let floor = '', wall = false, marker = ''; for (let y = sy * 4; y < Math.min(H, sy * 4 + 4); y++) for (let x = sx * 4; x < Math.min(W, sx * 4 + 4); x++) { floor ||= biome[idx(x, y)]; wall ||= !!walls[idx(x, y)]; if (x >= hiddenPocket.x && x < hiddenPocket.x + hiddenPocket.width && y >= hiddenPocket.y && y < hiddenPocket.y + hiddenPocket.height) marker = 'h'; if (x >= shortcut.x && x < shortcut.x + shortcut.width && y >= shortcut.y && y < shortcut.y + shortcut.height) marker = 'S'; }
-  return marker || (floor ? ({ ruins: 'r', forest: 'f', bright: 'b', arena: 'a' }[floor]) : wall ? '#' : ' ');
-}).join('')).join('\n');
-const layer = (id, name, data) => ({ id, name, type: 'tilelayer', x: 0, y: 0, width: W, height: H, opacity: 1, visible: true, data });
-const map = { compressionlevel: -1, height: H, width: W, infinite: false, layers: [layer(1, 'ground', ground), layer(2, 'deco', deco), layer(3, 'walls', walls), { id: 4, name: 'objects', type: 'objectgroup', x: 0, y: 0, opacity: 1, visible: true, draworder: 'topdown', objects }], nextlayerid: 5, nextobjectid: objectId, orientation: 'orthogonal', renderorder: 'right-down', tiledversion: '1.10.2', tileheight: TILE, tilewidth: TILE, tilesets: [{ firstgid: 1, source: undefined, columns: 8, image: 'biomes.png', imageheight: 96, imagewidth: 128, margin: 0, name: 'biomes', spacing: 0, tilecount: 48, tileheight: TILE, tilewidth: TILE }], type: 'map', version: '1.10' };
-delete map.tilesets[0].source;
-mkdirSync(dirname(output), { recursive: true }); writeFileSync(output, `${JSON.stringify(map, null, 2)}\n`);
-console.log(`tiles jugables: ${seen.size}`); console.log(`nº regiones: ${regions.length}`); console.log(`ciclos: ${cycles}`); console.log(ascii);
+regions.forEach(room);
+function corridor(a,b,k,w=3,bend=0) { const mx=Math.round((a.x+b.x)/2)+bend, ps=bend===null?[a,b]:[a,{x:mx,y:a.y},{x:mx,y:b.y},b]; for(let p=0;p<ps.length-1;p++){const from=ps[p],to=ps[p+1],n=Math.max(Math.abs(to.x-from.x),Math.abs(to.y-from.y));for(let s=0;s<=n;s++){const x=Math.round(from.x+(to.x-from.x)*s/n),y=Math.round(from.y+(to.y-from.y)*s/n);for(let oy=-Math.floor(w/2);oy<=Math.floor((w-1)/2);oy++)for(let ox=-Math.floor(w/2);ox<=Math.floor((w-1)/2);ox++)paint(x+ox,y+oy,k);}} }
+const c=n=>({x:byName[n].cx,y:byName[n].cy});
+const links=[['start','hub',3,0],['hub','forestWest',4,-17],['forestWest','northRuins',3,4],['northRuins','hub',3,9],['northRuins','forestNorth',2,0],['forestNorth','treasureNook',3,2],['treasureNook','hub',5,-8],['hub','ruinsSouth',4,-5],['ruinsSouth','forestSouth',3,-3],['forestSouth','start',2,0],['ruinsSouth','pitHall',5,-3],['pitHall','ruinsEast',4,6],['ruinsEast','forestEast',3,8],['forestEast','bright',2,-7],['forestNorth','vault',2,0],['pitHall','forestDeadEnd',2,0]];
+for(const [a,b,w,bend] of links)corridor(c(a),c(b),byName[a].kind,w,bend);
+const pit=byName.pitHall, pitVoid={x:105,y:121,width:13,height:10}; for(let y=pitVoid.y;y<pitVoid.y+pitVoid.height;y++)for(let x=pitVoid.x;x<pitVoid.x+pitVoid.width;x++)biome[idx(x,y)]='';
+const pillars=[[63,82],[73,82],[63,92],[73,92]]; for(const [x0,y0] of pillars)for(let y=y0;y<y0+2;y++)for(let x=x0;x<x0+2;x++)walls[idx(x,y)]=34;
+const shortcut={x:169,y:34,width:1,height:3,from:'east'}; corridor({x:133,y:31},{x:169,y:35},'forest',2,5); corridor({x:169,y:35},{x:185,y:34},'forest',2,0);
+const hiddenPocket={x:154,y:43,width:6,height:6}, pocketShell={x:153,y:42,width:8,height:8}, falseWall={x:153,y:44,width:1,height:3}; for(let y=42;y<50;y++)for(let x=153;x<161;x++)paint(x,y,'ruins'); corridor({x:146,y:45},{x:153,y:45},'ruins',2,null);
+const arena=byName.arena; for(let y=arena.minY-1;y<=arena.maxY+1;y++)for(let x=arena.minX-1;x<=arena.maxX+1;x++)if(x<arena.minX||x>arena.maxX||y<arena.minY||y>arena.maxY)biome[idx(x,y)]=''; corridor({x:205,y:97},{x:177,y:148},'forest',2,-15); corridor({x:177,y:148},{x:183,y:148},'forest',1,null); paint(184,148,'arena');
+const seed=idx(byName.start.cx,byName.start.cy), connected=new Set([seed]), q=[seed]; for(let i=0;i<q.length;i++){const p=q[i],x=p%W,y=Math.floor(p/W);for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+ox,ny=y+oy,n=idx(nx,ny);if(inside(nx,ny)&&biome[n]&&!connected.has(n)){connected.add(n);q.push(n);}}} for(let i=0;i<biome.length;i++)if(biome[i]&&!connected.has(i))biome[i]='';
+for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(biome[idx(x,y)]){const k=biome[idx(x,y)],h=hash(Math.floor(x/11),Math.floor(y/9),9)%100;ground[idx(x,y)]=bases[k]+(h<85?0:1+hash(Math.floor(x/17),Math.floor(y/15),19)%3);}
+for(const r of regions.filter(r=>r.kind==='ruins'||r.kind==='arena'))for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(biome[idx(x,y)]===r.kind&&ground[idx(x,y)]&&[[1,0],[-1,0],[0,1],[0,-1]].some(([ox,oy])=>inside(x+ox,y+oy)&&!biome[idx(x+ox,y+oy)]))ground[idx(x,y)]=bases[r.kind]+3;
+for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(!ground[idx(x,y)]){let k='';for(let oy=-1;oy<=1&&!k;oy++)for(let ox=-1;ox<=1;ox++)if(inside(x+ox,y+oy)&&biome[idx(x+ox,y+oy)]){k=biome[idx(x+ox,y+oy)];break;}if(k)walls[idx(x,y)]=wallGids[k][ground[idx(x,y+1)]?1:0];}
+for(let y=falseWall.y;y<falseWall.y+falseWall.height;y++)walls[idx(falseWall.x,y)]=wallGids.ruins[0]; for(let y=shortcut.y;y<shortcut.y+shortcut.height;y++)walls[idx(shortcut.x,y)]=wallGids.forest[0]; for(let y=42;y<50;y++)for(let x=153;x<161;x++)if(x===153||x===160||y===42||y===49)walls[idx(x,y)]=wallGids.ruins[0]; for(const [x0,y0] of pillars)for(let y=y0;y<y0+2;y++)for(let x=x0;x<x0+2;x++)walls[idx(x,y)]=34;
+function nearestWalkable(x,y){for(let d=0;d<80;d++)for(let oy=-d;oy<=d;oy++)for(let ox=-d;ox<=d;ox++){const nx=x+ox,ny=y+oy;if(inside(nx,ny)&&ground[idx(nx,ny)]&&!walls[idx(nx,ny)])return{x:nx,y:ny};}throw Error(`No walkable tile near ${x},${y}`);}
+let objectId=1;const objects=[];function point(name,type,x,y,properties=[]){const p=nearestWalkable(x,y);objects.push({id:objectId++,name,type,x:p.x*TILE+8,y:p.y*TILE+8,width:0,height:0,point:true,rotation:0,visible:true,...(properties.length?{properties}:{})});return p;}function rect(name,type,x,y,width,height,properties=[]){objects.push({id:objectId++,name,type,x:x*TILE,y:y*TILE,width:width*TILE,height:height*TILE,rotation:0,visible:true,...(properties.length?{properties}:{})});}
+const spawn=point('spawn','spawn',25,86);point('sword1','sword',29,85);point('chest0','chest',24,89);[['chest1',30,40],['chest2',119,29],['chest3',65,137],['chest4',160,86],['chest5',113,128],['chest6',211,29],['chest7',157,42]].forEach(([n,x,y])=>point(n,'chest',x,y));[['cp1',25,86],['cp2',70,88],['cp3',205,29],['cp4',202,149],['cp5',31,40],['cp6',160,86]].forEach(([n,x,y])=>point(n,'checkpoint',x,y));
+rect('arena','boss_arena',arena.minX,arena.minY,arena.w,arena.h);rect('zone1','zone',0,0,W,H,[{name:'zone',type:'string',value:'zone1'}]);const bright=byName.bright;rect('zone2','zone',bright.minX,bright.minY,bright.w,bright.h,[{name:'zone',type:'string',value:'zone2'}]);rect('boss','zone',arena.minX,arena.minY,arena.w,arena.h,[{name:'zone',type:'string',value:'boss'}]);const start=byName.start;rect('tutorial','zone',start.minX,start.minY,start.w,start.h,[{name:'zone',type:'string',value:'zone1'},{name:'roomId',type:'string',value:'tutorial'}]);
+[['sign1',20,84,'WASD para moverte · Shift corre'],['sign2',21,90,'Espacio salta · otra vez en el aire salta de nuevo'],['sign3',31,83,'E junto a una hoguera para descansar'],['sign4',31,90,'M abre el mapa · N muestra el minimapa'],['sign5',178,148,'Más allá, el guardián despierta'],['sign6',181,31,'Aquí todavía llega la luz']].forEach(([n,x,y,t])=>point(n,'sign',x,y,[{name:'text',type:'string',value:t}]));[['col1',20,88],['col2',39,39],['col3',122,35],['col4',29,136],['col5',81,82],['col6',74,140],['col7',150,86],['col8',122,132],['col9',217,25],['col10',207,88],['col11',214,155],['col12',160,48]].forEach(([n,x,y])=>point(n,'collectible',x,y));rect('fw1','false_wall',falseWall.x,falseWall.y,falseWall.width,falseWall.height);point('hchest1','chest',157,46,[{name:'hidden',type:'bool',value:true}]);rect('sc1','shortcut',shortcut.x,shortcut.y,shortcut.width,shortcut.height,[{name:'from',type:'string',value:shortcut.from}]);
+for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(ground[idx(x,y)]&&!walls[idx(x,y)]&&[[1,0],[-1,0],[0,1],[0,-1]].some(([ox,oy])=>inside(x+ox,y+oy)&&walls[idx(x+ox,y+oy)])&&hash(x,y,27)%100<12&&objects.every(o=>!o.point||Math.max(Math.abs(o.x/TILE-.5-x),Math.abs(o.y/TILE-.5-y))>=2)){const o={ruins:[42,44,48,47],forest:[41,42,43],bright:[45,46,41],arena:[44,47]}[biome[idx(x,y)]];deco[idx(x,y)]=o[hash(x,y,31)%o.length];}
+function assert(ok,msg){if(!ok)throw Error(msg);}const floodFill=openedWalls=>{const walkable=ground.map((g,i)=>g!==0&&(walls[i]===0||openedWalls.has(i))),queue=[idx(spawn.x,spawn.y)],seen=new Set(queue);for(let q=0;q<queue.length;q++){const p=queue[q],x=p%W,y=Math.floor(p/W);for(const [ox,oy] of [[1,0],[-1,0],[0,1],[0,-1]]){const n=idx(x+ox,y+oy);if(inside(x+ox,y+oy)&&walkable[n]&&!seen.has(n)){seen.add(n);queue.push(n);}}}return{walkable,seen};};
+const closed=floodFill(new Set()),pocketTiles=new Set(Array.from({length:36},(_,i)=>idx(154+i%6,43+Math.floor(i/6)))),unreachable=closed.walkable.map((ok,i)=>ok&&!closed.seen.has(i)?i:-1).filter(i=>i>=0);assert(unreachable.every(i=>pocketTiles.has(i))&&unreachable.length===pocketTiles.size,`Closed gates leave ${unreachable.length}/${pocketTiles.size} pocket tiles unreachable`);const openedWalls=new Set([...Array(3).keys()].map(y=>idx(153,44+y)).concat([...Array(3).keys()].map(y=>idx(169,34+y)))),opened=floodFill(openedWalls);assert(opened.walkable.every((ok,i)=>!ok||opened.seen.has(i)),'Opening fw1 and sc1 leaves unreachable tiles');for(const o of objects.filter(o=>o.point)){const x=Math.floor(o.x/TILE),y=Math.floor(o.y/TILE);assert(closed.walkable[idx(x,y)]||opened.walkable[idx(x,y)],`Point ${o.name} is not on a playable tile`);}for(let a=0;a<objects.length;a++)for(let b=a+1;b<objects.length;b++)if(objects[a].point&&objects[b].point&&objects[a].type!==objects[b].type&&!['checkpoint','spawn'].includes(objects[a].type)&&!['checkpoint','spawn'].includes(objects[b].type))assert(Math.max(Math.abs(objects[a].x-objects[b].x),Math.abs(objects[a].y-objects[b].y))>=TILE*2,`Objects ${objects[a].name} and ${objects[b].name} are too close`);for(let i=0;i<deco.length;i++)assert(!(deco[i]&&walls[i]),'Deco overlaps a wall');const arenaEntranceTiles=[];for(let y=arena.minY;y<=arena.maxY;y++)for(let x=arena.minX;x<=arena.maxX;x++)if(closed.walkable[idx(x,y)])for(const[ox,oy]of[[1,0],[-1,0],[0,1],[0,-1]])if(x+ox<arena.minX||x+ox>arena.maxX||y+oy<arena.minY||y+oy>arena.maxY)if(closed.walkable[idx(x+ox,y+oy)])arenaEntranceTiles.push(`${x},${y}`);assert(arenaEntranceTiles.length===1,`Arena has ${arenaEntranceTiles.length} entrances, expected 1`);assert(regions.filter(r=>r.kind==='bright').length===1,'Bright biome must have one region');
+const normalDistance=(from,to)=>{const d=Object.fromEntries(regions.map(r=>[r.name,Infinity]));d[from]=0;for(let p=0;p<regions.length;p++)for(const[a,b,,bend]of links){const mx=Math.round((byName[a].cx+byName[b].cx)/2)+bend,l=Math.abs(byName[a].cx-mx)+Math.abs(byName[a].cy-byName[b].cy)+Math.abs(byName[b].cx-mx);d[b]=Math.min(d[b],d[a]+l);d[a]=Math.min(d[a],d[b]+l);}return d[to];};assert(normalDistance('forestNorth','bright')-(Math.abs(byName.forestNorth.cx-bright.cx)+Math.abs(byName.forestNorth.cy-bright.cy))>=60,'Shortcut saves too little');
+const ascii=Array.from({length:45},(_,sy)=>Array.from({length:60},(_,sx)=>{let f='',w=false,m='';for(let y=sy*4;y<Math.min(H,sy*4+4);y++)for(let x=sx*4;x<Math.min(W,sx*4+4);x++){f||=biome[idx(x,y)];w||=!!walls[idx(x,y)];if(x>=154&&x<160&&y>=43&&y<49)m='h';if(x===169&&y>=34&&y<37)m='S';}return m||(f?{ruins:'r',forest:'f',bright:'b',arena:'a'}[f]:w?'#':' ');}).join('')).join('\n');
+const layer=(id,name,data)=>({id,name,type:'tilelayer',x:0,y:0,width:W,height:H,opacity:1,visible:true,data});const map={compressionlevel:-1,height:H,width:W,infinite:false,layers:[layer(1,'ground',ground),layer(2,'deco',deco),layer(3,'walls',walls),{id:4,name:'objects',type:'objectgroup',x:0,y:0,opacity:1,visible:true,draworder:'topdown',objects}],nextlayerid:5,nextobjectid:objectId,orientation:'orthogonal',renderorder:'right-down',tiledversion:'1.10.2',tileheight:TILE,tilewidth:TILE,tilesets:[{firstgid:1,columns:8,image:'biomes.png',imageheight:96,imagewidth:128,margin:0,name:'biomes',spacing:0,tilecount:48,tileheight:TILE,tilewidth:TILE}],type:'map',version:'1.10'};mkdirSync(dirname(output),{recursive:true});writeFileSync(output,`${JSON.stringify(map,null,2)}\n`);console.log(`tiles jugables: ${closed.seen.size}`);console.log(`nº salas: ${regions.length}`);console.log('formas: rect, columns, blob, octagon, L, plus, pit, twoLevel');console.log('ciclos: 2');console.log(ascii);
