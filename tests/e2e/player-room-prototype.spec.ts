@@ -343,13 +343,13 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   if (!box) throw new Error('No se encontró el canvas del prototipo');
   await page.mouse.move(box.x + box.width * 820 / 960, box.y + box.height * 383 / 600);
   await page.mouse.down();
-  await page.waitForTimeout(500);
+  await expect.poll(async () => (await state(page)).charge).toBeGreaterThan(0);
   const charging = await state(page);
   expect(charging.charge).toBeGreaterThan(0);
   expect(charging.chargeEffect).toBe(true);
   expect(charging.dummyHp).toBe(100);
   await page.keyboard.down('ArrowUp');
-  await page.waitForTimeout(140);
+  await expect.poll(async () => (await state(page)).y, { intervals: [16] }).toBeLessThan(charging.y);
   await page.keyboard.up('ArrowUp');
   const movedWhileCharging = await state(page);
   expect(movedWhileCharging.y).toBeLessThan(charging.y);
@@ -358,13 +358,13 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
   expect(movedWhileCharging.swordRotation).toBeCloseTo(Math.atan2(383 - (movedWhileCharging.y - 17), 820 - movedWhileCharging.x), 1);
   expect(movedWhileCharging.dummyHp).toBe(100);
   await page.keyboard.press('c');
-  await expect.poll(async () => (await state(page)).dash).toBe(true);
+  await expect.poll(async () => (await state(page)).cooldown).toBeGreaterThan(0);
   await expect.poll(async () => (await state(page)).charge).toBe(0);
   await page.mouse.up();
   await page.waitForTimeout(200);
   expect((await state(page)).dummyHp).toBe(100);
 
-  await page.waitForTimeout(800);
+  await expect.poll(async () => (await state(page)).cooldown).toBe(0);
   await place(page, 680, 400);
   await page.evaluate(() => {
     const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
@@ -372,9 +372,9 @@ test('el dash cancela la carga y soltar una carga máxima hace un golpe de largo
     scene.player.motion.velocity = { x: 0, y: 0 };
   });
   await page.mouse.down();
-  await page.waitForTimeout(1050);
+  await expect.poll(async () => (await state(page)).charge).toBe(1);
   await page.keyboard.down('ArrowRight');
-  await page.waitForTimeout(160);
+  await expect.poll(async () => (await state(page)).x, { intervals: [16] }).toBeGreaterThan(700);
   await page.keyboard.up('ArrowRight');
   expect((await state(page)).charge).toBe(1);
   const releasePose = await state(page);
@@ -509,13 +509,9 @@ test('Eco del Reverso repite una sola vez el golpe desde el dash con daño reduc
   expect(replayed.echoSlash).toBe(true);
   expect(replayed.dummyHp).toBe(66); // 25 original + round(25 × 0.35) echo.
   expect(replayed.dummyDebtMarks).toBe(2);
-  await page.waitForTimeout(300);
-  expect((await state(page)).dummyHits).toBe(2); // Neither hitbox leaves a ghost hit after its window.
-
-  await expect.poll(async () => page.evaluate(() => {
-    const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
-    return scene.player.attack.active;
-  })).toBe(false);
+  // Wait for the combo window to close so the next tap always deals base damage.
+  await expect.poll(async () => (await state(page)).comboAttack).toBe(0);
+  expect((await state(page)).dummyHits).toBe(2);
   await page.evaluate(() => {
     const scene = window.__game!.scene.getScene('RoomPrototype') as RoomScene;
     scene.player.body.reset(760, 400);
@@ -523,9 +519,8 @@ test('Eco del Reverso repite una sola vez el golpe desde el dash con daño reduc
   });
   await strikeAt(page, 820, 383);
   await expect.poll(async () => (await state(page)).dummyHits).toBe(3);
-  await page.waitForTimeout(150);
-  expect((await state(page)).dummyHp).toBe(36);
-  expect((await state(page)).dummyDebtMarks).toBe(3);
+  await expect.poll(async () => (await state(page)).comboAttack).toBe(0);
+  expect(await state(page)).toMatchObject({ dummyHp: 41, dummyHits: 3, dummyDebtMarks: 3 });
   await page.keyboard.press('r');
   await expect.poll(async () => page.evaluate(() => {
     const scene = window.__game!.scene.getScene('RoomPrototype');
