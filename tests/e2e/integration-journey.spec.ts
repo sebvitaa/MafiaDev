@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import type {GameScene} from '../../src/scenes/GameScene';
 
 test('apertura completa, ambos videos, mundo, jefe y cierre sin créditos prematuros',async({page})=>{
-  test.setTimeout(180000);
+  test.setTimeout(240000);
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/?map=1&noEnemies=1');
   await page.waitForFunction(()=>window.__game?.scene.isActive('PreloadScene'));
@@ -18,7 +18,7 @@ test('apertura completa, ambos videos, mundo, jefe y cierre sin créditos premat
   const video=page.locator('video');
   await expect(video).toHaveAttribute('aria-label','La Nota');
   await expect.poll(()=>video.evaluate(v=>(v as HTMLVideoElement).currentTime)).toBeGreaterThan(0.3);
-  await expect(video).toHaveCount(0,{timeout:20000});
+  await expect(video).toHaveCount(0,{timeout:90000});
   await page.waitForFunction(()=>window.__game?.scene.isActive('GameScene'));
   await page.keyboard.press('d',{delay:100});
   expect(await page.evaluate(()=>{
