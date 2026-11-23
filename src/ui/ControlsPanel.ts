@@ -54,8 +54,8 @@ export function showControls(scene: Phaser.Scene): Promise<void> {
       ['ATACAR', ['CLIC IZQ']], ['ULTI', ['CLIC DER']], ['PAPEL TP', ['Q+CLIC DER']],
     ];
     const right: [string, string[]][] = [
-      ['IR A PAPEL', ['Q+CLIC IZQ', '1-4']], ['INTERACTUAR', ['E']], ['VIAJAR', ['G']], ['MAPA', ['TAB', 'N']],
-      ['PAUSA', BINDINGS.pause], ['SILENCIO', ['M']], ['PANT. COMPLETA', ['F']],
+      ['IR A PAPEL', ['Q+CLIC IZQ', '1-4']], ['INTERACTUAR', ['E']], ['VIAJAR', ['F']], ['MAPA', ['M', 'N']],
+      ['PAUSA', BINDINGS.pause], ['SILENCIO', ['0']], ['PANT. COMPLETA', ['F (MENÚ)']],
     ];
     left.forEach(([name, keys], i) => row(name, keys, leftX, rowY + step * i, colRight));
     right.forEach(([name, keys], i) => row(name, keys, rightX, rowY + step * i, px + pw - 16));

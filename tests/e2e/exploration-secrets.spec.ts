@@ -59,7 +59,7 @@ for (const m of [1, 2, 3]) test(`pared ilusoria, atajo, coleccionable y viaje r√
   const cp1 = one('cp1'), cp2 = one('cp2');
   await tp(page, cp2.x, cp2.y + 10); await press(page, 'KeyE');
   await tp(page, cp1.x, cp1.y + 10); await press(page, 'KeyE');
-  await press(page, 'KeyG');
+  await press(page, 'KeyF');
   await page.waitForTimeout(700);
   const at = await pos(page);
   expect(Math.hypot(at.x - cp2.x, at.y - cp2.y)).toBeLessThan(24);
