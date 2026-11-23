@@ -7,10 +7,10 @@ agent: gpt
 created: 2026-11-23T18:31:11.000Z
 title: coordinar llegada cinematica con mapa real
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done
 area: world
 refs: [HIS-basti-20261123-153110, SUP-basti-20261123-153110, PEN-seba-20261123-153110]
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: 9bad40e
 ---
 
 ## Contexto
@@ -27,3 +27,6 @@ En origin/main, preloadWorld elige mapa y GameScene obtiene el inicio mediante d
 
 ## Notas
 Guion y criterios en agents/history/materiales/HIS-basti-20261123-153110/LA-NOTA-guion-tecnico.md. Propuesta reversible en SUP-basti-20261123-153110; no crea eventos compartidos.
+
+## Resultado técnico
+Realizado en 9bad40e. Reproductor y HUD usan la cámara y el sprite efectivos del mapa. Se probaron los tres mapas, salida natural, salto, error y movimiento tras aterrizar. La identidad de los planos dibujados procede del clip original. No se ha registrado una aprobación artística personal de alejandro o vicho.

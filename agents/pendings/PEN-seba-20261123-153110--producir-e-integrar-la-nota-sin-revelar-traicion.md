@@ -7,10 +7,10 @@ agent: gpt
 created: 2026-11-23T18:31:10.940Z
 title: producir e integrar La Nota sin revelar traicion
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done
 area: ui
 refs: [HIS-basti-20261123-153110, SUP-basti-20261123-153110, PEN-vicho-20261123-153111]
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: 9bad40e
 ---
 
 ## Contexto
@@ -29,3 +29,6 @@ origin/main (3c75dfa) contiene cine1.webm de 10,008 s y docs/LORE.md §8. Ambos 
 
 ## Notas
 No hay video nuevo generado ni promesa de nuevas mecánicas de pruebas/inventario/retorno. Todo texto se añade en montaje o interfaz. No editar shared sin el aviso humano requerido.
+
+## Resultado técnico
+Realizado en 9bad40e. Reproductor y HUD usan la cámara y el sprite efectivos del mapa. Se probaron los tres mapas, salida natural, salto, error y movimiento tras aterrizar. La identidad de los planos dibujados procede del clip original. No se ha registrado una aprobación artística personal de alejandro o vicho.
