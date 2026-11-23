@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import classes from '../../data/classes.json';
 import { RoomPlayer } from './RoomPlayer';
 import { SwordPickup } from './SwordPickup';
+import { TrainingDummy } from './TrainingDummy';
 
 export const ROOM = { width: 960, height: 600, left: 56, top: 104, right: 904, bottom: 544 };
 
@@ -9,6 +10,7 @@ export const ROOM = { width: 960, height: 600, left: 56, top: 104, right: 904, b
 export class RoomScene extends Phaser.Scene {
   player!: RoomPlayer;
   swordPickup!: SwordPickup;
+  trainingDummy!: TrainingDummy;
   obstacles: Phaser.GameObjects.Container[] = [];
   private status!: Phaser.GameObjects.Text;
 
@@ -23,7 +25,8 @@ export class RoomScene extends Phaser.Scene {
     this.block(solids, 640, 270, 96, 40, 68);
     this.block(solids, 480, 170, 112, 32, 42);
     this.block(solids, 700, 450, 80, 40, 34);
-    this.player = new RoomPlayer(this, 480, 400, { ...classes.luchador.stats });
+    this.trainingDummy = new TrainingDummy(this, 820, 400);
+    this.player = new RoomPlayer(this, 480, 400, { ...classes.luchador.stats }, () => [this.trainingDummy]);
     // SUP-basti-20261123-112350: place pickup on the open right side, away from spawn and pillars.
     this.swordPickup = new SwordPickup(this, 760, 400);
     this.physics.add.collider(this.player.anchor, solids);
@@ -47,14 +50,23 @@ export class RoomScene extends Phaser.Scene {
   }
 
   update(_time: number, dtMs: number): void {
+    this.trainingDummy.update(dtMs);
     this.player.update(dtMs);
     if (this.swordPickup.update(this.time.now, this.player.anchor.x, this.player.anchor.y)) {
       this.player.equipSword();
     }
+    this.trainingDummy.visual.setDepth(this.trainingDummy.visual.y + 0.5);
+    this.trainingDummy.healthBar.setDepth(this.trainingDummy.visual.y + 20);
+    this.trainingDummy.healthLabel.setDepth(this.trainingDummy.visual.y + 21);
+    this.trainingDummy.damageLabel.setDepth(this.trainingDummy.visual.y + 22);
+    this.trainingDummy.defeatedLabel.setDepth(this.trainingDummy.visual.y + 23);
     const { motion } = this.player;
     const label = motion.dash.active ? 'DASH' : motion.height > 0 ? 'AIRE' : 'SUELO';
     const swordLabel = this.player.hasSword ? this.player.attack.active ? ' / ATAQUE' : ' / ESPADA' : '';
-    this.status.setText(`${label}${swordLabel}  /  ${Math.hypot(motion.velocity.x, motion.velocity.y).toFixed(0)} px/s  /  Z ${motion.height.toFixed(0)}`);
+    const fireball = this.player.fireball;
+    const fireballLabel = fireball.aiming ? ' / APUNTANDO E'
+      : fireball.cooldownRemainingMs > 0 ? ` / E ${Math.ceil(fireball.cooldownRemainingMs / 1000)}s` : ' / E LISTA';
+    this.status.setText(`${label}${swordLabel}${fireballLabel}  /  ${Math.hypot(motion.velocity.x, motion.velocity.y).toFixed(0)} px/s  /  Z ${motion.height.toFixed(0)}`);
   }
 
   private drawRoom(): void {
