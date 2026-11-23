@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T13:51:13.010Z
 title: V03 Cargar el mapa de Tiled en GameScene y reemplazar el stub
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done             # open | in_progress | blocked | done | wontfix
 area: world
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-vicho-20261123-112712               # hash o HIS-ID al cerrar
 ---
 
 ## Contexto
@@ -22,6 +22,6 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 ```
 
 ## Criterio de cierre
-- [ ] npm run build ok; el juego arranca mostrando el mapa
+- [x] npm run build ok; el juego arranca mostrando el mapa
 
 ## Notas

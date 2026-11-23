@@ -7,10 +7,10 @@ agent: claude
 created: 2026-11-23T13:51:14.162Z
 title: V04 Colisión con muros y spawn desde objeto Tiled
 priority: p1   # p0 rompe demo/main | p1 MUST incompleto | p2 pulido
-status: open             # open | in_progress | blocked | done | wontfix
+status: done             # open | in_progress | blocked | done | wontfix
 area: world
 refs: []
-closed_by:               # hash o HIS-ID al cerrar
+closed_by: HIS-vicho-20261123-112712               # hash o HIS-ID al cerrar
 ---
 
 ## Contexto
@@ -22,6 +22,6 @@ MoSCoW: MUST. Vista cenital, mundo abierto (no por salas).
 ```
 
 ## Criterio de cierre
-- [ ] El jugador aparece en spawn y no atraviesa muros
+- [x] El jugador aparece en spawn y no atraviesa muros
 
 ## Notas

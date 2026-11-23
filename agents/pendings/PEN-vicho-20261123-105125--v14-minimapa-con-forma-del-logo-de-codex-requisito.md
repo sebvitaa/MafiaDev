@@ -26,3 +26,4 @@ MoSCoW: SHOULD. Vista cenital, mundo abierto (no por salas).
 
 ## Notas
 - 2026-11-23 (vicho): Ubicación: arriba a la derecha. Tecla/botón para mostrar u ocultar. Forma de logo de Codex: POSPUESTA por ahora (primero minimapa rectangular funcional).
+- 2026-11-23 (vicho): CAMBIO: minimapa ARRIBA A LA IZQUIERDA (no derecha). Ojo: hoy el HUD de vida de seba ocupa la esquina superior izquierda → coordinar posición con seba.
